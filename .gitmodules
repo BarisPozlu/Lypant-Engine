@@ -1,0 +1,3 @@
+[submodule "Lypant/vendor/spdlog"]
+	path = Lypant/vendor/spdlog
+	url = https://github.com/gabime/spdlog
