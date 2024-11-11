@@ -2,7 +2,7 @@
 
 .vs/
 bin-int/
-bin/
+/bin/
 
 #Files
 
