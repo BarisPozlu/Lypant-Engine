@@ -44,8 +44,14 @@ project "Lypant"
 			"LYPANT_BUILD_DLL"
 		}
 
+		prebuildcommands
+		{
+			"{MKDIR} %{!sln.location}bin/" .. outputdir .. "SandBox/"
+		}
+		
 		postbuildcommands
 		{
+
 			"{COPYFILE} %[%{!cfg.buildtarget.abspath}] %[%{!sln.location}bin/" .. outputdir .. "SandBox/Lypant.dll]"
 		}
 		
