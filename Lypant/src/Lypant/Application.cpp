@@ -1,3 +1,4 @@
+#include "lypch.h"
 #include "Application.h"
 
 namespace lypant

@@ -21,6 +21,9 @@ project "Lypant"
 	targetdir ("bin/" .. outputdir .. "%{prj.name}")
 	objdir ("bin-int/" .. outputdir .. "%{prj.name}")
 
+	pchheader "lypch.h"
+	pchsource "%{prj.name}/src/lypch.cpp"
+
 	files
 	{
 		"%{prj.name}/src/**.h",
@@ -29,6 +32,7 @@ project "Lypant"
 
 	includedirs
 	{
+		"%{prj.name}/src",
 		"%{prj.name}/vendor/spdlog/include"
 	}
 
