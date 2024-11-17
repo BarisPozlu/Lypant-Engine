@@ -12,6 +12,8 @@ workspace "Lypant"
 
 outputdir = "%{cfg.system}-%{cfg.architecture}-%{cfg.buildcfg}/"
 
+include "Lypant/vendor/GLFW"
+
 project "Lypant"
 
 	location "Lypant"
@@ -33,7 +35,14 @@ project "Lypant"
 	includedirs
 	{
 		"%{prj.name}/src",
-		"%{prj.name}/vendor/spdlog/include"
+		"%{prj.name}/vendor/spdlog/include",
+		"%{prj.name}/vendor/GLFW/include"
+	}
+
+	links
+	{
+		"GLFW",
+		"opengl32.lib"
 	}
 
 	filter "system:windows"

@@ -8,4 +8,13 @@
 	#else
 		#define LYPANT_API __declspec(dllimport)
 	#endif
+	#ifdef LYPANT_DEBUG
+		#define LY_CORE_ASSERT(x, ...) { if(!(x)) { LY_CORE_ERROR("Assertion failed: {0}", __VA_ARGS__); __debugbreak(); } }
+		#define LY_ASSERT(x, ...) { if(!(x)) { LY_ERROR("Assertion failed: {0}", __VA_ARGS__); __debugbreak(); } }
+	#else
+		#define LY_CORE_ASSERT(x, ...)
+		#define LY_ASSERT(x, ...)
+	#endif
+#else 
+	#error Lypant only supports windows for now.
 #endif

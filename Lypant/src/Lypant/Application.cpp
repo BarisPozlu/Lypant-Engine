@@ -3,7 +3,7 @@
 
 namespace lypant
 {
-	Application::Application()
+	Application::Application() : m_Window(std::make_unique<Window>())
 	{
 	}
 
@@ -13,6 +13,9 @@ namespace lypant
 
 	void Application::Run()
 	{
-		while (true);
+		while (m_Running)
+		{
+			m_Window->Tick();
+		}
 	}
 }
