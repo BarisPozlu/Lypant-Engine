@@ -30,7 +30,7 @@ namespace lypant
 		~Window();
 
 		void Tick();
-		inline void SetEventCallback(std::function<bool(Event&)> func) { m_Data.EventCallback = func; }
+		inline void SetEventCallback(std::function<void(Event&)> func) { m_Data.EventCallback = func; }
 
 		void SetVSync(bool enabled);
 		inline bool IsVSync() const { return m_Data.IsVSync; };
@@ -45,7 +45,7 @@ namespace lypant
 		struct WindowData
 		{
 			std::string Title;
-			std::function<bool(Event&)> EventCallback;
+			std::function<void(Event&)> EventCallback;
 			unsigned int Width;
 			unsigned int Heigth;
 			bool IsVSync;

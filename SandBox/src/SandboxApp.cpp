@@ -5,7 +5,7 @@ class SandboxApp : public lypant::Application
 public:
 	SandboxApp()
 	{
-		LY_INFO("App started.");
+
 	}
 
 	~SandboxApp()
