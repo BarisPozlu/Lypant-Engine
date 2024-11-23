@@ -73,11 +73,13 @@ project "Lypant"
 	filter "configurations:Debug"
 
 		defines "LYPANT_DEBUG"
+		buildoptions "/MDd"
 		symbols "On"
 
 	filter "configurations:Release"
 
 		defines "LYPANT_RELEASE"
+		buildoptions "/MD"
 		optimize "On"
 
 
@@ -120,9 +122,11 @@ project "SandBox"
 	filter "configurations:Debug"
 
 		defines "LYPANT_DEBUG"
+		buildoptions "/MDd"
 		symbols "On"
 
 	filter "configurations:Release"
 
 		defines "LYPANT_RELEASE"
+		buildoptions "/MD"
 		optimize "On"

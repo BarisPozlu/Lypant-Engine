@@ -1,6 +1,7 @@
 #include "lypch.h"
 #include "Application.h"
 #include "Event/WindowEvent.h"
+#include "Layer.h"
 
 namespace lypant
 {
@@ -15,9 +16,14 @@ namespace lypant
 	}
 
 	void Application::Run()
-	{
+	{		
 		while (m_Running)
 		{
+			for (Layer* layer : m_LayerStack)
+			{
+				layer->Tick();
+			}
+
 			m_Window->Tick();
 		}
 	}
@@ -30,5 +36,25 @@ namespace lypant
 				m_Running = false;
 				return true;
 			});
+
+		for (auto it = m_LayerStack.end(); it != m_LayerStack.begin();)
+		{
+			if (event.IsHandled())
+			{
+				break;
+			}
+			(*(--it))->OnEvent(event);
+		}
+	}
+
+	void Application::PushLayer(Layer* layer)
+	{
+		m_LayerStack.PushLayer(layer);
+	}
+
+
+	void Application::PopLayer(Layer* layer)
+	{
+		m_LayerStack.PopLayer(layer);
 	}
 }

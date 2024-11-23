@@ -35,7 +35,7 @@ namespace lypant
 		#endif
 
 		inline bool IsInEventCategory(EventCategory category) const { return GetEventCategoryFlags() & category; }
-
+		inline bool IsHandled() { return m_Handled; }
 	protected:
 		bool m_Handled = false;
 	};
