@@ -1,5 +1,6 @@
 #include "lypch.h"
 #include "Window.h"
+#include "glad/glad.h"
 #include "GLFW/glfw3.h"
 #include "Event/WindowEvent.h"
 #include "Event/KeyEvent.h"
@@ -24,8 +25,7 @@ namespace lypant
 
 		if (!IsGlfwInitialized)
 		{
-			bool success = glfwInit();
-			LY_CORE_ASSERT(success, "GLFW could not initialize");
+			LY_CORE_VERIFY(glfwInit(), "GLFW could not initialize");
 			IsGlfwInitialized = true;
 			glfwSetErrorCallback(GLFWErrorCallback);
 		}
@@ -34,6 +34,7 @@ namespace lypant
 
 		m_Window = glfwCreateWindow(m_Data.Width, m_Data.Heigth, m_Data.Title.c_str(), nullptr, nullptr);
 		glfwMakeContextCurrent(m_Window);
+		LY_CORE_VERIFY(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress), "GLAD could not initialize");
 		glfwSetWindowUserPointer(m_Window, &m_Data);
 		SetVSync(true);
 

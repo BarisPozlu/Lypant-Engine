@@ -5,7 +5,7 @@ class ExampleLayer : public lypant::Layer
 public:
 	void Tick() override
 	{
-		LY_TRACE("Layer");
+
 	}
 
 	void OnEvent(lypant::Event& event) override

@@ -8,11 +8,12 @@ workspace "Lypant"
 		"Release"
 	}
 
-	startproject "SandBox"
+	startproject "Sandbox"
 
 outputdir = "%{cfg.system}-%{cfg.architecture}-%{cfg.buildcfg}/"
 
 include "Lypant/vendor/GLFW"
+include "Lypant/vendor/Glad"
 
 project "Lypant"
 
@@ -36,36 +37,38 @@ project "Lypant"
 	{
 		"%{prj.name}/src",
 		"%{prj.name}/vendor/spdlog/include",
-		"%{prj.name}/vendor/GLFW/include"
+		"%{prj.name}/vendor/GLFW/include",
+		"%{prj.name}/vendor/Glad/include"
 	}
 
 	links
 	{
 		"GLFW",
+		"Glad",
 		"opengl32.lib"
 	}
 
 	filter "system:windows"
 		
 		cppdialect "C++17"
-		staticruntime "On"
 		systemversion "latest"
 
 		defines
 		{
 			"LYPANT_PLATFORM_WINDOWS",
-			"LYPANT_BUILD_DLL"
+			"LYPANT_BUILD_DLL",
+			"GLFW_INCLUDE_NONE"
 		}
 
 		prebuildcommands
 		{
-			"{MKDIR} %{!sln.location}bin/" .. outputdir .. "SandBox/"
+			"{MKDIR} %{!sln.location}bin/" .. outputdir .. "Sandbox/"
 		}
 		
 		postbuildcommands
 		{
 
-			"{COPYFILE} %[%{!cfg.buildtarget.abspath}] %[%{!sln.location}bin/" .. outputdir .. "SandBox/Lypant.dll]"
+			"{COPYFILE} %[%{!cfg.buildtarget.abspath}] %[%{!sln.location}bin/" .. outputdir .. "Sandbox/Lypant.dll]"
 		}
 		
 		buildoptions { "/utf-8" }
@@ -83,14 +86,14 @@ project "Lypant"
 		optimize "On"
 
 
-project "SandBox"
+project "Sandbox"
 
 	links
 	{
 		"Lypant"
 	}
 
-	location "SandBox"
+	location "Sandbox"
 	kind "ConsoleApp"
 	language "C++"
 
@@ -112,7 +115,6 @@ project "SandBox"
 	filter "system:windows"
 		
 		cppdialect "C++17"
-		staticruntime "On"
 		systemversion "latest"
 
 		defines "LYPANT_PLATFORM_WINDOWS"
