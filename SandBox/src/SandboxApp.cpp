@@ -20,6 +20,7 @@ public:
 	SandboxApp()
 	{
 		PushLayer(new ExampleLayer());
+		PushOverlay(new lypant::ImGuiLayer());
 	}
 
 	~SandboxApp()

@@ -4,6 +4,21 @@
 
 namespace lypant
 {
+	class LYPANT_API KeyTypeEvent : public Event
+	{
+	public:
+		KeyTypeEvent(unsigned int codepoint) 
+			: codepoint(codepoint) {}
+		
+		inline unsigned int GetCodepoint() const { return codepoint; }
+
+		DEFINE_EVENT_CATEGORY(EventCategoryInput | EventCategoryKeyboard);
+		DEFINE_EVENT_TYPE(KeyType);
+
+	private:
+		unsigned int codepoint;
+	};
+
 	class LYPANT_API KeyEvent : public Event
 	{
 	public:
@@ -40,4 +55,5 @@ namespace lypant
 
 		DEFINE_EVENT_TYPE(KeyRelease)
 	};
+
 }

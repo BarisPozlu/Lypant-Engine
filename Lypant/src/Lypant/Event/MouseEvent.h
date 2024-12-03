@@ -28,8 +28,8 @@ namespace lypant
 		{
 		}
 
-		inline float GetX() const { return m_XOffset; }
-		inline float GetY() const { return m_YOffset; }
+		inline float GetXOffset() const { return m_XOffset; }
+		inline float GetYOffset() const { return m_YOffset; }
 
 		DEFINE_EVENT_CATEGORY(EventCategoryInput | EventCategoryMouse)
 		DEFINE_EVENT_TYPE(MouseScroll)

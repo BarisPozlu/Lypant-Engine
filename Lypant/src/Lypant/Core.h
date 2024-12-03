@@ -19,6 +19,7 @@
 		#define LY_CORE_VERIFY(x, ...) x
 		#define LY_VERIFY(x, ...) x
 	#endif
+#define LY_BIND_EVENT_FUNC(x) std::bind(&x, this, std::placeholders::_1)
 #else 
 	#error Lypant only supports windows for now.
 #endif

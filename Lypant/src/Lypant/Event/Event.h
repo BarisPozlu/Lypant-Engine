@@ -9,7 +9,7 @@ namespace lypant
 	{
 		None,
 		WindowClose, WindowResize, WindowFocus, WindowLostFocus, WindowMove,
-		KeyPress, KeyRelease,
+		KeyPress, KeyRelease, KeyType,
 		MouseButtonPress, MouseButtonRelease, MouseMove, MouseScroll
 	};
 

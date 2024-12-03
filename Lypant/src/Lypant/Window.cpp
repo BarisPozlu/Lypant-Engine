@@ -109,6 +109,13 @@ namespace lypant
 				data.EventCallback(moveEvent);
 			});
 
+		glfwSetCharCallback(m_Window, [](GLFWwindow* window, unsigned int codepoint)
+			{
+				KeyTypeEvent typeEvent(codepoint);
+				WindowData& data = *(WindowData*)glfwGetWindowUserPointer(window);
+				data.EventCallback(typeEvent);
+			});
+
 	}
 
 	Window::~Window()

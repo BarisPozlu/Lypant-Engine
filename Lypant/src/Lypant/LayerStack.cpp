@@ -1,5 +1,6 @@
 #include "lypch.h"
 #include "LayerStack.h"
+#include "Layer.h"
 
 namespace lypant
 {
@@ -19,11 +20,13 @@ namespace lypant
 	void LayerStack::PushLayer(Layer* layer)
 	{
 		m_LayerInsert = m_Layers.emplace(m_LayerInsert, layer);
+		layer->OnAttach();
 	}
 
 	void LayerStack::PushOverlay(Layer* layer)
 	{
 		m_Layers.emplace_back(layer);
+		layer->OnAttach();
 	}
 
 	void LayerStack::PopLayer(Layer* layer)
@@ -34,6 +37,7 @@ namespace lypant
 		{
 			m_Layers.erase(it);
 			m_LayerInsert--;
+			layer->OnDetach();
 		}
 
 	}
@@ -45,6 +49,7 @@ namespace lypant
 		if (it != end())
 		{
 			m_Layers.erase(it);
+			layer->OnDetach();
 		}
 	}
 }

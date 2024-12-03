@@ -14,6 +14,7 @@ outputdir = "%{cfg.system}-%{cfg.architecture}-%{cfg.buildcfg}/"
 
 include "Lypant/vendor/GLFW"
 include "Lypant/vendor/Glad"
+include "Lypant/vendor/ImGui"
 
 project "Lypant"
 
@@ -38,13 +39,15 @@ project "Lypant"
 		"%{prj.name}/src",
 		"%{prj.name}/vendor/spdlog/include",
 		"%{prj.name}/vendor/GLFW/include",
-		"%{prj.name}/vendor/Glad/include"
+		"%{prj.name}/vendor/Glad/include",
+		"%{prj.name}/vendor/ImGui"
 	}
 
 	links
 	{
 		"GLFW",
 		"Glad",
+		"ImGui",
 		"opengl32.lib"
 	}
 
