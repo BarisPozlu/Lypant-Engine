@@ -21,6 +21,7 @@ project "Lypant"
 	location "Lypant"
 	kind "SharedLib"
 	language "C++"
+	staticruntime "off"
 
 	targetdir ("bin/" .. outputdir .. "%{prj.name}")
 	objdir ("bin-int/" .. outputdir .. "%{prj.name}")
@@ -70,7 +71,6 @@ project "Lypant"
 		
 		postbuildcommands
 		{
-
 			"{COPYFILE} %[%{!cfg.buildtarget.abspath}] %[%{!sln.location}bin/" .. outputdir .. "Sandbox/Lypant.dll]"
 		}
 		
@@ -79,13 +79,13 @@ project "Lypant"
 	filter "configurations:Debug"
 
 		defines "LYPANT_DEBUG"
-		buildoptions "/MDd"
+		runtime "debug"
 		symbols "On"
 
 	filter "configurations:Release"
 
 		defines "LYPANT_RELEASE"
-		buildoptions "/MD"
+		runtime "release"
 		optimize "On"
 
 
@@ -99,6 +99,7 @@ project "Sandbox"
 	location "Sandbox"
 	kind "ConsoleApp"
 	language "C++"
+	staticruntime "off"
 
 	targetdir ("bin/" .. outputdir .. "%{prj.name}")
 	objdir ("bin-int/" .. outputdir .. "%{prj.name}")
@@ -127,11 +128,11 @@ project "Sandbox"
 	filter "configurations:Debug"
 
 		defines "LYPANT_DEBUG"
-		buildoptions "/MDd"
+		runtime "debug"
 		symbols "On"
 
 	filter "configurations:Release"
 
 		defines "LYPANT_RELEASE"
-		buildoptions "/MD"
+		runtime "release"
 		optimize "On"

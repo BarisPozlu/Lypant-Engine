@@ -1,7 +1,7 @@
 #include "lypch.h"
 #include "ImGuiLayer.h"
 #include "imgui.h"
-#include "Platform/OpenGL/imgui_impl_opengl3.h"
+#include "imgui_impl_opengl3.h"
 #include "Lypant/Application.h"
 #include "Lypant/Event/KeyEvent.h"
 #include "Lypant/Event/MouseEvent.h"

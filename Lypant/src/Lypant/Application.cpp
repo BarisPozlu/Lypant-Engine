@@ -2,7 +2,7 @@
 #include "Application.h"
 #include "Event/WindowEvent.h"
 #include "Layer.h"
-#include "glad/glad.h"
+#include <glad/glad.h>
 
 namespace lypant
 {
