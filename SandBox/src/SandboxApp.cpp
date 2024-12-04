@@ -10,7 +10,7 @@ public:
 
 	void OnEvent(lypant::Event& event) override
 	{
-		LY_INFO(event.GetName());
+
 	}
 };
 

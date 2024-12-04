@@ -9,14 +9,18 @@
 		#define LYPANT_API __declspec(dllimport)
 	#endif
 	#ifdef LYPANT_DEBUG
-		#define LY_CORE_ASSERT(x, ...) { if(!(x)) { LY_CORE_ERROR("Assertion failed: {0}", __VA_ARGS__); __debugbreak(); } }
+		#ifdef LYPANT_BUILD_DLL
+			#define LY_CORE_ASSERT(x, ...) { if(!(x)) { LY_CORE_ERROR("Assertion failed: {0}", __VA_ARGS__); __debugbreak(); } }
+			#define LY_CORE_VERIFY(x, ...) { if(!(x)) { LY_CORE_ERROR("Assertion failed: {0}", __VA_ARGS__); __debugbreak(); } }
+		#endif
 		#define LY_ASSERT(x, ...) { if(!(x)) { LY_ERROR("Assertion failed: {0}", __VA_ARGS__); __debugbreak(); } }
-		#define LY_CORE_VERIFY(x, ...) { if(!(x)) { LY_CORE_ERROR("Assertion failed: {0}", __VA_ARGS__); __debugbreak(); } }
 		#define LY_VERIFY(x, ...) { if(!(x)) { LY_ERROR("Assertion failed: {0}", __VA_ARGS__); __debugbreak(); } }
 	#else
-		#define LY_CORE_ASSERT(x, ...)
+		#ifdef LYPANT_BUILD_DLL
+			#define LY_CORE_ASSERT(x, ...)
+			#define LY_CORE_VERIFY(x, ...) x
+		#endif
 		#define LY_ASSERT(x, ...)
-		#define LY_CORE_VERIFY(x, ...) x
 		#define LY_VERIFY(x, ...) x
 	#endif
 #define LY_BIND_EVENT_FUNC(x) std::bind(&x, this, std::placeholders::_1)

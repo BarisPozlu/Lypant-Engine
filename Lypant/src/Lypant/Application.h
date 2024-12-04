@@ -13,7 +13,7 @@ namespace lypant
 		Application();
 		virtual ~Application();
 
-		virtual void Run();
+		void Run();
 
 		void OnEvent(Event& event);
 

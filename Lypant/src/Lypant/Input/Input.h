@@ -2,6 +2,9 @@
 
 #include "Lypant/Core.h"
 
+#include "KeyCodes.h"
+#include "MouseButtonCodes.h"
+
 namespace lypant
 {
 	class LYPANT_API Input

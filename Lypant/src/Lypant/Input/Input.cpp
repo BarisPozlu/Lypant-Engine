@@ -7,12 +7,12 @@ namespace lypant
 {
 	bool Input::IsKeyPressed(int keycode)
 	{
-		return glfwGetKey(Application::Get().GetWindow().GetGLFWwindow(), keycode);
+		return glfwGetKey(Application::Get().GetWindow().GetGLFWwindow(), keycode) == GLFW_PRESS;
 	}
 
 	bool Input::IsMouseButtonPressed(int button)
 	{
-		return glfwGetMouseButton(Application::Get().GetWindow().GetGLFWwindow(), button);
+		return glfwGetMouseButton(Application::Get().GetWindow().GetGLFWwindow(), button) == GLFW_PRESS;
 	}
 
 	float Input::GetMouseX()

@@ -60,19 +60,19 @@ namespace lypant
 				
 				if (action == GLFW_PRESS)
 				{
-					KeyPressEvent event(scancode, 0);
+					KeyPressEvent event(key, 0);
 					data.EventCallback(event);
 				}
 
 				else if (action == GLFW_REPEAT)
 				{
-					KeyPressEvent event(scancode, 1);
+					KeyPressEvent event(key, 1);
 					data.EventCallback(event);
 				}
 
 				else if (action == GLFW_RELEASE)
 				{
-					KeyReleaseEvent event(scancode);
+					KeyReleaseEvent event(key);
 					data.EventCallback(event);
 				}
 			});

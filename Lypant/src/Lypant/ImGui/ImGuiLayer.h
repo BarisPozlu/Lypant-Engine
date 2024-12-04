@@ -32,7 +32,6 @@ namespace lypant
 		bool OnMouseButtonPressEvent(MouseButtonPressEvent& event);
 		bool OnMouseButtonReleaseEvent(MouseButtonReleaseEvent& event);
 		bool OnWindowResizeEvent(WindowResizeEvent& event);
-		/*ImGuiKey LypantKeyToImGuiKey(LypantKey key);*/ // implement.
 	private:
 		float m_Time = 0; // temp
 	};
