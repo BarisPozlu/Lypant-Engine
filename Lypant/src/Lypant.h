@@ -8,7 +8,7 @@
 #include "Lypant/Event/WindowEvent.h"
 
 #include "Lypant/Input/Input.h"
+#include "imgui.h"
 
-#include "Lypant/ImGui/ImGuiLayer.h"
 #include "Lypant/Layer.h"
 #include "Lypant/EntryPoint.h"

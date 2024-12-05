@@ -3,6 +3,7 @@
 #include "Event/WindowEvent.h"
 #include "Layer.h"
 #include <glad/glad.h>
+#include "Lypant/ImGui/ImGuiLayer.h"
 
 namespace lypant
 {
@@ -13,6 +14,8 @@ namespace lypant
 		LY_CORE_ASSERT(!m_Instance, "Application already exists.");
 		m_Instance = this;
 		m_Window->SetEventCallback(std::bind(&Application::OnEvent, this, std::placeholders::_1));
+		m_ImGuiLayer = new ImGuiLayer();
+		PushOverlay(m_ImGuiLayer);
 	}
 
 	Application::~Application()
@@ -31,6 +34,15 @@ namespace lypant
 			{
 				layer->Tick();
 			}
+
+			m_ImGuiLayer->Begin();
+
+			for (Layer* layer : m_LayerStack)
+			{
+				layer->OnImGuiRender();
+			}
+
+			m_ImGuiLayer->End();
 
 			m_Window->Tick();
 		}

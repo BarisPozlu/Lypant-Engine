@@ -8,6 +8,16 @@ public:
 
 	}
 
+	void OnImGuiRender() override
+	{
+		
+		{
+			ImGui::Begin("Example Layer");
+			ImGui::End();
+		}
+		
+	}
+
 	void OnEvent(lypant::Event& event) override
 	{
 
@@ -20,7 +30,6 @@ public:
 	SandboxApp()
 	{
 		PushLayer(new ExampleLayer());
-		PushOverlay(new lypant::ImGuiLayer());
 	}
 
 	~SandboxApp()

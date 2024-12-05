@@ -15,6 +15,7 @@ namespace lypant
 		virtual void OnAttach() {}
 		virtual void OnDetach() {}
 		virtual void Tick() {}
+		virtual void OnImGuiRender() {}
 		virtual void OnEvent(Event& event) {}
 	};
 }

@@ -7,6 +7,8 @@
 
 namespace lypant
 {
+	class ImGuiLayer;
+
 	class LYPANT_API Application
 	{
 	public:
@@ -25,6 +27,7 @@ namespace lypant
 	private:
 		std::unique_ptr<Window> m_Window;
 		bool m_Running = true;
+		ImGuiLayer* m_ImGuiLayer;
 		LayerStack m_LayerStack;
 		static Application* m_Instance;
 	};

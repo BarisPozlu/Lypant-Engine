@@ -7,6 +7,7 @@
 		#define LYPANT_API __declspec(dllexport)
 	#else
 		#define LYPANT_API __declspec(dllimport)
+		#define IMGUI_API __declspec(dllimport)
 	#endif
 	#ifdef LYPANT_DEBUG
 		#ifdef LYPANT_BUILD_DLL

@@ -58,6 +58,7 @@ project "Lypant"
 		cppdialect "C++17"
 		systemversion "latest"
 
+
 		defines
 		{
 			"LYPANT_PLATFORM_WINDOWS",
@@ -114,7 +115,8 @@ project "Sandbox"
 	includedirs
 	{
 		"Lypant/src",
-		"Lypant/vendor/spdlog/include"
+		"Lypant/vendor/spdlog/include",
+		"Lypant/vendor/ImGui"
 	}
 
 	filter "system:windows"
