@@ -23,7 +23,7 @@ namespace lypant
 
 #ifdef LYPANT_DEBUG
 
-	#ifdef LYPANT_BUILD_DLL
+	#ifdef LYPANT_BUILD
 
 		#define LY_CORE_TRACE(...)        ::lypant::Log::GetCoreLogger()->trace(__VA_ARGS__)
 		#define LY_CORE_INFO(...)         ::lypant::Log::GetCoreLogger()->info(__VA_ARGS__)
@@ -41,7 +41,7 @@ namespace lypant
 
 #else
 
-	#ifdef LYPANT_BUILD_DLL
+	#ifdef LYPANT_BUILD
 
 		#define LY_CORE_TRACE(...)
 		#define LY_CORE_INFO(...)
@@ -57,4 +57,4 @@ namespace lypant
 	#define LY_ERROR(...)   
 	#define LY_CRITICAL(...)
 
-#endif 
+#endif

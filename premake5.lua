@@ -19,9 +19,10 @@ include "Lypant/vendor/ImGui"
 project "Lypant"
 
 	location "Lypant"
-	kind "SharedLib"
+	kind "StaticLib"
 	language "C++"
-	staticruntime "off"
+	cppdialect "C++17"
+	staticruntime "on"
 
 	targetdir ("bin/" .. outputdir .. "%{prj.name}")
 	objdir ("bin-int/" .. outputdir .. "%{prj.name}")
@@ -55,40 +56,28 @@ project "Lypant"
 
 	filter "system:windows"
 		
-		cppdialect "C++17"
 		systemversion "latest"
-
 
 		defines
 		{
 			"LYPANT_PLATFORM_WINDOWS",
-			"LYPANT_BUILD_DLL",
+			"LYPANT_BUILD",
 			"GLFW_INCLUDE_NONE"
 		}
 
-		prebuildcommands
-		{
-			"{MKDIR} %{!sln.location}bin/" .. outputdir .. "Sandbox/"
-		}
-		
-		postbuildcommands
-		{
-			"{COPYFILE} %[%{!cfg.buildtarget.abspath}] %[%{!sln.location}bin/" .. outputdir .. "Sandbox/Lypant.dll]"
-		}
-		
 		buildoptions { "/utf-8" }
 
 	filter "configurations:Debug"
 
 		defines "LYPANT_DEBUG"
 		runtime "debug"
-		symbols "On"
+		symbols "on"
 
 	filter "configurations:Release"
 
 		defines "LYPANT_RELEASE"
 		runtime "release"
-		optimize "On"
+		optimize "on"
 
 
 project "Sandbox"
@@ -101,7 +90,8 @@ project "Sandbox"
 	location "Sandbox"
 	kind "ConsoleApp"
 	language "C++"
-	staticruntime "off"
+	cppdialect "C++17"
+	staticruntime "on"
 
 	targetdir ("bin/" .. outputdir .. "%{prj.name}")
 	objdir ("bin-int/" .. outputdir .. "%{prj.name}")
@@ -121,7 +111,6 @@ project "Sandbox"
 
 	filter "system:windows"
 		
-		cppdialect "C++17"
 		systemversion "latest"
 
 		defines "LYPANT_PLATFORM_WINDOWS"
@@ -132,10 +121,10 @@ project "Sandbox"
 
 		defines "LYPANT_DEBUG"
 		runtime "debug"
-		symbols "On"
+		symbols "on"
 
 	filter "configurations:Release"
 
 		defines "LYPANT_RELEASE"
 		runtime "release"
-		optimize "On"
+		optimize "on"
