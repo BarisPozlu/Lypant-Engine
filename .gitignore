@@ -12,3 +12,4 @@ bin/
 *.vcxproj
 *.filters
 *.sln
+Sandbox/imgui.ini
