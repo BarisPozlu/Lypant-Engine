@@ -6,7 +6,7 @@ namespace lypant
 	{
 	public:
 		void Init(void* windowHandle);
-		void SwapBuffers();
+		void SwapBuffers() const;
 	private:
 		void* m_WindowHandle;
 	};

@@ -15,7 +15,7 @@ namespace lypant
 		LY_CORE_VERIFY(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress), "GLAD could not initialize");
 	}
 
-	void GraphicsContext::SwapBuffers()
+	void GraphicsContext::SwapBuffers() const
 	{
 		glfwSwapBuffers((GLFWwindow*)m_WindowHandle);
 	}
