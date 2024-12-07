@@ -8,6 +8,8 @@ struct GLFWwindow;
 
 namespace lypant
 {
+	class GraphicsContext;
+
 	struct WindowProps
 	{
 		std::string Title;
@@ -41,6 +43,7 @@ namespace lypant
 
 	private:
 		GLFWwindow* m_Window;
+		GraphicsContext* m_GraphicsContext;
 
 		// this is to give a pointer to glfw.
 		struct WindowData
