@@ -5,8 +5,9 @@ namespace lypant
 	class GraphicsContext
 	{
 	public:
-		virtual ~GraphicsContext() {}
-		virtual void Init() = 0;
-		virtual void SwapBuffers() = 0;
+		void Init(void* windowHandle);
+		void SwapBuffers();
+	private:
+		void* m_WindowHandle;
 	};
 }

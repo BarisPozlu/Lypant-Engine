@@ -3,13 +3,12 @@
 #include "lypch.h"
 #include "Core.h"
 #include "Event/Event.h"
+#include "Lypant/Renderer/GraphicsContext.h"
 
 struct GLFWwindow;
 
 namespace lypant
 {
-	class GraphicsContext;
-
 	struct WindowProps
 	{
 		std::string Title;
@@ -43,7 +42,7 @@ namespace lypant
 
 	private:
 		GLFWwindow* m_Window;
-		GraphicsContext* m_GraphicsContext;
+		GraphicsContext m_GraphicsContext;
 
 		// this is to give a pointer to glfw.
 		struct WindowData

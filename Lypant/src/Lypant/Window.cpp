@@ -4,7 +4,6 @@
 #include "Event/WindowEvent.h"
 #include "Event/KeyEvent.h"
 #include "Event/MouseEvent.h"
-#include "Lypant/Renderer/OpenGLContext.h"
 
 namespace lypant
 {
@@ -33,8 +32,7 @@ namespace lypant
 		//TODO: Implement debugging here.
 
 		m_Window = glfwCreateWindow(m_Data.Width, m_Data.Heigth, m_Data.Title.c_str(), nullptr, nullptr);
-		m_GraphicsContext = new OpenGLContext(m_Window);
-		m_GraphicsContext->Init();
+		m_GraphicsContext.Init(m_Window);
 
 		glfwSetWindowUserPointer(m_Window, &m_Data);
 		SetVSync(true);
@@ -121,14 +119,13 @@ namespace lypant
 
 	Window::~Window()
 	{
-		delete m_GraphicsContext;
 		glfwDestroyWindow(m_Window);
 	}
 
 	void Window::Tick()
 	{
 		glfwPollEvents();
-		m_GraphicsContext->SwapBuffers();
+		m_GraphicsContext.SwapBuffers();
 	}
 
 	void Window::SetVSync(bool enabled)

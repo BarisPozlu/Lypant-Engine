@@ -62,6 +62,7 @@ project "Lypant"
 		{
 			"LYPANT_PLATFORM_WINDOWS",
 			"LYPANT_BUILD",
+			"LYPANT_OPENGL",
 			"GLFW_INCLUDE_NONE"
 		}
 
