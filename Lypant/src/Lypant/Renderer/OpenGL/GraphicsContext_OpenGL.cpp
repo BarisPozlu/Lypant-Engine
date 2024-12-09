@@ -2,7 +2,7 @@
 
 #ifdef LYPANT_OPENGL
 
-#include "GraphicsContext.h"
+#include "Lypant/Renderer/GraphicsContext.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
