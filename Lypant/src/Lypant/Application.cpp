@@ -2,8 +2,8 @@
 #include "Application.h"
 #include "Event/WindowEvent.h"
 #include "Layer.h"
-#include <glad/glad.h>
 #include "Lypant/ImGui/ImGuiLayer.h"
+#include "Lypant/Renderer/Renderer.h"
 
 namespace lypant
 {
@@ -27,8 +27,8 @@ namespace lypant
 	{
 		while (m_Running)
 		{
-			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-			glClear(GL_COLOR_BUFFER_BIT);
+			RenderCommand::SetClearColor(0.2f, 0.5f, 0.8f, 1.0f);
+			RenderCommand::Clear();
 
 			for (Layer* layer : m_LayerStack)
 			{
