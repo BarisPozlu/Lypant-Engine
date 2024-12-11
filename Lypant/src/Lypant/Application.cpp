@@ -4,6 +4,7 @@
 #include "Layer.h"
 #include "Lypant/ImGui/ImGuiLayer.h"
 #include "Lypant/Renderer/Renderer.h"
+#include "Lypant/Renderer/Shader.h" // temp
 
 namespace lypant
 {
@@ -25,6 +26,48 @@ namespace lypant
 
 	void Application::Run()
 	{
+		//temp
+		Shader shader("../Lypant/src/Lypant/Renderer/OpenGL/Shaders/VertexShader.shader", "../Lypant/src/Lypant/Renderer/OpenGL/Shaders/FragmentShader.shader");
+		shader.Bind();
+
+		float color[]
+		{
+			0.8f, 0.2f, 0.3f, 1.0f
+		};
+
+		shader.SetVec4FloatUniform("u_Color", color);
+
+		std::shared_ptr<VertexArray> vertexArray = std::make_shared<VertexArray>();
+		vertexArray->Bind();
+		
+		float vertexData[]
+		{
+			-0.5f, -0.5f, 0.0f,
+			 0.5f, -0.5f, 0.0f,
+			 0.0f,  0.25f, 0.0f
+		};
+
+		std::shared_ptr<VertexBuffer> vertexBuffer = std::make_shared<VertexBuffer>(vertexData, sizeof(float) * 3 * 3);
+
+		BufferLayout layout
+		{
+			{ShaderDataType::Float3, ""}
+		};
+
+		vertexBuffer->SetLayout(layout);
+
+		vertexArray->AddVertexBuffer(vertexBuffer);
+
+		unsigned int indexData[]
+		{
+			0, 1, 2
+		};
+
+		std::shared_ptr<IndexBuffer> indexBuffer = std::make_shared<IndexBuffer>(indexData, sizeof(unsigned int) * 3 );
+
+		vertexArray->SetIndexBuffer(indexBuffer);
+
+
 		while (m_Running)
 		{
 			RenderCommand::SetClearColor(0.2f, 0.5f, 0.8f, 1.0f);
@@ -34,6 +77,8 @@ namespace lypant
 			{
 				layer->Tick();
 			}
+
+			Renderer::Submit(vertexArray);
 
 			m_ImGuiLayer->Begin();
 
