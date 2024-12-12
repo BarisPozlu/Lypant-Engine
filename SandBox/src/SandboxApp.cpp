@@ -3,6 +3,8 @@
 class ExampleLayer : public lypant::Layer
 {
 public:
+	GENERATE_LAYER_BODY(ExampleLayer);
+
 	void Tick() override
 	{
 
@@ -18,9 +20,10 @@ public:
 		
 	}
 
-	void OnEvent(lypant::Event& event) override
+	bool OnKeyPressEvent(lypant::KeyPressEvent& event)
 	{
-
+		LY_INFO("Key pressed.");
+		return true;
 	}
 };
 
