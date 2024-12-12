@@ -7,7 +7,7 @@
 #include "Lypant/Renderer/Shader.h" // temp
 #include "Lypant/Camera/OrthographicCamera.h" // temp
 #include "glm/glm.hpp" // temp
-#include <imgui.h>
+#include <GLFW/glfw3.h> // temp
 
 namespace lypant
 {
@@ -75,12 +75,16 @@ namespace lypant
 
 		while (m_Running)
 		{
+			float time = glfwGetTime();
+			float deltaTime = time - m_LastFrameTime;
+			m_LastFrameTime = time;
+
 			RenderCommand::SetClearColor(0.2f, 0.5f, 0.8f, 1.0f);
 			RenderCommand::Clear();
 
 			for (Layer* layer : m_LayerStack)
 			{
-				layer->Tick();
+				layer->Tick(deltaTime);
 			}
 
 			Renderer::BeginScene(camera);

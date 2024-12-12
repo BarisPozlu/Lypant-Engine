@@ -5,7 +5,7 @@ class ExampleLayer : public lypant::Layer
 public:
 	GENERATE_LAYER_BODY(ExampleLayer);
 
-	void Tick() override
+	void Tick(float deltaTime) override
 	{
 
 	}

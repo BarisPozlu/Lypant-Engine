@@ -26,10 +26,11 @@ namespace lypant
 		void PushOverlay(Layer* layer);
 	private:
 		std::unique_ptr<Window> m_Window;
-		bool m_Running = true;
 		ImGuiLayer* m_ImGuiLayer;
 		LayerStack m_LayerStack;
 		static Application* m_Instance;
+		float m_LastFrameTime = 0;
+		bool m_Running = true;
 	};
 
 	Application* CreateApplication();

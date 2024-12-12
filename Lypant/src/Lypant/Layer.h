@@ -12,7 +12,7 @@ namespace lypant
 
 		virtual void OnAttach() {}
 		virtual void OnDetach() {}
-		virtual void Tick() {}
+		virtual void Tick(float deltaTime) {}
 		virtual void OnImGuiRender() {}
 		virtual void OnEvent(class Event& event) {}
 
