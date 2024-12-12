@@ -24,17 +24,17 @@ namespace lypant
         glUseProgram(m_Program);
     }
 
-    int Shader::GetUniformLocation(const std::string& name)
+    int Shader::GetUniformLocation(const std::string& name) const
     {
         return glGetUniformLocation(m_Program, name.c_str());
     }
 
-    void Shader::SetMatrix4FloatUniform(const std::string& name, float* value)
+    void Shader::SetMatrix4FloatUniform(const std::string& name, float* value) const
     {
         glUniformMatrix4fv(GetUniformLocation(name), 1, GL_FALSE, value);
     }
 
-    void Shader::SetVec4FloatUniform(const std::string& name, float* value)
+    void Shader::SetVec4FloatUniform(const std::string& name, float* value) const
     {
         glUniform4f(GetUniformLocation(name), value[0], value[1], value[2], value[3]);
     }
@@ -128,7 +128,7 @@ namespace lypant
         m_Program = program;
     }
 
-    void Shader::GetShaderSource(const std::string& vsPath, const std::string& fsPath, std::string& outVertexShaderSrc, std::string& outFragmentShaderSrc)
+    void Shader::GetShaderSource(const std::string& vsPath, const std::string& fsPath, std::string& outVertexShaderSrc, std::string& outFragmentShaderSrc) const
     {
         std::ifstream stream(vsPath);
         std::string line;

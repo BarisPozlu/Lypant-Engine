@@ -5,6 +5,9 @@
 #include "Lypant/ImGui/ImGuiLayer.h"
 #include "Lypant/Renderer/Renderer.h"
 #include "Lypant/Renderer/Shader.h" // temp
+#include "Lypant/Camera/OrthographicCamera.h" // temp
+#include "glm/glm.hpp" // temp
+#include <imgui.h>
 
 namespace lypant
 {
@@ -27,15 +30,15 @@ namespace lypant
 	void Application::Run()
 	{
 		//temp
-		Shader shader("../Lypant/src/Lypant/Renderer/OpenGL/Shaders/VertexShader.shader", "../Lypant/src/Lypant/Renderer/OpenGL/Shaders/FragmentShader.shader");
-		shader.Bind();
+		std::shared_ptr<Shader> shader = std::make_unique<Shader>("../Lypant/src/Lypant/Renderer/OpenGL/Shaders/VertexShader.shader", "../Lypant/src/Lypant/Renderer/OpenGL/Shaders/FragmentShader.shader");
+		shader->Bind();
 
 		float color[]
 		{
 			0.8f, 0.2f, 0.3f, 1.0f
 		};
 
-		shader.SetVec4FloatUniform("u_Color", color);
+		shader->SetVec4FloatUniform("u_Color", color);
 
 		std::shared_ptr<VertexArray> vertexArray = std::make_shared<VertexArray>();
 		vertexArray->Bind();
@@ -68,6 +71,8 @@ namespace lypant
 		vertexArray->SetIndexBuffer(indexBuffer);
 
 
+		std::shared_ptr<OrthographicCamera> camera = std::make_shared<OrthographicCamera>(glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), 90, -2, 2, -2, 2);
+
 		while (m_Running)
 		{
 			RenderCommand::SetClearColor(0.2f, 0.5f, 0.8f, 1.0f);
@@ -78,7 +83,11 @@ namespace lypant
 				layer->Tick();
 			}
 
-			Renderer::Submit(vertexArray);
+			Renderer::BeginScene(camera);
+
+			Renderer::Submit(vertexArray, shader);
+
+			Renderer::EndScene();
 
 			m_ImGuiLayer->Begin();
 
