@@ -8,6 +8,7 @@
 #include "Lypant/Camera/OrthographicCamera.h" // temp
 #include "glm/glm.hpp" // temp
 #include <GLFW/glfw3.h> // temp
+#include "Lypant/Renderer/Texture.h" // temp
 
 namespace lypant
 {
@@ -17,7 +18,10 @@ namespace lypant
 	{
 		LY_CORE_ASSERT(!m_Instance, "Application already exists.");
 		m_Instance = this;
+
 		m_Window->SetEventCallback(std::bind(&Application::OnEvent, this, std::placeholders::_1));
+		Renderer::Init();
+
 		m_ImGuiLayer = new ImGuiLayer();
 		PushOverlay(m_ImGuiLayer);
 	}
@@ -33,28 +37,34 @@ namespace lypant
 		std::shared_ptr<Shader> shader = std::make_unique<Shader>("../Lypant/src/Lypant/Renderer/OpenGL/Shaders/VertexShader.shader", "../Lypant/src/Lypant/Renderer/OpenGL/Shaders/FragmentShader.shader");
 		shader->Bind();
 
+		std::shared_ptr<Texture2D> texture = std::make_unique<Texture2D>("../Lypant/src/Lypant/Renderer/example.png");
+		texture->Bind(0);
+
+		shader->SetUniformInt("u_TexSlot", 0);
+
 		float color[]
 		{
 			0.8f, 0.2f, 0.3f, 1.0f
 		};
 
-		shader->SetVec4FloatUniform("u_Color", color);
+		shader->SetUniformVec4Float("u_Color", color);
 
 		std::shared_ptr<VertexArray> vertexArray = std::make_shared<VertexArray>();
 		vertexArray->Bind();
 		
 		float vertexData[]
 		{
-			-0.5f, -0.5f, 0.0f,
-			 0.5f, -0.5f, 0.0f,
-			 0.0f,  0.25f, 0.0f
+			-0.5f, -0.5f, 0.0f, 0.0f, 0.0f,
+			 0.5f, -0.5f, 0.0f, 1.0f, 0.0f,
+			 0.5f,  0.5f, 0.0f, 1.0f, 1.0f,
+			-0.5f,  0.5f, 0.0f, 0.0f, 1.0f
 		};
 
-		std::shared_ptr<VertexBuffer> vertexBuffer = std::make_shared<VertexBuffer>(vertexData, sizeof(float) * 3 * 3);
+		std::shared_ptr<VertexBuffer> vertexBuffer = std::make_shared<VertexBuffer>(vertexData, sizeof(vertexData));
 
 		BufferLayout layout
 		{
-			{ShaderDataType::Float3, ""}
+			{ShaderDataType::Float3, "a_Position"}, {ShaderDataType::Float2, "a_TexCoord"}
 		};
 
 		vertexBuffer->SetLayout(layout);
@@ -63,15 +73,15 @@ namespace lypant
 
 		unsigned int indexData[]
 		{
-			0, 1, 2
+			0, 1, 2, 2, 3, 0
 		};
 
-		std::shared_ptr<IndexBuffer> indexBuffer = std::make_shared<IndexBuffer>(indexData, sizeof(unsigned int) * 3 );
+		std::shared_ptr<IndexBuffer> indexBuffer = std::make_shared<IndexBuffer>(indexData, sizeof(indexData));
 
 		vertexArray->SetIndexBuffer(indexBuffer);
 
 
-		std::shared_ptr<OrthographicCamera> camera = std::make_shared<OrthographicCamera>(glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), 90, -2, 2, -2, 2);
+		std::shared_ptr<OrthographicCamera> camera = std::make_shared<OrthographicCamera>(glm::vec4(0.0f, 0.0f, 0.0f, 0.0f), 0, -0.5, 0.5, -0.5, 0.5);
 
 		while (m_Running)
 		{

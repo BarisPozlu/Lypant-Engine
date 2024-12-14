@@ -11,6 +11,7 @@ namespace lypant
 	class Renderer
 	{
 	public:
+		static void Init();
 		static void BeginScene(const std::shared_ptr<OrthographicCamera>& camera);
 		static void EndScene();
 

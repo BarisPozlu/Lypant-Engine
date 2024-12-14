@@ -29,14 +29,19 @@ namespace lypant
         return glGetUniformLocation(m_Program, name.c_str());
     }
 
-    void Shader::SetMatrix4FloatUniform(const std::string& name, float* value) const
+    void Shader::SetUniformMatrix4Float(const std::string& name, float* value) const
     {
         glUniformMatrix4fv(GetUniformLocation(name), 1, GL_FALSE, value);
     }
 
-    void Shader::SetVec4FloatUniform(const std::string& name, float* value) const
+    void Shader::SetUniformVec4Float(const std::string& name, float* value) const
     {
         glUniform4f(GetUniformLocation(name), value[0], value[1], value[2], value[3]);
+    }
+
+    void Shader::SetUniformInt(const std::string& name, int value) const
+    {
+        glUniform1i(GetUniformLocation(name), value);
     }
 
     void Shader::CreateShader(const std::string& vsPath, const std::string& fsPath)

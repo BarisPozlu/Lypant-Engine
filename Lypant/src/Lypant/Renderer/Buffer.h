@@ -4,7 +4,7 @@ namespace lypant
 {
 	enum class ShaderDataType
 	{
-		None, Float, Float2, Float3, Float4, Mat3, Mat4
+		None, Float, Float2, Float3, Float4, Mat3, Mat4, Int
 	};
 
 	inline uint32_t GetSizeFromShaderDataType(ShaderDataType type)
@@ -17,7 +17,8 @@ namespace lypant
 			case lypant::ShaderDataType::Float3:	return 4 * 3;
 			case lypant::ShaderDataType::Float4:	return 4 * 4;
 			case lypant::ShaderDataType::Mat3:		return 4 * 3 * 3;
-			case lypant::ShaderDataType::Mat4:		return 4 * 4 * 4;		
+			case lypant::ShaderDataType::Mat4:		return 4 * 4 * 4;
+			case lypant::ShaderDataType::Int:		return 4;		
 		}
 
 		LY_CORE_ASSERT(false, "Invalid Shader data type!");
@@ -35,6 +36,7 @@ namespace lypant
 			case lypant::ShaderDataType::Float4:	return 4;
 			case lypant::ShaderDataType::Mat3:		return 3 * 3;
 			case lypant::ShaderDataType::Mat4:		return 4 * 4;
+			case lypant::ShaderDataType::Int:		return 1;
 		}
 
 		LY_CORE_ASSERT(false, "Invalid Shader data type!");

@@ -18,6 +18,7 @@ namespace lypant
 			case lypant::ShaderDataType::Float4:	return GL_FLOAT;
 			case lypant::ShaderDataType::Mat3:		return GL_FLOAT;
 			case lypant::ShaderDataType::Mat4:		return GL_FLOAT;
+			case lypant::ShaderDataType::Int:		return GL_INT;
 		}
 
 		LY_CORE_ASSERT(false, "Invalid Shader data type!");
