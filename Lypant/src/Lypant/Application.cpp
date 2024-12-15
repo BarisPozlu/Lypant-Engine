@@ -34,7 +34,7 @@ namespace lypant
 	void Application::Run()
 	{
 		//temp
-		std::shared_ptr<Shader> shader = std::make_unique<Shader>("../Lypant/src/Lypant/Renderer/OpenGL/Shaders/VertexShader.shader", "../Lypant/src/Lypant/Renderer/OpenGL/Shaders/FragmentShader.shader");
+		std::shared_ptr<Shader> shader = std::make_unique<Shader>("../Lypant/src/Lypant/Renderer/OpenGL/Shaders/TextureShader.glsl");
 		shader->Bind();
 
 		std::shared_ptr<Texture2D> texture = std::make_unique<Texture2D>("../Lypant/src/Lypant/Renderer/example.png");
