@@ -12,7 +12,7 @@ namespace lypant
 
 	void Renderer::BeginScene(const std::shared_ptr<OrthographicCamera>& camera)
 	{
-		s_SceneData.s_Camera = camera;
+		s_SceneData.Camera = camera;
 	}
 
 	void Renderer::EndScene()
@@ -24,7 +24,7 @@ namespace lypant
 	{
 		vertexArray->Bind();
 		shader->Bind();
-		shader->SetUniformMatrix4Float("u_VP", (float*)&s_SceneData.s_Camera->GetViewProjectionMatrix()[0][0]);
+		shader->SetUniformMatrix4Float("u_VP", (float*)&s_SceneData.Camera->GetViewProjectionMatrix()[0][0]);
 		RenderCommand::DrawIndexed(vertexArray);
 	}
 }

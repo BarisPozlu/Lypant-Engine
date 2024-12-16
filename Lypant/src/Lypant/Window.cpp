@@ -1,6 +1,6 @@
 #include "lypch.h"
 #include "Window.h"
-#include "GLFW/glfw3.h"
+#include <GLFW/glfw3.h>
 #include "Event/WindowEvent.h"
 #include "Event/KeyEvent.h"
 #include "Event/MouseEvent.h"
@@ -26,10 +26,16 @@ namespace lypant
 		{
 			LY_CORE_VERIFY(glfwInit(), "GLFW could not initialize");
 			IsGlfwInitialized = true;
+
+			#ifdef LYPANT_DEBUG
 			glfwSetErrorCallback(GLFWErrorCallback);
+			#endif
 		}
 
-		//TODO: Implement debugging here.
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
+
+		m_GraphicsContext.Hint();
 
 		m_Window = glfwCreateWindow(m_Data.Width, m_Data.Heigth, m_Data.Title.c_str(), nullptr, nullptr);
 		m_GraphicsContext.Init(m_Window);

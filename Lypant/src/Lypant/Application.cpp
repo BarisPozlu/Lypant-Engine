@@ -12,12 +12,12 @@
 
 namespace lypant
 {
-	Application* Application::m_Instance = nullptr;
+	Application* Application::s_Instance = nullptr;
 
 	Application::Application() : m_Window(std::make_unique<Window>())
 	{
-		LY_CORE_ASSERT(!m_Instance, "Application already exists.");
-		m_Instance = this;
+		LY_CORE_ASSERT(!s_Instance, "Application already exists.");
+		s_Instance = this;
 
 		m_Window->SetEventCallback(std::bind(&Application::OnEvent, this, std::placeholders::_1));
 		Renderer::Init();

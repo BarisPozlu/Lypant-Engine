@@ -19,16 +19,17 @@ namespace lypant
 
 		void OnEvent(Event& event);
 
-		inline static Application& Get() { return *m_Instance; }
+		inline static Application& Get() { return *s_Instance; }
 		inline Window& GetWindow() { return *m_Window; }
 
 		void PushLayer(Layer* layer);
 		void PushOverlay(Layer* layer);
 	private:
+		static Application* s_Instance;
+	private:
 		std::unique_ptr<Window> m_Window;
 		ImGuiLayer* m_ImGuiLayer;
 		LayerStack m_LayerStack;
-		static Application* m_Instance;
 		float m_LastFrameTime = 0;
 		bool m_Running = true;
 	};

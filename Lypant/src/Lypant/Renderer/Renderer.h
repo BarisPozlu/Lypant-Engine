@@ -19,7 +19,7 @@ namespace lypant
 	private:
 		struct SceneData
 		{
-			std::shared_ptr<OrthographicCamera> s_Camera;
+			std::shared_ptr<OrthographicCamera> Camera;
 		};
 
 		static SceneData s_SceneData;
