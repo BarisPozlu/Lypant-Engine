@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Lypant/Core.h"
+#include "Lypant/Core/Core.h"
 
 #include "KeyCodes.h"
 #include "MouseButtonCodes.h"

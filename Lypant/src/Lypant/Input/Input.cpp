@@ -1,7 +1,7 @@
 #include "lypch.h"
 #include "Input.h"
 #include <GLFW/glfw3.h>
-#include "Lypant/Application.h"
+#include "Lypant/Core/Application.h"
 
 namespace lypant
 {

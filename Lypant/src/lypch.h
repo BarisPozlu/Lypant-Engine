@@ -6,4 +6,4 @@
 #include <sstream>
 #include <fstream>
 
-#include "Lypant/Log.h"
+#include "Lypant/Core/Log.h"

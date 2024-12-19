@@ -1,7 +1,7 @@
 #pragma once
 
 #include "lypch.h"
-#include "Lypant/Core.h"
+#include "Lypant/Core/Core.h"
 
 namespace lypant
 {

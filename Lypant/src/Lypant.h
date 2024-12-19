@@ -10,5 +10,5 @@
 #include "Lypant/Input/Input.h"
 #include "imgui.h"
 
-#include "Lypant/Layer.h"
-#include "Lypant/EntryPoint.h"
+#include "Lypant/Core/Layer.h"
+#include "Lypant/Core/EntryPoint.h"

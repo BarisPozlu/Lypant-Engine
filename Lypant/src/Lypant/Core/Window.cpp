@@ -1,9 +1,9 @@
 #include "lypch.h"
 #include "Window.h"
 #include <GLFW/glfw3.h>
-#include "Event/WindowEvent.h"
-#include "Event/KeyEvent.h"
-#include "Event/MouseEvent.h"
+#include "Lypant/Event/WindowEvent.h"
+#include "Lypant/Event/KeyEvent.h"
+#include "Lypant/Event/MouseEvent.h"
 
 namespace lypant
 {

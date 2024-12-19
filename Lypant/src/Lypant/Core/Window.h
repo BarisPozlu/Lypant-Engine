@@ -2,7 +2,7 @@
 
 #include "lypch.h"
 #include "Core.h"
-#include "Event/Event.h"
+#include "Lypant/Event/Event.h"
 #include "Lypant/Renderer/GraphicsContext.h"
 
 struct GLFWwindow;
