@@ -89,19 +89,22 @@ namespace lypant
 			float deltaTime = time - m_LastFrameTime;
 			m_LastFrameTime = time;
 
-			RenderCommand::SetClearColor(0.2f, 0.5f, 0.8f, 1.0f);
-			RenderCommand::Clear();
-
-			for (Layer* layer : m_LayerStack)
+			if (!m_Minimized)
 			{
-				layer->Tick(deltaTime);
+				RenderCommand::SetClearColor(0.2f, 0.5f, 0.8f, 1.0f);
+				RenderCommand::Clear();
+
+				for (Layer* layer : m_LayerStack)
+				{
+					layer->Tick(deltaTime);
+				}
+
+				Renderer::BeginScene(camera);
+
+				Renderer::Submit(vertexArray, shader);
+
+				Renderer::EndScene();
 			}
-
-			Renderer::BeginScene(camera);
-
-			Renderer::Submit(vertexArray, shader);
-
-			Renderer::EndScene();
 
 			m_ImGuiLayer->Begin();
 
@@ -119,10 +122,24 @@ namespace lypant
 	void Application::OnEvent(Event& event)
 	{
 		EventDispatcher dispatcher(event);
+
 		dispatcher.Dispatch<WindowCloseEvent>([this](WindowCloseEvent& closeEvent)
 			{
 				m_Running = false;
 				return true;
+			});
+
+		dispatcher.Dispatch<WindowResizeEvent>([this](WindowResizeEvent& resizeEvent)
+			{
+				if (resizeEvent.GetWidth() == 0 || resizeEvent.GetHeight() == 0)
+				{
+					m_Minimized = true;
+					return false;
+				}
+
+				m_Minimized = false;
+				Renderer::OnWindowResize(resizeEvent.GetWidth(), resizeEvent.GetHeight());
+				return false;
 			});
 
 		for (auto it = m_LayerStack.end(); it != m_LayerStack.begin();)

@@ -10,6 +10,11 @@ namespace lypant
 		RenderCommand::Init();
 	}
 
+	void Renderer::OnWindowResize(uint32_t width, uint32_t height)
+	{
+		RenderCommand::SetViewport(0, 0, width, height);
+	}
+
 	void Renderer::BeginScene(const std::shared_ptr<OrthographicCamera>& camera)
 	{
 		s_SceneData.Camera = camera;

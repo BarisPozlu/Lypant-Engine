@@ -32,6 +32,7 @@ namespace lypant
 		LayerStack m_LayerStack;
 		float m_LastFrameTime = 0;
 		bool m_Running = true;
+		bool m_Minimized = false;
 	};
 
 	Application* CreateApplication();
