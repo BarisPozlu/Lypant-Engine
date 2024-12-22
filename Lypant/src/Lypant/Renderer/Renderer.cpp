@@ -15,7 +15,7 @@ namespace lypant
 		RenderCommand::SetViewport(0, 0, width, height);
 	}
 
-	void Renderer::BeginScene(const std::shared_ptr<OrthographicCamera>& camera)
+	void Renderer::BeginScene(const std::shared_ptr<PerspectiveCamera>& camera)
 	{
 		s_SceneData.Camera = camera;
 	}
@@ -25,11 +25,14 @@ namespace lypant
 
 	}
 
-	void Renderer::Submit(const std::shared_ptr<VertexArray>& vertexArray, const std::shared_ptr<Shader>& shader)
+	void Renderer::Submit(const std::shared_ptr<VertexArray>& vertexArray, const std::shared_ptr<Shader>& shader, const glm::mat4& modelMatrix)
 	{
 		vertexArray->Bind();
 		shader->Bind();
-		shader->SetUniformMatrix4Float("u_VP", (float*)&s_SceneData.Camera->GetViewProjectionMatrix()[0][0]);
+
+		glm::mat4& MVP = s_SceneData.Camera->GetViewProjectionMatrix() * modelMatrix;
+		shader->SetUniformMatrix4Float("u_MVP", &MVP[0][0]);
+		
 		RenderCommand::DrawIndexed(vertexArray);
 	}
 }

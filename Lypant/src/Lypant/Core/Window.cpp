@@ -18,7 +18,7 @@ namespace lypant
 	{
 		m_Data.Title = props.Title;
 		m_Data.Width = props.Width;
-		m_Data.Heigth = props.Heigth;
+		m_Data.Height = props.Heigth;
 
 		LY_CORE_INFO("Creating window \"{0}\"", m_Data.Title);
 
@@ -37,7 +37,7 @@ namespace lypant
 
 		m_GraphicsContext.Hint();
 
-		m_Window = glfwCreateWindow(m_Data.Width, m_Data.Heigth, m_Data.Title.c_str(), nullptr, nullptr);
+		m_Window = glfwCreateWindow(m_Data.Width, m_Data.Height, m_Data.Title.c_str(), nullptr, nullptr);
 		m_GraphicsContext.Init(m_Window);
 
 		glfwSetWindowUserPointer(m_Window, &m_Data);
@@ -48,7 +48,7 @@ namespace lypant
 				WindowResizeEvent resizeEvent(width, height);
 				WindowData& data = *(WindowData*) glfwGetWindowUserPointer(window);
 				data.Width = width;
-				data.Heigth = height;
+				data.Height = height;
 				data.EventCallback(resizeEvent);
 			});
 

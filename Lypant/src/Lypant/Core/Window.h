@@ -38,7 +38,7 @@ namespace lypant
 
 		inline GLFWwindow* GetGLFWwindow() const { return m_Window; }
 		inline unsigned int GetWidth() const { return m_Data.Width; }
-		inline unsigned int GetHeight() const { return m_Data.Heigth; };
+		inline unsigned int GetHeight() const { return m_Data.Height; };
 
 	private:
 		GLFWwindow* m_Window;
@@ -50,7 +50,7 @@ namespace lypant
 			std::string Title;
 			std::function<void(Event&)> EventCallback;
 			unsigned int Width;
-			unsigned int Heigth;
+			unsigned int Height;
 			bool IsVSync;
 		};
 

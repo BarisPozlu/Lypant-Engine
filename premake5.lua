@@ -110,7 +110,8 @@ project "Sandbox"
 	{
 		"Lypant/src",
 		"Lypant/vendor/spdlog/include",
-		"Lypant/vendor/ImGui"
+		"Lypant/vendor/ImGui",
+		"Lypant/vendor/glm"
 	}
 
 	filter "system:windows"

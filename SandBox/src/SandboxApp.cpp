@@ -22,7 +22,6 @@ public:
 
 	bool OnKeyPressEvent(lypant::KeyPressEvent& event)
 	{
-		LY_INFO("Key pressed.");
 		return true;
 	}
 };

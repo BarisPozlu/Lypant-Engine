@@ -9,6 +9,7 @@ namespace lypant
 {
 	void RendererAPI::Init()
 	{
+		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glBlendEquation(GL_FUNC_ADD);
@@ -22,6 +23,7 @@ namespace lypant
 	void RendererAPI::Clear()
 	{
 		glClear(GL_COLOR_BUFFER_BIT);
+		glClear(GL_DEPTH_BUFFER_BIT);
 	}
 
 	void RendererAPI::SetClearColor(float r, float g, float b, float a)
