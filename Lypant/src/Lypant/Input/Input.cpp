@@ -2,7 +2,6 @@
 #include "Input.h"
 #include <GLFW/glfw3.h>
 #include "Lypant/Core/Application.h"
-#include "Lypant/Event/MouseEvent.h"
 
 namespace lypant
 {
