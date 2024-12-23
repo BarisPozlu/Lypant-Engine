@@ -12,3 +12,13 @@
 
 #include "Lypant/Core/Layer.h"
 #include "Lypant/Core/EntryPoint.h"
+
+
+// temp
+#include "Lypant/Renderer/Buffer.h"
+#include "Lypant/Renderer/Shader.h"
+#include "Lypant/Renderer/VertexArray.h"
+#include "Lypant/Renderer/Renderer.h"
+#include "Lypant/Renderer/RenderCommand.h"
+
+#include "Lypant/Camera/EditorPerspectiveCamera.h"

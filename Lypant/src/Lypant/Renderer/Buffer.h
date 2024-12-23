@@ -1,5 +1,8 @@
 #pragma once
 
+// this is not supposed to be included in the application in the future when the engine matures.
+// when that happens make the asserts core again.
+
 namespace lypant
 {
 	enum class ShaderDataType
@@ -11,17 +14,17 @@ namespace lypant
 	{
 		switch (type)
 		{
-			case lypant::ShaderDataType::None:		LY_CORE_ASSERT(false, "Shader data type is none!"); return 0;
-			case lypant::ShaderDataType::Float:		return 4;
-			case lypant::ShaderDataType::Float2:	return 4 * 2;
-			case lypant::ShaderDataType::Float3:	return 4 * 3;
-			case lypant::ShaderDataType::Float4:	return 4 * 4;
-			case lypant::ShaderDataType::Mat3:		return 4 * 3 * 3;
-			case lypant::ShaderDataType::Mat4:		return 4 * 4 * 4;
-			case lypant::ShaderDataType::Int:		return 4;		
+			case ShaderDataType::None:		LY_ASSERT(false, "Shader data type is none!"); return 0;
+			case ShaderDataType::Float:		return 4;
+			case ShaderDataType::Float2:	return 4 * 2;
+			case ShaderDataType::Float3:	return 4 * 3;
+			case ShaderDataType::Float4:	return 4 * 4;
+			case ShaderDataType::Mat3:		return 4 * 3 * 3;
+			case ShaderDataType::Mat4:		return 4 * 4 * 4;
+			case ShaderDataType::Int:		return 4;		
 		}
 
-		LY_CORE_ASSERT(false, "Invalid Shader data type!");
+		LY_ASSERT(false, "Invalid Shader data type!");
 		return 0;
 	}
 
@@ -29,17 +32,17 @@ namespace lypant
 	{
 		switch (type)
 		{
-			case lypant::ShaderDataType::None:		LY_CORE_ASSERT(false, "Shader data type is none!"); return 0;
-			case lypant::ShaderDataType::Float:		return 1;
-			case lypant::ShaderDataType::Float2:	return 2;
-			case lypant::ShaderDataType::Float3:	return 3;
-			case lypant::ShaderDataType::Float4:	return 4;
-			case lypant::ShaderDataType::Mat3:		return 3 * 3;
-			case lypant::ShaderDataType::Mat4:		return 4 * 4;
-			case lypant::ShaderDataType::Int:		return 1;
+			case ShaderDataType::None:		LY_ASSERT(false, "Shader data type is none!"); return 0;
+			case ShaderDataType::Float:		return 1;
+			case ShaderDataType::Float2:	return 2;
+			case ShaderDataType::Float3:	return 3;
+			case ShaderDataType::Float4:	return 4;
+			case ShaderDataType::Mat3:		return 3 * 3;
+			case ShaderDataType::Mat4:		return 4 * 4;
+			case ShaderDataType::Int:		return 1;
 		}
 
-		LY_CORE_ASSERT(false, "Invalid Shader data type!");
+		LY_ASSERT(false, "Invalid Shader data type!");
 		return 0;
 	}
 

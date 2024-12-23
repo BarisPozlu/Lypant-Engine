@@ -19,7 +19,8 @@ namespace lypant
 		glm::vec3 GetForward() const;
 		glm::vec3 GetUp() const;
 
-		void UpdateViewProjection();
+		void UpdateViewAndViewProjection();
+		void UpdateProjectionAndViewProjection(float fovy, float aspectRatio, float zNear, float zFar);
 	private:
 		glm::vec3 m_Position;
 		glm::quat m_Orientation;

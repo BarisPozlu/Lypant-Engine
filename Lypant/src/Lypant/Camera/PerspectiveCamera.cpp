@@ -1,7 +1,6 @@
 #include "lypch.h"
 #include "PerspectiveCamera.h"
 #include "glm/gtc/matrix_transform.hpp"
-#include "Lypant/Event/WindowEvent.h"
 
 namespace lypant
 {
@@ -16,19 +15,19 @@ namespace lypant
 	void PerspectiveCamera::AddMovementInput(const glm::vec3& offset)
 	{
 		m_Position += offset;
-		UpdateViewProjection();
+		UpdateViewAndViewProjection();
 	}
 
 	void PerspectiveCamera::AddPitchInput(float offset)
 	{
 		m_Orientation = glm::normalize(glm::angleAxis(glm::radians(-offset), GetRight()) * m_Orientation);
-		UpdateViewProjection();
+		UpdateViewAndViewProjection();
 	}
 
 	void PerspectiveCamera::AddYawInput(float offset)
 	{
 		m_Orientation = glm::normalize(glm::angleAxis(glm::radians(-offset), glm::vec3(0, 1, 0)) * m_Orientation);
-		UpdateViewProjection();
+		UpdateViewAndViewProjection();
 	}
 
 	glm::vec3 PerspectiveCamera::GetRight() const
@@ -46,9 +45,15 @@ namespace lypant
 		return glm::normalize(m_Orientation * glm::vec3(0, 1, 0));
 	}
 
-	void PerspectiveCamera::UpdateViewProjection()
+	void PerspectiveCamera::UpdateViewAndViewProjection()
 	{
 		m_ViewMatrix = glm::mat4_cast(glm::conjugate(m_Orientation)) * glm::translate(glm::mat4(1.0f), -m_Position);
+		m_ViewProjectionMatrix = m_ProjectionMatrix * m_ViewMatrix;
+	}
+
+	void PerspectiveCamera::UpdateProjectionAndViewProjection(float fovy, float aspectRatio, float zNear, float zFar)
+	{
+		m_ProjectionMatrix = glm::perspective(fovy, aspectRatio, zNear, zFar);
 		m_ViewProjectionMatrix = m_ProjectionMatrix * m_ViewMatrix;
 	}
 }
