@@ -9,11 +9,13 @@ namespace lypant
 	{
 	public:
 		PerspectiveCamera(const glm::vec3& position, float fovy, float aspectRatio, float zNear, float zFar);
-		const glm::mat4& GetViewProjectionMatrix() const { return m_ViewProjectionMatrix; }
 
 		void AddMovementInput(const glm::vec3& offset);
 		void AddPitchInput(float offset);
 		void AddYawInput(float offset);
+
+		inline const glm::vec3& GetPosition() const { return m_Position; }
+		inline const glm::mat4& GetViewProjectionMatrix() const { return m_ViewProjectionMatrix; }
 
 		glm::vec3 GetRight() const;
 		glm::vec3 GetForward() const;

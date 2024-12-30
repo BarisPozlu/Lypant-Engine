@@ -4,12 +4,7 @@
 #include "Layer.h"
 #include "Lypant/ImGui/ImGuiLayer.h"
 #include "Lypant/Renderer/Renderer.h"
-#include "Lypant/Renderer/Shader.h" // temp
-#include "Lypant/Camera/PerspectiveCamera.h" // temp
-#include "Lypant/Camera/EditorPerspectiveCamera.h" // temp
-#include "glm/glm.hpp" // temp
 #include <GLFW/glfw3.h> // temp
-#include "Lypant/Renderer/Texture.h" // temp
 #include "Lypant/Input/Input.h" // temp
 
 namespace lypant

@@ -4,51 +4,78 @@
 class ExampleLayer : public lypant::Layer
 {
 public:
-	ExampleLayer()
+	ExampleLayer() : m_LightPosition(-2.0f, 0.0f, -2.5f), m_LightColor(1.0f, 1.0f, 1.0f)
 	{
-		m_Shader = std::make_shared<lypant::Shader>("../Lypant/src/Lypant/Renderer/OpenGL/Shaders/BasicShader.glsl");
-		m_Shader->Bind();
+		m_LightObjectShader = std::make_shared<lypant::Shader>("shaders/LightObject.glsl");
+		m_ObjectShader = std::make_shared<lypant::Shader>("shaders/Object.glsl");
+		m_TexturedObjectShader = std::make_shared<lypant::Shader>("shaders/TexturedObject.glsl");
+
+		m_ObjectTexture = std::make_shared<lypant::Texture2D>("textures/container2.png");
+		m_ObjectTexture->Bind(0);
 
 		m_VertexArray = std::make_shared<lypant::VertexArray>();
-		m_VertexArray->Bind();
 
 		float vertexData[]
 		{
-			 0.5f,  0.5f,  0.5f,
-			-0.5f,  0.5f, -0.5f,
-			-0.5f,  0.5f,  0.5f,
-			 0.5f, -0.5f, -0.5f,
-			-0.5f, -0.5f, -0.5f,
-			 0.5f,  0.5f, -0.5f,
-			 0.5f, -0.5f,  0.5f,
-			-0.5f, -0.5f,  0.5f
+			-0.5f, -0.5f, -0.5f,  0.0f, 0.0f, -1.0f,  0.0f, 0.0f,
+			 0.5f, -0.5f, -0.5f,  0.0f, 0.0f, -1.0f,  1.0f, 0.0f,
+			 0.5f,  0.5f, -0.5f,  0.0f, 0.0f, -1.0f,  1.0f, 1.0f,
+			 0.5f,  0.5f, -0.5f,  0.0f, 0.0f, -1.0f,  1.0f, 1.0f,
+			-0.5f,  0.5f, -0.5f,  0.0f, 0.0f, -1.0f,  0.0f, 1.0f,
+			-0.5f, -0.5f, -0.5f,  0.0f, 0.0f, -1.0f,  0.0f, 0.0f,
+
+			-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, 1.0f,   0.0f, 0.0f,
+			 0.5f, -0.5f,  0.5f,  0.0f, 0.0f, 1.0f,   1.0f, 0.0f,
+			 0.5f,  0.5f,  0.5f,  0.0f, 0.0f, 1.0f,   1.0f, 1.0f,
+			 0.5f,  0.5f,  0.5f,  0.0f, 0.0f, 1.0f,   1.0f, 1.0f,
+			-0.5f,  0.5f,  0.5f,  0.0f, 0.0f, 1.0f,   0.0f, 1.0f,
+			-0.5f, -0.5f,  0.5f,  0.0f, 0.0f, 1.0f,   0.0f, 0.0f,
+
+			-0.5f,  0.5f,  0.5f, -1.0f, 0.0f,  0.0f,  1.0f, 0.0f,
+			-0.5f,  0.5f, -0.5f, -1.0f, 0.0f,  0.0f,  1.0f, 1.0f,
+			-0.5f, -0.5f, -0.5f, -1.0f, 0.0f,  0.0f,  0.0f, 1.0f,
+			-0.5f, -0.5f, -0.5f, -1.0f, 0.0f,  0.0f,  0.0f, 1.0f,
+			-0.5f, -0.5f,  0.5f, -1.0f, 0.0f,  0.0f,  0.0f, 0.0f,
+			-0.5f,  0.5f,  0.5f, -1.0f, 0.0f,  0.0f,  1.0f, 0.0f,
+
+			 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,  0.0f,  1.0f, 0.0f,
+			 0.5f,  0.5f, -0.5f,  1.0f, 0.0f,  0.0f,  1.0f, 1.0f,
+			 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,  0.0f,  0.0f, 1.0f,
+			 0.5f, -0.5f, -0.5f,  1.0f, 0.0f,  0.0f,  0.0f, 1.0f,
+			 0.5f, -0.5f,  0.5f,  1.0f, 0.0f,  0.0f,  0.0f, 0.0f,
+			 0.5f,  0.5f,  0.5f,  1.0f, 0.0f,  0.0f,  1.0f, 0.0f,
+
+			-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,  0.0f,  0.0f, 1.0f,
+			 0.5f, -0.5f, -0.5f,  0.0f, 1.0f,  0.0f,  1.0f, 1.0f,
+			 0.5f, -0.5f,  0.5f,  0.0f, 1.0f,  0.0f,  1.0f, 0.0f,
+			 0.5f, -0.5f,  0.5f,  0.0f, 1.0f,  0.0f,  1.0f, 0.0f,
+			-0.5f, -0.5f,  0.5f,  0.0f, 1.0f,  0.0f,  0.0f, 0.0f,
+			-0.5f, -0.5f, -0.5f,  0.0f, 1.0f,  0.0f,  0.0f, 1.0f,
+
+			-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,  0.0f,  0.0f, 1.0f,
+			 0.5f,  0.5f, -0.5f,  0.0f, 1.0f,  0.0f,  1.0f, 1.0f,
+			 0.5f,  0.5f,  0.5f,  0.0f, 1.0f,  0.0f,  1.0f, 0.0f,
+			 0.5f,  0.5f,  0.5f,  0.0f, 1.0f,  0.0f,  1.0f, 0.0f,
+			-0.5f,  0.5f,  0.5f,  0.0f, 1.0f,  0.0f,  0.0f, 0.0f,
+			-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,  0.0f,  0.0f, 1.0f
 		};
 
 		m_VertexBuffer = std::make_shared<lypant::VertexBuffer>(vertexData, sizeof(vertexData));
 
 		lypant::BufferLayout layout
 		{
-			{lypant::ShaderDataType::Float3, "a_Position"}
+			{lypant::ShaderDataType::Float3, "a_Position"}, {lypant::ShaderDataType::Float3, "a_Normal"}, {lypant::ShaderDataType::Float2, "a_TexCoord"}
 		};
 
 		m_VertexBuffer->SetLayout(layout);
 		m_VertexArray->AddVertexBuffer(m_VertexBuffer);
 
-		unsigned int indexData[]
+		// draw arrays are not supported, we have to use indices.
+		unsigned int indexData[36];
+		for (int i = 0; i < 36; i++)
 		{
-			0, 1, 2,
-			1, 3, 4,
-			5, 6, 3,
-			7, 3, 6,
-			2, 4, 7,
-			0, 7, 6,
-			0, 5, 1,
-			1, 5, 3,
-			5, 0, 6,
-			7, 4, 3,
-			2, 1, 4,
-			0, 2, 7
-		};
+			indexData[i] = i;
+		}
 
 		m_IndexBuffer = std::make_shared<lypant::IndexBuffer>(indexData, 36);
 
@@ -66,7 +93,34 @@ public:
 
 		lypant::Renderer::BeginScene(m_Camera);
 
-		lypant::Renderer::Submit(m_VertexArray, m_Shader, glm::rotate(glm::mat4(1.0f), glm::radians(0.0f), glm::vec3(0, 1, 0)));
+		// light object
+		m_LightObjectShader->Bind();
+		m_LightObjectShader->SetUniformVec3Float("u_LightColor", &m_LightColor[0]);
+		lypant::Renderer::Submit(m_VertexArray, m_LightObjectShader, glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), m_LightPosition), glm::radians(0.0f), glm::vec3(0, 1, 0)), glm::vec3(0.3f)));
+
+		//textured objects
+		m_TexturedObjectShader->Bind();
+		m_TexturedObjectShader->SetUniformVec3Float("u_LightPosition", &m_LightPosition[0]);
+		m_TexturedObjectShader->SetUniformVec3Float("u_LightColor", &m_LightColor[0]);
+		m_TexturedObjectShader->SetUniformVec3Float("u_ViewPosition", (float*) &m_Camera->GetPosition());
+		m_TexturedObjectShader->SetUniformInt("u_TexSlot", 0);
+
+		lypant::Renderer::Submit(m_VertexArray, m_TexturedObjectShader, glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f)), glm::radians(0.0f), glm::vec3(0, 1, 0)));
+		lypant::Renderer::Submit(m_VertexArray, m_TexturedObjectShader, glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 0.0f, -5.0f)), glm::radians(45.0f), glm::vec3(0, 1, 0)));
+		lypant::Renderer::Submit(m_VertexArray, m_TexturedObjectShader, glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -7.0f)), glm::radians(180.0f), glm::vec3(0, 1, 0)));
+
+		//floor
+		static float floorColor[]
+		{
+			0.3f, 0.3f, 0.3f
+		};
+
+		m_ObjectShader->Bind();
+		m_ObjectShader->SetUniformVec3Float("u_LightPosition", &m_LightPosition[0]);
+		m_ObjectShader->SetUniformVec3Float("u_LightColor", &m_LightColor[0]);
+		m_ObjectShader->SetUniformVec3Float("u_ViewPosition", (float*)&m_Camera->GetPosition());
+		m_ObjectShader->SetUniformVec3Float("u_ObjectColor", floorColor);
+		lypant::Renderer::Submit(m_VertexArray, m_ObjectShader, glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(-0.8f, -0.55f, -5.0f)), glm::vec3(10.0f, 0.1f, 11.0f)));
 
 		lypant::Renderer::EndScene();
 	}
@@ -76,12 +130,32 @@ public:
 		m_Camera->OnEvent(event);
 	}
 
+	void OnImGuiRender() override
+	{
+		ImGui::Begin("Hey");
+
+		ImGui::DragFloat3("Light position", &m_LightPosition[0], 0.05f, -20.0f, 20.0f);
+		
+		ImGui::ColorEdit3("Light color", &m_LightColor[0]);
+
+		ImGui::End();
+	}
+
 private:
-	std::shared_ptr<lypant::Shader> m_Shader;
+	std::shared_ptr<lypant::Shader> m_LightObjectShader;
+	std::shared_ptr<lypant::Shader> m_ObjectShader;
+	std::shared_ptr<lypant::Shader> m_TexturedObjectShader;
+
+	std::shared_ptr<lypant::Texture2D> m_ObjectTexture;
+
 	std::shared_ptr<lypant::VertexArray> m_VertexArray;
 	std::shared_ptr<lypant::VertexBuffer> m_VertexBuffer;
 	std::shared_ptr<lypant::IndexBuffer> m_IndexBuffer;
+
 	std::shared_ptr<lypant::EditorPerspectiveCamera> m_Camera;
+
+	glm::vec3 m_LightPosition;
+	glm::vec3 m_LightColor;
 };
 
 class SandboxApp : public lypant::Application

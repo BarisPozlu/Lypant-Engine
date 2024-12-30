@@ -32,6 +32,8 @@ namespace lypant
 
 		glm::mat4& MVP = s_SceneData.Camera->GetViewProjectionMatrix() * modelMatrix;
 		shader->SetUniformMatrix4Float("u_MVP", &MVP[0][0]);
+		shader->SetUniformMatrix4Float("u_ModelMatrix", (float*) &modelMatrix[0][0]); // temp
+		shader->SetUniformMatrix3Float("u_NormalMatrix", (float*) &(glm::transpose(glm::inverse(glm::mat3(modelMatrix))))[0][0]); // temp
 		
 		RenderCommand::DrawIndexed(vertexArray);
 	}

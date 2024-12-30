@@ -17,6 +17,7 @@
 // temp
 #include "Lypant/Renderer/Buffer.h"
 #include "Lypant/Renderer/Shader.h"
+#include "Lypant/Renderer/Texture.h"
 #include "Lypant/Renderer/VertexArray.h"
 #include "Lypant/Renderer/Renderer.h"
 #include "Lypant/Renderer/RenderCommand.h"

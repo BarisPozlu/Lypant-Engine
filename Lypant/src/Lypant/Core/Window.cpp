@@ -38,6 +38,7 @@ namespace lypant
 		m_GraphicsContext.Hint();
 
 		m_Window = glfwCreateWindow(m_Data.Width, m_Data.Height, m_Data.Title.c_str(), nullptr, nullptr);
+		LY_CORE_ASSERT(m_Window, "Could not create GLFW Window.");
 		m_GraphicsContext.Init(m_Window);
 
 		glfwSetWindowUserPointer(m_Window, &m_Data);
