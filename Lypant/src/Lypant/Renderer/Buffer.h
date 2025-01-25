@@ -89,7 +89,7 @@ namespace lypant
 	class VertexBuffer
 	{
 	public:
-		VertexBuffer(float* data, uint32_t size);
+		VertexBuffer(const void* data, uint32_t size);
 		~VertexBuffer();
 		void Bind() const;
 		void Unbind() const;
@@ -113,5 +113,21 @@ namespace lypant
 	private:
 		uint32_t m_RendererID;
 		uint32_t m_Count;
+	};
+
+	class UniformBuffer
+	{
+	public:
+		UniformBuffer(uint32_t size, const void* data);
+		~UniformBuffer();
+		
+		void BindBase(uint32_t index) const;
+		void BindRange(uint32_t index, uint32_t offset, uint32_t size) const;
+		void BufferSubData(uint32_t offset, uint32_t size, const void* data) const;
+
+		void Bind() const;
+		void Unbind() const;
+	private:
+		uint32_t m_RendererID;
 	};
 }

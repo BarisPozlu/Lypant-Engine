@@ -4,7 +4,7 @@
 class ExampleLayer : public lypant::Layer
 {
 public:
-	ExampleLayer() : m_LightPosition(-2.0f, 0.0f, -2.5f), m_LightColor(1.0f, 1.0f, 1.0f)
+	ExampleLayer()
 	{
 		m_LightObjectShader = std::make_shared<lypant::Shader>("shaders/LightObject.glsl");
 		m_ObjectShader = std::make_shared<lypant::Shader>("shaders/Object.glsl");
@@ -82,6 +82,13 @@ public:
 		m_VertexArray->SetIndexBuffer(m_IndexBuffer);
 
 		m_Camera = std::make_shared<lypant::EditorPerspectiveCamera>(glm::vec3(-1.8f, 0.7f, 4.0f), glm::radians(45.0f), 1280.0f / 720.0f, 0.1f, 100.0f);
+		
+		m_PointLight = std::make_shared<lypant::PointLight>(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.1f), glm::vec3(1.0f), glm::vec3(0.5f), glm::vec3(-2.0f, 0.0f, -2.5f));
+		m_PointLight2 = std::make_shared<lypant::PointLight>(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.1f), glm::vec3(1.0f), glm::vec3(0.5f), glm::vec3(1.0f, 0.0f, -3.5f));
+		m_DirectionalLight = std::make_shared<lypant::DirectionalLight>(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.1f), glm::vec3(1.0f), glm::vec3(0.5f), glm::vec3(0.0f, -1.0f, 0.0f));
+		m_SpotLight = std::make_shared<lypant::SpotLight>(glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.1f), glm::vec3(1.0f), glm::vec3(0.5f), glm::vec3(-5.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+
+		m_Lights.reserve(4);
 	}
 
 	void Tick(float deltaTime) override
@@ -91,17 +98,25 @@ public:
 
 		m_Camera->Tick(deltaTime);
 
-		lypant::Renderer::BeginScene(m_Camera);
+		lypant::Renderer::BeginScene(m_Camera, m_Lights);
 
-		// light object
+		// light objects
 		m_LightObjectShader->Bind();
-		m_LightObjectShader->SetUniformVec3Float("u_LightColor", &m_LightColor[0]);
-		lypant::Renderer::Submit(m_VertexArray, m_LightObjectShader, glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), m_LightPosition), glm::radians(0.0f), glm::vec3(0, 1, 0)), glm::vec3(0.3f)));
+
+		if (std::find(m_Lights.begin(), m_Lights.end(), m_PointLight) != m_Lights.end())
+		{
+			m_LightObjectShader->SetUniformVec3Float("u_LightColor", (float*)&m_PointLight->Color);
+			lypant::Renderer::Submit(m_VertexArray, m_LightObjectShader, glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), (glm::vec3)m_PointLight->Position), glm::radians(0.0f), glm::vec3(0, 1, 0)), glm::vec3(0.3f)));
+		}
+
+		if (std::find(m_Lights.begin(), m_Lights.end(), m_PointLight2) != m_Lights.end())
+		{
+			m_LightObjectShader->SetUniformVec3Float("u_LightColor", (float*) &m_PointLight2->Color);
+			lypant::Renderer::Submit(m_VertexArray, m_LightObjectShader, glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), (glm::vec3)m_PointLight2->Position), glm::radians(0.0f), glm::vec3(0, 1, 0)), glm::vec3(0.3f)));
+		}
 
 		//textured objects
 		m_TexturedObjectShader->Bind();
-		m_TexturedObjectShader->SetUniformVec3Float("u_LightPosition", &m_LightPosition[0]);
-		m_TexturedObjectShader->SetUniformVec3Float("u_LightColor", &m_LightColor[0]);
 		m_TexturedObjectShader->SetUniformVec3Float("u_ViewPosition", (float*) &m_Camera->GetPosition());
 		m_TexturedObjectShader->SetUniformInt("u_TexSlot", 0);
 
@@ -116,10 +131,9 @@ public:
 		};
 
 		m_ObjectShader->Bind();
-		m_ObjectShader->SetUniformVec3Float("u_LightPosition", &m_LightPosition[0]);
-		m_ObjectShader->SetUniformVec3Float("u_LightColor", &m_LightColor[0]);
 		m_ObjectShader->SetUniformVec3Float("u_ViewPosition", (float*)&m_Camera->GetPosition());
 		m_ObjectShader->SetUniformVec3Float("u_ObjectColor", floorColor);
+		
 		lypant::Renderer::Submit(m_VertexArray, m_ObjectShader, glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(-0.8f, -0.55f, -5.0f)), glm::vec3(10.0f, 0.1f, 11.0f)));
 
 		lypant::Renderer::EndScene();
@@ -128,15 +142,76 @@ public:
 	void OnEvent(lypant::Event& event) override
 	{
 		m_Camera->OnEvent(event);
+
+		lypant::EventDispatcher dispatcher(event);
+
+		dispatcher.Dispatch<lypant::KeyPressEvent>([this](lypant::KeyPressEvent event)
+			{
+				if (event.GetKeyCode() == LY_KEY_1)
+				{
+					if (std::find(m_Lights.begin(), m_Lights.end(), m_PointLight) != m_Lights.end())
+					{
+						m_Lights.erase(std::find(m_Lights.begin(), m_Lights.end(), m_PointLight));
+					}
+
+					else
+					{
+						m_Lights.emplace_back(m_PointLight);
+					}
+				}
+
+				else if (event.GetKeyCode() == LY_KEY_2)
+				{
+					
+					if (std::find(m_Lights.begin(), m_Lights.end(), m_PointLight2) != m_Lights.end())
+					{
+						m_Lights.erase(std::find(m_Lights.begin(), m_Lights.end(), m_PointLight2));
+					}
+
+					else
+					{
+						m_Lights.emplace_back(m_PointLight2);
+					}
+				}
+
+				else if (event.GetKeyCode() == LY_KEY_3)
+				{
+					if (std::find(m_Lights.begin(), m_Lights.end(), m_DirectionalLight) != m_Lights.end())
+					{
+						m_Lights.erase(std::find(m_Lights.begin(), m_Lights.end(), m_DirectionalLight));
+					}
+
+					else
+					{
+						m_Lights.emplace_back(m_DirectionalLight);
+					}
+				}
+
+				return false;
+			});
 	}
 
 	void OnImGuiRender() override
 	{
 		ImGui::Begin("Hey");
 
-		ImGui::DragFloat3("Light position", &m_LightPosition[0], 0.05f, -20.0f, 20.0f);
+		if (std::find(m_Lights.begin(), m_Lights.end(), m_PointLight) != m_Lights.end())
+		{
+			ImGui::DragFloat3("Light1 position", (float*)&m_PointLight->Position, 0.05f, -20.0f, 20.0f);
+			ImGui::ColorEdit3("Light1 color", &m_PointLight->Color[0]);
+		}
 		
-		ImGui::ColorEdit3("Light color", &m_LightColor[0]);
+		if (std::find(m_Lights.begin(), m_Lights.end(), m_PointLight2) != m_Lights.end())
+		{
+			ImGui::DragFloat3("Light2 position", (float*) &m_PointLight2->Position, 0.05f, -20.0f, 20.0f);		
+			ImGui::ColorEdit3("Light2 color", &m_PointLight2->Color[0]);
+		}
+		
+		if (std::find(m_Lights.begin(), m_Lights.end(), m_DirectionalLight) != m_Lights.end())
+		{
+			ImGui::SliderFloat3("Directional Light", (float*)&m_DirectionalLight->Direction, -1, 1);
+			m_DirectionalLight->SetDirection(m_DirectionalLight->Direction);
+		}
 
 		ImGui::End();
 	}
@@ -154,8 +229,12 @@ private:
 
 	std::shared_ptr<lypant::EditorPerspectiveCamera> m_Camera;
 
-	glm::vec3 m_LightPosition;
-	glm::vec3 m_LightColor;
+	std::shared_ptr<lypant::PointLight> m_PointLight;
+	std::shared_ptr<lypant::PointLight> m_PointLight2;
+	std::shared_ptr<lypant::DirectionalLight> m_DirectionalLight;
+	std::shared_ptr<lypant::SpotLight> m_SpotLight;
+
+	std::vector<std::shared_ptr<lypant::Light>> m_Lights;
 };
 
 class SandboxApp : public lypant::Application

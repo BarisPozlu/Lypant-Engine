@@ -28,6 +28,7 @@ namespace lypant
 	Application::~Application()
 	{
 		Input::Shutdown();
+		Renderer::Shutdown();
 	}
 
 	void Application::Run()

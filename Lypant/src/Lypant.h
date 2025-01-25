@@ -23,3 +23,5 @@
 #include "Lypant/Renderer/RenderCommand.h"
 
 #include "Lypant/Camera/EditorPerspectiveCamera.h"
+
+#include "Lypant/Light/Light.h"
