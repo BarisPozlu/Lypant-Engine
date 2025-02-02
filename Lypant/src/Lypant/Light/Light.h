@@ -42,6 +42,30 @@ namespace lypant
 		float Padding3;
 	};
 
+	struct SpotLight : public Light
+	{
+		SpotLight(const glm::vec3& color, const glm::vec3& ambient, const glm::vec3& diffuse, const glm::vec3& specular, const glm::vec3& position, const glm::vec3& direction, float outerCutOff = 17.5, float innerCutOff = 12.5)
+			: Light(color, ambient, diffuse, specular), Position(position, 0), Direction(glm::normalize(direction)), OuterCutOff(glm::cos(glm::radians(outerCutOff))), InnerCutOff(glm::cos(glm::radians(innerCutOff)))
+		{
+
+		}
+
+		// normalizes the direction. Advised to use this intead of setting it up directly.
+		inline void SetDirection(const glm::vec3& direction)
+		{
+			Direction = glm::normalize(direction);
+		}
+
+		glm::vec4 Position;
+		glm::vec3 Direction;
+		float OuterCutOff;
+		float InnerCutOff;
+		// 12 bytes padding needed for gpu.
+		float Padding;
+		float Padding2;
+		float Padding3;
+	};
+
 	struct DirectionalLight : public Light
 	{
 		DirectionalLight(const glm::vec3& color, const glm::vec3& ambient, const glm::vec3& diffuse, const glm::vec3& specular, const glm::vec3& direction)
@@ -59,22 +83,4 @@ namespace lypant
 		glm::vec4 Direction;
 	};
 
-	struct SpotLight : public Light
-	{
-		SpotLight(const glm::vec3& color, const glm::vec3& ambient, const glm::vec3& diffuse, const glm::vec3& specular, const glm::vec3& position, const glm::vec3& direction)
-			: Light(color, ambient, diffuse, specular), Position(position, 0), Direction(glm::normalize(direction)), CutOff(45.0f)
-		{
-
-		}
-
-		// normalizes the direction. Advised to use this intead of setting it up directly.
-		inline void SetDirection(const glm::vec3& direction)
-		{
-			Direction = glm::normalize(direction);
-		}
-
-		glm::vec4 Position;
-		glm::vec3 Direction;
-		float CutOff;
-	};
 }

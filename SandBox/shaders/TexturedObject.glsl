@@ -57,7 +57,8 @@ struct SpotLight
 	vec3 Specular;
 	vec3 Position;
 	vec3 Direction;
-	float CutOff;
+	float OuterCutOff;
+	float InnerCutOff;
 };
 
 layout (std140, binding = 1) uniform SpotLights
@@ -86,24 +87,72 @@ layout (std140, binding = 3) uniform NumberOfLights
 	int u_NumberOfDirectionalLights;
 };
 
-
 uniform vec3 u_ViewPosition;
+
+vec3 CalculatePointLight(int i, vec3 normal, vec3 viewDirection);
+vec3 CalculateSpotLight(int i, vec3 normal, vec3 viewDirection);
+vec3 CalculateDirectionalLight(int i, vec3 normal, vec3 viewDirection);
+
+void main()
+{
+	vec3 normal = normalize(v_Normal);
+	vec3 viewDirection = normalize(u_ViewPosition - v_WorldPosition);
+
+	vec3 result = vec3(0);
+
+	int i;
+
+	for (i = 0; i < u_NumberOfPointLights; i++)
+	{
+		result += CalculatePointLight(i, normal, viewDirection);
+	}
+
+	for (i = 0; i < u_NumberOfSpotLights; i++)
+	{
+		result += CalculateSpotLight(i, normal, viewDirection);
+	}
+
+	for (i = 0; i < u_NumberOfDirectionalLights; i++)
+	{
+		result += CalculateDirectionalLight(i, normal, viewDirection);
+	}
+
+	color = vec4(result * vec3(texture(u_TexSlot, v_TexCoord)), 1.0);
+}
 
 vec3 CalculatePointLight(int i, vec3 normal, vec3 viewDirection)
 {
 	vec3 ambient =  u_PointLights[i].Ambient * u_PointLights[i].Color;
 
 	vec3 lightDirection = normalize(u_PointLights[i].Position - v_WorldPosition);
-	vec3 diffuse = max(dot(normal, lightDirection), 0.0) * u_PointLights[i].Color * u_PointLights[i].Diffuse;
+	vec3 diffuse = max(dot(normal, lightDirection), 0) * u_PointLights[i].Color * u_PointLights[i].Diffuse;
 
 	vec3 reflectDirection = reflect(-lightDirection, normal);
 
-	vec3 specular = pow(max(dot(viewDirection, reflectDirection), 0.0), 32) * u_PointLights[i].Specular * u_PointLights[i].Color;
+	vec3 specular = pow(max(dot(viewDirection, reflectDirection), 0), 32) * u_PointLights[i].Specular * u_PointLights[i].Color;
 
 	float pointLightDistance = distance(v_WorldPosition, u_PointLights[i].Position);
 	float attenuation = 1.0 / (1.0 + u_PointLights[i].Linear * pointLightDistance + u_PointLights[i].Quadratic * pointLightDistance * pointLightDistance);
 
 	return (ambient + diffuse + specular) * attenuation;
+}
+
+vec3 CalculateSpotLight(int i, vec3 normal, vec3 viewDirection)
+{
+	vec3 ambient = u_SpotLights[i].Ambient * u_SpotLights[i].Color;
+
+	vec3 lightDirection = normalize(u_SpotLights[i].Position - v_WorldPosition);
+	float cosOfAngle = dot(lightDirection, -u_SpotLights[i].Direction);
+	
+	float intensity = (cosOfAngle - u_SpotLights[i].OuterCutOff) / (u_SpotLights[i].InnerCutOff - u_SpotLights[i].OuterCutOff);
+	intensity = clamp(intensity, 0.0, 1.0);
+
+	vec3 diffuse = max(dot(normal, lightDirection), 0) * u_SpotLights[i].Diffuse * u_SpotLights[i].Color;
+
+	vec3 reflectDirection = reflect(-lightDirection, normal);
+	vec3 specular = pow(max(dot(viewDirection, reflectDirection), 0), 32) * u_SpotLights[i].Specular * u_SpotLights[i].Color;
+
+	return (ambient + diffuse + specular) * intensity;
 }
 
 vec3 CalculateDirectionalLight(int i, vec3 normal, vec3 viewDirection)
@@ -117,26 +166,6 @@ vec3 CalculateDirectionalLight(int i, vec3 normal, vec3 viewDirection)
 	vec3 specular = pow(max(dot(reflectDirection, viewDirection), 0), 32) * u_DirectionalLights[i].Color * u_DirectionalLights[i].Specular;
 
 	return ambient + diffuse + specular;
-}
-
-void main()
-{
-	vec3 normal = normalize(v_Normal);
-	vec3 viewDirection = normalize(u_ViewPosition - v_WorldPosition);
-
-	vec3 result = vec3(0);
-
-	for (int i = 0; i < u_NumberOfDirectionalLights; i++)
-	{
-		result += CalculateDirectionalLight(i, normal, viewDirection);
-	}
-
-	for (int i = 0; i < u_NumberOfPointLights; i++)
-	{
-		result += CalculatePointLight(i, normal, viewDirection);
-	}
-
-	color = vec4(result * vec3(texture(u_TexSlot, v_TexCoord)), 1.0);
 }
 
 #endif

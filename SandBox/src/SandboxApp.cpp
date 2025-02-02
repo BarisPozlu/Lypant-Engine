@@ -86,9 +86,11 @@ public:
 		m_PointLight = std::make_shared<lypant::PointLight>(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.1f), glm::vec3(1.0f), glm::vec3(0.5f), glm::vec3(-2.0f, 0.0f, -2.5f));
 		m_PointLight2 = std::make_shared<lypant::PointLight>(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.1f), glm::vec3(1.0f), glm::vec3(0.5f), glm::vec3(1.0f, 0.0f, -3.5f));
 		m_DirectionalLight = std::make_shared<lypant::DirectionalLight>(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.1f), glm::vec3(1.0f), glm::vec3(0.5f), glm::vec3(0.0f, -1.0f, 0.0f));
-		m_SpotLight = std::make_shared<lypant::SpotLight>(glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.1f), glm::vec3(1.0f), glm::vec3(0.5f), glm::vec3(-5.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		m_SpotLight = std::make_shared<lypant::SpotLight>(glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(0.1f), glm::vec3(1.0f), glm::vec3(0.5f), glm::vec3(-5.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, -1.0f));
 
 		m_Lights.reserve(4);
+
+		m_Lights.push_back(m_SpotLight);
 	}
 
 	void Tick(float deltaTime) override
@@ -113,6 +115,12 @@ public:
 		{
 			m_LightObjectShader->SetUniformVec3Float("u_LightColor", (float*) &m_PointLight2->Color);
 			lypant::Renderer::Submit(m_VertexArray, m_LightObjectShader, glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), (glm::vec3)m_PointLight2->Position), glm::radians(0.0f), glm::vec3(0, 1, 0)), glm::vec3(0.3f)));
+		}
+
+		if (std::find(m_Lights.begin(), m_Lights.end(), m_SpotLight) != m_Lights.end())
+		{
+			m_LightObjectShader->SetUniformVec3Float("u_LightColor", (float*)&m_SpotLight->Color);
+			lypant::Renderer::Submit(m_VertexArray, m_LightObjectShader, glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), (glm::vec3)m_SpotLight->Position), glm::radians(0.0f), glm::vec3(0, 1, 0)), glm::vec3(0.3f)));
 		}
 
 		//textured objects
@@ -205,6 +213,14 @@ public:
 		{
 			ImGui::DragFloat3("Light2 position", (float*) &m_PointLight2->Position, 0.05f, -20.0f, 20.0f);		
 			ImGui::ColorEdit3("Light2 color", &m_PointLight2->Color[0]);
+		}
+
+		if (std::find(m_Lights.begin(), m_Lights.end(), m_SpotLight) != m_Lights.end())
+		{
+			ImGui::DragFloat3("SpotLight position", (float*)&m_SpotLight->Position, 0.05f, -20.0f, 20.0f);
+			ImGui::ColorEdit3("SpotLight color", &m_SpotLight->Color[0]);
+			ImGui::SliderFloat3("SpotLight Direction", (float*)&m_SpotLight->Direction, -1, 1);
+			m_SpotLight->SetDirection(m_SpotLight->Direction);
 		}
 		
 		if (std::find(m_Lights.begin(), m_Lights.end(), m_DirectionalLight) != m_Lights.end())
