@@ -11,15 +11,14 @@ namespace lypant
 
 	struct Light
 	{
-		Light(const glm::vec3& color, const glm::vec3& ambient, const glm::vec3& diffuse, const glm::vec3& specular)
-			: Color(color, 0), Ambient(ambient, 0), Diffuse(diffuse, 0), Specular(specular, 0)
+		Light(const glm::vec3& ambient, const glm::vec3& diffuse, const glm::vec3& specular)
+			: Ambient(ambient, 0), Diffuse(diffuse, 0), Specular(specular, 0)
 		{
 
 		}
 
 		virtual ~Light() = default;
 
-		glm::vec4 Color;
 		glm::vec4 Ambient;
 		glm::vec4 Diffuse;
 		glm::vec4 Specular;
@@ -27,8 +26,8 @@ namespace lypant
 
 	struct PointLight : public Light
 	{
-		PointLight(const glm::vec3& color, const glm::vec3& ambient, const glm::vec3& diffuse, const glm::vec3& specular, const glm::vec3& position, float linear = 0.09f, float quadratic = 0.032)
-			: Light(color, ambient, diffuse, specular), Position(position), Linear(linear), Quadratic(quadratic)
+		PointLight(const glm::vec3& ambient, const glm::vec3& diffuse, const glm::vec3& specular, const glm::vec3& position, float linear = 0.09f, float quadratic = 0.032)
+			: Light(ambient, diffuse, specular), Position(position), Linear(linear), Quadratic(quadratic)
 		{
 
 		}
@@ -44,8 +43,8 @@ namespace lypant
 
 	struct SpotLight : public Light
 	{
-		SpotLight(const glm::vec3& color, const glm::vec3& ambient, const glm::vec3& diffuse, const glm::vec3& specular, const glm::vec3& position, const glm::vec3& direction, float outerCutOff = 17.5, float innerCutOff = 12.5)
-			: Light(color, ambient, diffuse, specular), Position(position, 0), Direction(glm::normalize(direction)), OuterCutOff(glm::cos(glm::radians(outerCutOff))), InnerCutOff(glm::cos(glm::radians(innerCutOff)))
+		SpotLight(const glm::vec3& ambient, const glm::vec3& diffuse, const glm::vec3& specular, const glm::vec3& position, const glm::vec3& direction, float outerCutOff = 17.5, float innerCutOff = 12.5)
+			: Light(ambient, diffuse, specular), Position(position, 0), Direction(glm::normalize(direction)), OuterCutOff(glm::cos(glm::radians(outerCutOff))), InnerCutOff(glm::cos(glm::radians(innerCutOff)))
 		{
 
 		}
@@ -68,8 +67,8 @@ namespace lypant
 
 	struct DirectionalLight : public Light
 	{
-		DirectionalLight(const glm::vec3& color, const glm::vec3& ambient, const glm::vec3& diffuse, const glm::vec3& specular, const glm::vec3& direction)
-			: Light(color, ambient, diffuse, specular), Direction(glm::normalize(direction), 0)
+		DirectionalLight(const glm::vec3& ambient, const glm::vec3& diffuse, const glm::vec3& specular, const glm::vec3& direction)
+			: Light(ambient, diffuse, specular), Direction(glm::normalize(direction), 0)
 		{
 
 		}

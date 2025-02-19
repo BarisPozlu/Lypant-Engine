@@ -7,6 +7,24 @@
 
 namespace lypant
 {
+    static ShaderDataType GetTypeFromOpenGLType(GLenum type)
+    {
+        switch (type)
+        {
+            case GL_FLOAT:          return ShaderDataType::Float;
+            case GL_FLOAT_VEC2:     return ShaderDataType::Float2;
+            case GL_FLOAT_VEC3:     return ShaderDataType::Float3;
+            case GL_FLOAT_VEC4:     return ShaderDataType::Float4;
+            case GL_FLOAT_MAT3:     return ShaderDataType::Mat3;
+            case GL_FLOAT_MAT4:     return ShaderDataType::Mat4;
+            case GL_INT:            return ShaderDataType::Int;
+            case GL_SAMPLER_2D:     return ShaderDataType::Sampler2D;
+        }
+
+        LY_CORE_ASSERT(false, "Invalid OpenGL data type!");
+        return ShaderDataType::None;
+    }
+
     static std::string ReadFile(const std::string& path)
     {
         std::string source;
@@ -24,7 +42,7 @@ namespace lypant
         return source;
     }
 
-    Shader::Shader(const std::string& path)
+    Shader::Shader(const std::string& path) : m_Path(path)
     {
         const char* sourceArray[2];
 
@@ -113,11 +131,62 @@ namespace lypant
         glDetachShader(program, fragmentShader);
 
         m_Program = program;
+
+        PopulateUniformTypes();
+
+        Bind();
+
+        int samplerValue = 0;
+
+        for (auto& [name, type] : m_UniformNamesToTypesMap)
+        {
+            if (type == ShaderDataType::Sampler2D)
+            {
+                SetUniformInt(name, samplerValue++);
+            }
+        }
     }
 
     Shader::~Shader()
     {
         glDeleteProgram(m_Program);
+        s_Cache.erase(m_Path);
+    }
+
+    void Shader::PopulateUniformTypes()
+    {
+        int activeUniforms;
+        glGetProgramiv(m_Program, GL_ACTIVE_UNIFORMS, &activeUniforms);
+
+        int maxLength;
+        glGetProgramiv(m_Program, GL_ACTIVE_UNIFORM_MAX_LENGTH, &maxLength);
+
+        char* nameBuffer = new char[maxLength];
+
+        GLenum currentType;
+
+        int isUniformBlock;
+        int length;
+        int size; // Does not work for arrays right now beacuse of this.
+        // might wanna actually add to the name at the end like this: [size] this will enable the shaders to be written freely but we will be able to see if they are
+        // an array and their size without any more additionial overhead.
+
+        for (unsigned int i = 0; i < activeUniforms; i++)
+        {
+            glGetActiveUniformsiv(m_Program, 1, &i, GL_UNIFORM_BLOCK_INDEX, &isUniformBlock);
+            if (isUniformBlock == -1)
+            {
+                glGetActiveUniform(m_Program, i, maxLength, &length, &size, &currentType, nameBuffer);
+                nameBuffer[length] = '\0';
+                std::string currentName = nameBuffer;
+                if (currentName.find("Model") == std::string::npos && currentName.find("Normal") == std::string::npos)
+                {
+                    m_UniformNamesToTypesMap[std::move(currentName)] = GetTypeFromOpenGLType(currentType);
+                }
+            }
+        }
+
+        delete[] nameBuffer;
     }
 
     void Shader::Bind() const
@@ -128,6 +197,13 @@ namespace lypant
     int Shader::GetUniformLocation(const std::string& name) const
     {
         return glGetUniformLocation(m_Program, name.c_str());
+    }
+
+    int Shader::GetUniformValueInt(const std::string& name) const
+    {
+        int value;
+        glGetUniformiv(m_Program, GetUniformLocation(name), &value);
+        return value;
     }
 
     void Shader::SetUniformMatrix4Float(const std::string& name, float* value) const

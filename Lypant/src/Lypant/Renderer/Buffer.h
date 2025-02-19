@@ -1,51 +1,9 @@
 #pragma once
 
-// this is not supposed to be included in the application in the future when the engine matures.
-// when that happens make the asserts core again.
+#include "Shader.h"
 
 namespace lypant
 {
-	enum class ShaderDataType
-	{
-		None, Float, Float2, Float3, Float4, Mat3, Mat4, Int
-	};
-
-	inline uint32_t GetSizeFromShaderDataType(ShaderDataType type)
-	{
-		switch (type)
-		{
-			case ShaderDataType::None:		LY_ASSERT(false, "Shader data type is none!"); return 0;
-			case ShaderDataType::Float:		return 4;
-			case ShaderDataType::Float2:	return 4 * 2;
-			case ShaderDataType::Float3:	return 4 * 3;
-			case ShaderDataType::Float4:	return 4 * 4;
-			case ShaderDataType::Mat3:		return 4 * 3 * 3;
-			case ShaderDataType::Mat4:		return 4 * 4 * 4;
-			case ShaderDataType::Int:		return 4;		
-		}
-
-		LY_ASSERT(false, "Invalid Shader data type!");
-		return 0;
-	}
-
-	inline uint32_t GetCountFromShaderDataType(ShaderDataType type)
-	{
-		switch (type)
-		{
-			case ShaderDataType::None:		LY_ASSERT(false, "Shader data type is none!"); return 0;
-			case ShaderDataType::Float:		return 1;
-			case ShaderDataType::Float2:	return 2;
-			case ShaderDataType::Float3:	return 3;
-			case ShaderDataType::Float4:	return 4;
-			case ShaderDataType::Mat3:		return 3 * 3;
-			case ShaderDataType::Mat4:		return 4 * 4;
-			case ShaderDataType::Int:		return 1;
-		}
-
-		LY_ASSERT(false, "Invalid Shader data type!");
-		return 0;
-	}
-
 	struct BufferSubBlock
 	{
 		BufferSubBlock(ShaderDataType type, const std::string& name) 

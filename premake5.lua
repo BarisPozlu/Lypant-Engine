@@ -46,7 +46,8 @@ project "Lypant"
 		"%{prj.name}/vendor/Glad/include",
 		"%{prj.name}/vendor/ImGui",
 		"%{prj.name}/vendor/glm",
-		"%{prj.name}/vendor/stb_image"
+		"%{prj.name}/vendor/stb_image",
+		"%{prj.name}/vendor/assimp/include"
 	}
 
 	links
@@ -76,13 +77,24 @@ project "Lypant"
 		defines "LYPANT_DEBUG"
 		runtime "debug"
 		symbols "on"
+		links
+		{
+			"vendor/bin/assimp/lib/Debug/assimp-vc143-mtd.lib",
+			"vendor/bin/assimp/lib/Debug/zlibstaticd.lib"
+		}
+			
+		
 
 	filter "configurations:Release"
 
 		defines "LYPANT_RELEASE"
 		runtime "release"
 		optimize "on"
-
+		links 
+		{
+			"vendor/bin/assimp/lib/Release/assimp-vc143-mt.lib",
+			"vendor/bin/assimp/lib/Release/zlibstatic.lib"
+		}
 
 project "Sandbox"
 

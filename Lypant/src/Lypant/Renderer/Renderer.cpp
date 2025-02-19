@@ -15,16 +15,16 @@ namespace lypant
 	{
 		RenderCommand::Init();
 
-		s_SceneData.LightBuffer = new char[s_BufferSize];
-		s_SceneData.LightUniformBuffer = std::make_unique<UniformBuffer>(s_BufferSize, nullptr);
+		s_SceneData.EnvironmentBuffer = new char[s_BufferSize];
+		s_SceneData.EnvironmentUniformBuffer = std::make_unique<UniformBuffer>(s_BufferSize, nullptr);
 	}
 
 	void Renderer::Shutdown()
 	{
 		s_SceneData.Lights.swap(std::vector<std::shared_ptr<Light>>());
 		s_SceneData.Camera.reset();
-		s_SceneData.LightUniformBuffer.release();
-		delete[] s_SceneData.LightBuffer;
+		s_SceneData.EnvironmentUniformBuffer.release();
+		delete[] s_SceneData.EnvironmentBuffer;
 	}
 
 	void Renderer::OnWindowResize(uint32_t width, uint32_t height)
@@ -81,7 +81,7 @@ namespace lypant
 
 		for (i = 0; i < numberOfLights[LightTypePoint]; i++)
 		{
-			memcpy(&s_SceneData.LightBuffer[offset], ((char*)s_SceneData.Lights.at(i).get()) + 8, s_PurePointLightSize);
+			memcpy(&s_SceneData.EnvironmentBuffer[offset], ((char*)s_SceneData.Lights.at(i).get()) + sizeof(void*), s_PurePointLightSize);
 			offset += s_PurePointLightSize;
 		}
 
@@ -90,7 +90,7 @@ namespace lypant
 
 		for (; i < numberOfLights[LightTypePoint] + numberOfLights[LightTypeSpot]; i++)
 		{
-			memcpy(&s_SceneData.LightBuffer[offset], ((char*)s_SceneData.Lights.at(i).get()) + 8, s_PureSpotLightSize);
+			memcpy(&s_SceneData.EnvironmentBuffer[offset], ((char*)s_SceneData.Lights.at(i).get()) + sizeof(void*), s_PureSpotLightSize);
 			offset += s_PureSpotLightSize;
 		}
 
@@ -99,7 +99,7 @@ namespace lypant
 
 		for (; i < s_SceneData.Lights.size(); i++)
 		{
-			memcpy(&s_SceneData.LightBuffer[offset], ((char*)s_SceneData.Lights.at(i).get()) + 8, s_PureDirectionalLightSize);
+			memcpy(&s_SceneData.EnvironmentBuffer[offset], ((char*)s_SceneData.Lights.at(i).get()) + sizeof(void*), s_PureDirectionalLightSize);
 			offset += s_PureDirectionalLightSize;
 		}
 		
@@ -107,29 +107,40 @@ namespace lypant
 		int offsetForNumberOfLights = offset;
 
 		constexpr int totalNumberOfLightsSize = sizeof(int) * 3;
+		constexpr int totalNumberOfLightsPadding = 256 - totalNumberOfLightsSize;
 
-		memcpy(&s_SceneData.LightBuffer[offset], numberOfLights, totalNumberOfLightsSize);
+		memcpy(&s_SceneData.EnvironmentBuffer[offset], numberOfLights, totalNumberOfLightsSize);
 		
-		offset += totalNumberOfLightsSize;
-		
-		s_SceneData.LightUniformBuffer->BufferSubData(0, offset, s_SceneData.LightBuffer);
+		offset += totalNumberOfLightsSize + totalNumberOfLightsPadding;
+		int offsetForCamera = offset;
+
+		memcpy(&s_SceneData.EnvironmentBuffer[offset], &s_SceneData.Camera->GetViewProjectionMatrix(), sizeof(glm::mat4));
+
+		offset += sizeof(glm::mat4);
+
+		memcpy(&s_SceneData.EnvironmentBuffer[offset], &s_SceneData.Camera->GetPosition(), sizeof(glm::vec3));
+
+		offset += sizeof(glm::vec3);
+
+		s_SceneData.EnvironmentUniformBuffer->BufferSubData(0, offset, s_SceneData.EnvironmentBuffer);
 
 		if (numberOfLights[LightTypePoint] != 0)
 		{
-			s_SceneData.LightUniformBuffer->BindRange(0, 0, totalPointLightSize);
+			s_SceneData.EnvironmentUniformBuffer->BindRange(0, 0, totalPointLightSize);
 		}
 
 		if (numberOfLights[LightTypeSpot] != 0)
 		{
-			s_SceneData.LightUniformBuffer->BindRange(1, offsetForSpotLight, totalSpotLightSize);
+			s_SceneData.EnvironmentUniformBuffer->BindRange(1, offsetForSpotLight, totalSpotLightSize);
 		}
 
 		if (numberOfLights[LightTypeDirectional] != 0)
 		{
-			s_SceneData.LightUniformBuffer->BindRange(2, offsetForDirectionalLight, totalDirectionalLightSize);
+			s_SceneData.EnvironmentUniformBuffer->BindRange(2, offsetForDirectionalLight, totalDirectionalLightSize);
 		}
 
-		s_SceneData.LightUniformBuffer->BindRange(3, offsetForNumberOfLights, totalNumberOfLightsSize);
+		s_SceneData.EnvironmentUniformBuffer->BindRange(3, offsetForNumberOfLights, totalNumberOfLightsSize);
+		s_SceneData.EnvironmentUniformBuffer->BindRange(4, offsetForCamera, sizeof(glm::mat4) + sizeof(glm::vec3));
 	}
 
 	void Renderer::EndScene()
@@ -137,15 +148,14 @@ namespace lypant
 		
 	}
 
-	void Renderer::Submit(const std::shared_ptr<VertexArray>& vertexArray, const std::shared_ptr<Shader>& shader, const glm::mat4& modelMatrix)
+	void Renderer::Submit(const std::shared_ptr<VertexArray>& vertexArray, const std::shared_ptr<Material>& material, const glm::mat4& modelMatrix)
 	{
 		vertexArray->Bind();
-		shader->Bind();
+		material->Bind();
 
-		glm::mat4& MVP = s_SceneData.Camera->GetViewProjectionMatrix() * modelMatrix;
-		shader->SetUniformMatrix4Float("u_MVP", &MVP[0][0]);
-		shader->SetUniformMatrix4Float("u_ModelMatrix", (float*) &modelMatrix[0][0]); // temp
-		shader->SetUniformMatrix3Float("u_NormalMatrix", (float*) &(glm::transpose(glm::inverse(glm::mat3(modelMatrix))))[0][0]); // temp
+		// This is just a work around for now because we do not have a transform system.
+		material->GetShader()->SetUniformMatrix4Float("u_ModelMatrix", (float*)&modelMatrix[0][0]);
+		material->GetShader()->SetUniformMatrix3Float("u_NormalMatrix", (float*) &(glm::transpose(glm::inverse(glm::mat3(modelMatrix))))[0][0]);
 		
 		RenderCommand::DrawIndexed(vertexArray);
 	}

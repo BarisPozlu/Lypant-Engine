@@ -2,11 +2,17 @@
 
 layout(location = 0) in vec4 a_Position;
 
-uniform mat4 u_MVP;
+layout (std140, binding = 4) uniform Camera
+{
+	mat4 u_VP;
+	vec3 u_ViewPosition;
+};
+
+uniform mat4 u_ModelMatrix;
 
 void main()
 {
-	gl_Position = u_MVP * a_Position;
+	gl_Position = u_VP * u_ModelMatrix * a_Position;
 }
 
 #endif

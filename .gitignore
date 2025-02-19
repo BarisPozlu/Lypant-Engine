@@ -5,6 +5,8 @@ bin-int/
 
 bin/
 !vendor/bin/
+vendor/bin/assimp/lib/Debug/
+vendor/bin/assimp/lib/Release/
 
 #Files
 

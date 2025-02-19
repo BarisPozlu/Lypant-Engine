@@ -10,7 +10,7 @@
 
 namespace lypant
 {
-	Texture2D::Texture2D(const std::string& path)
+	Texture2D::Texture2D(const std::string& path) : m_Path(path)
 	{
 		glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
 
@@ -54,6 +54,7 @@ namespace lypant
 	Texture2D::~Texture2D()
 	{
 		glDeleteTextures(1, &m_RendererID);
+		s_Cache.erase(m_Path);
 	}
 
 	void Texture2D::Bind(uint32_t slot) const
