@@ -6,7 +6,7 @@ class ExampleLayer : public lypant::Layer
 public:
 	ExampleLayer()
 	{
-		m_VertexArray = std::make_shared<lypant::VertexArray>();
+		std::shared_ptr<lypant::VertexArray> vertexArray = std::make_shared<lypant::VertexArray>();
 
 		float vertexData[]
 		{
@@ -53,15 +53,15 @@ public:
 			-0.5f,  0.5f, -0.5f,  0.0f, 1.0f,  0.0f,  0.0f, 1.0f
 		};
 
-		m_VertexBuffer = std::make_shared<lypant::VertexBuffer>(vertexData, sizeof(vertexData));
+		std::shared_ptr<lypant::VertexBuffer> vertexBuffer = std::make_shared<lypant::VertexBuffer>(vertexData, sizeof(vertexData));
 
 		lypant::BufferLayout layout
 		{
 			{lypant::ShaderDataType::Float3, "a_Position"}, {lypant::ShaderDataType::Float3, "a_Normal"}, {lypant::ShaderDataType::Float2, "a_TexCoord"}
 		};
 
-		m_VertexBuffer->SetLayout(layout);
-		m_VertexArray->AddVertexBuffer(m_VertexBuffer);
+		vertexBuffer->SetLayout(layout);
+		vertexArray->AddVertexBuffer(vertexBuffer);
 
 		// draw arrays are not supported, we have to use indices.
 		unsigned int indexData[36];
@@ -70,9 +70,9 @@ public:
 			indexData[i] = i;
 		}
 
-		m_IndexBuffer = std::make_shared<lypant::IndexBuffer>(indexData, 36);
+		std::shared_ptr<lypant::IndexBuffer> indexBuffer = std::make_shared<lypant::IndexBuffer>(indexData, 36);
 
-		m_VertexArray->SetIndexBuffer(m_IndexBuffer);
+		vertexArray->SetIndexBuffer(indexBuffer);
 
 		m_Camera = std::make_shared<lypant::EditorPerspectiveCamera>(glm::vec3(-1.8f, 0.7f, 4.0f), glm::radians(45.0f), 1280.0f / 720.0f, 0.1f, 100.0f);
 		
@@ -83,9 +83,13 @@ public:
 		m_Lights.reserve(4);
 		//m_Lights.push_back(m_SpotLight);
 
-		m_LightObjectMaterial = std::make_shared<lypant::Material>("shaders/LightObject.glsl", glm::vec3(m_PointLight->Diffuse));
-		m_ObjectMaterial = std::make_shared<lypant::Material>("shaders/Object.glsl", glm::vec3(0.3f, 0.3f, 0.3f));
-		m_TexturedObjectMaterial = std::make_shared<lypant::Material>("shaders/TexturedObject.glsl", "textures/container2.png", "textures/container2_specular.png");
+		std::shared_ptr<lypant::Material> lightMaterial = std::make_shared<lypant::Material>("shaders/LightObject.glsl", glm::vec3(m_PointLight->Diffuse));
+		std::shared_ptr<lypant::Material> groundMaterial = std::make_shared<lypant::Material>("shaders/Object.glsl", glm::vec3(0.3f, 0.3f, 0.3f));
+		std::shared_ptr<lypant::Material> cubeMaterial = std::make_shared<lypant::Material>("shaders/TexturedObject.glsl", "textures/container2.png", "textures/container2_specular.png");
+
+		m_LightMesh = std::make_shared<lypant::Mesh>(vertexArray, lightMaterial);
+		m_GroundMesh = std::make_shared<lypant::Mesh>(vertexArray, groundMaterial);
+		m_CubeMesh = std::make_shared<lypant::Mesh>(vertexArray, cubeMaterial);
 	}
 
 	void Tick(float deltaTime) override
@@ -99,27 +103,27 @@ public:
 
 		if (std::find(m_Lights.begin(), m_Lights.end(), m_PointLight) != m_Lights.end())
 		{
-			m_LightObjectMaterial->UpdateColor(m_PointLight->Diffuse);
-			lypant::Renderer::Submit(m_VertexArray, m_LightObjectMaterial, glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), (glm::vec3)m_PointLight->Position), glm::radians(0.0f), glm::vec3(0, 1, 0)), glm::vec3(0.3f)));
+			m_LightMesh->GetMaterial()->UpdateColor(m_PointLight->Diffuse);
+			lypant::Renderer::Submit(m_LightMesh, glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), (glm::vec3)m_PointLight->Position), glm::radians(0.0f), glm::vec3(0, 1, 0)), glm::vec3(0.3f)));
 		}
 
 		if (std::find(m_Lights.begin(), m_Lights.end(), m_PointLight2) != m_Lights.end())
 		{
-			m_LightObjectMaterial->UpdateColor(m_PointLight2->Diffuse);
-			lypant::Renderer::Submit(m_VertexArray, m_LightObjectMaterial, glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), (glm::vec3)m_PointLight2->Position), glm::radians(0.0f), glm::vec3(0, 1, 0)), glm::vec3(0.3f)));
+			m_LightMesh->GetMaterial()->UpdateColor(m_PointLight2->Diffuse);
+			lypant::Renderer::Submit(m_LightMesh, glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), (glm::vec3)m_PointLight2->Position), glm::radians(0.0f), glm::vec3(0, 1, 0)), glm::vec3(0.3f)));
 		}
 
 		if (std::find(m_Lights.begin(), m_Lights.end(), m_SpotLight) != m_Lights.end())
 		{
-			m_LightObjectMaterial->UpdateColor(m_SpotLight->Diffuse);
-			lypant::Renderer::Submit(m_VertexArray, m_LightObjectMaterial, glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), (glm::vec3)m_SpotLight->Position), glm::radians(0.0f), glm::vec3(0, 1, 0)), glm::vec3(0.3f)));
+			m_LightMesh->GetMaterial()->UpdateColor(m_SpotLight->Diffuse);
+			lypant::Renderer::Submit(m_LightMesh, glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), (glm::vec3)m_SpotLight->Position), glm::radians(0.0f), glm::vec3(0, 1, 0)), glm::vec3(0.3f)));
 		}
 
-		lypant::Renderer::Submit(m_VertexArray, m_TexturedObjectMaterial, glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f)), glm::radians(0.0f), glm::vec3(0, 1, 0)));
-		lypant::Renderer::Submit(m_VertexArray, m_TexturedObjectMaterial, glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 0.0f, -5.0f)), glm::radians(45.0f), glm::vec3(0, 1, 0)));
-		lypant::Renderer::Submit(m_VertexArray, m_TexturedObjectMaterial, glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -7.0f)), glm::radians(180.0f), glm::vec3(0, 1, 0)));
+		lypant::Renderer::Submit(m_CubeMesh, glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f)), glm::radians(0.0f), glm::vec3(0, 1, 0)));
+		lypant::Renderer::Submit(m_CubeMesh, glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 0.0f, -5.0f)), glm::radians(45.0f), glm::vec3(0, 1, 0)));
+		lypant::Renderer::Submit(m_CubeMesh, glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -7.0f)), glm::radians(180.0f), glm::vec3(0, 1, 0)));
 		
-		lypant::Renderer::Submit(m_VertexArray, m_ObjectMaterial, glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(-0.8f, -0.55f, -5.0f)), glm::vec3(10.0f, 0.1f, 11.0f)));
+		lypant::Renderer::Submit(m_GroundMesh, glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(-0.8f, -0.55f, -5.0f)), glm::vec3(10.0f, 0.1f, 11.0f)));
 
 		lypant::Renderer::EndScene();
 	}
@@ -213,9 +217,9 @@ public:
 	}
 
 private:
-	std::shared_ptr<lypant::VertexArray> m_VertexArray;
-	std::shared_ptr<lypant::VertexBuffer> m_VertexBuffer;
-	std::shared_ptr<lypant::IndexBuffer> m_IndexBuffer;
+	std::shared_ptr<lypant::Mesh> m_LightMesh;
+	std::shared_ptr<lypant::Mesh> m_GroundMesh;
+	std::shared_ptr<lypant::Mesh> m_CubeMesh;
 
 	std::shared_ptr<lypant::EditorPerspectiveCamera> m_Camera;
 
@@ -224,10 +228,6 @@ private:
 	std::shared_ptr<lypant::DirectionalLight> m_DirectionalLight;
 	std::shared_ptr<lypant::SpotLight> m_SpotLight;
 	std::vector<std::shared_ptr<lypant::Light>> m_Lights;
-
-	std::shared_ptr<lypant::Material> m_LightObjectMaterial;
-	std::shared_ptr<lypant::Material> m_ObjectMaterial;
-	std::shared_ptr<lypant::Material> m_TexturedObjectMaterial;
 };
 
 class SandboxApp : public lypant::Application

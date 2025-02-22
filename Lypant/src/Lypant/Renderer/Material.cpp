@@ -40,7 +40,7 @@ namespace lypant
 
 		int offset = 0;
 
-		for (auto& [name, type] : m_Shader->GetUniformNamesToTypesMap()) // talk about this.
+		for (auto& [name, type] : m_Shader->GetUniformNamesToTypesMap())
 		{
 			switch (type)
 			{
@@ -69,7 +69,7 @@ namespace lypant
 	{
 		int offset = 0;
 
-		for (auto& [name, type] : m_Shader->GetUniformNamesToTypesMap()) // for now the buffer should only contain the color. 
+		for (auto& [name, type] : m_Shader->GetUniformNamesToTypesMap())
 		{
 			if (name.find("Color") == std::string::npos)
 			{
