@@ -8,6 +8,7 @@
 #include "glm/glm.hpp"
 #include "Lypant/Light/Light.h"
 #include "Mesh.h"
+#include "Model.h"
 
 namespace lypant
 {
@@ -19,6 +20,7 @@ namespace lypant
 		static void BeginScene(const std::shared_ptr<PerspectiveCamera>& camera, const std::vector<std::shared_ptr<Light>>& lights);
 		static void EndScene();
 		static void Submit(const std::shared_ptr<Mesh>& mesh, const glm::mat4& modelMatrix);
+		static void Submit(const std::shared_ptr<Model>& model, const glm::mat4& modelMatrix);
 	private:
 		static void Init();
 		static void Shutdown();

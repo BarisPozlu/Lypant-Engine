@@ -26,3 +26,4 @@
 
 #include "Lypant/Light/Light.h"
 #include "Lypant/Renderer/Mesh.h"
+#include "Lypant/Renderer/Model.h"

@@ -90,6 +90,9 @@ public:
 		m_LightMesh = std::make_shared<lypant::Mesh>(vertexArray, lightMaterial);
 		m_GroundMesh = std::make_shared<lypant::Mesh>(vertexArray, groundMaterial);
 		m_CubeMesh = std::make_shared<lypant::Mesh>(vertexArray, cubeMaterial);
+
+		m_Backpack = std::make_shared<lypant::Model>("models/backpack/backpack.obj");
+		m_BackpackPosition = glm::vec3(-2.5f, 1.0f, -2.0f);
 	}
 
 	void Tick(float deltaTime) override
@@ -124,6 +127,8 @@ public:
 		lypant::Renderer::Submit(m_CubeMesh, glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -7.0f)), glm::radians(180.0f), glm::vec3(0, 1, 0)));
 		
 		lypant::Renderer::Submit(m_GroundMesh, glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(-0.8f, -0.55f, -5.0f)), glm::vec3(10.0f, 0.1f, 11.0f)));
+
+		lypant::Renderer::Submit(m_Backpack, glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), m_BackpackPosition), glm::radians(0.0f), glm::vec3(0, 1, 0)), glm::vec3(0.45f)));
 
 		lypant::Renderer::EndScene();
 	}
@@ -213,10 +218,15 @@ public:
 			m_DirectionalLight->SetDirection(m_DirectionalLight->Direction);
 		}
 
+		ImGui::DragFloat3("Backpack position", (float*)&m_BackpackPosition, 0.05f, -20, 20);
+
 		ImGui::End();
 	}
 
 private:
+	std::shared_ptr<lypant::Model> m_Backpack;
+	glm::vec3 m_BackpackPosition;
+
 	std::shared_ptr<lypant::Mesh> m_LightMesh;
 	std::shared_ptr<lypant::Mesh> m_GroundMesh;
 	std::shared_ptr<lypant::Mesh> m_CubeMesh;

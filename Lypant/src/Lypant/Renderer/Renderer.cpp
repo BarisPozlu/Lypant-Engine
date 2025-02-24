@@ -159,4 +159,19 @@ namespace lypant
 		
 		RenderCommand::DrawIndexed(mesh->GetVertexArray());
 	}
+
+	void Renderer::Submit(const std::shared_ptr<Model>& model, const glm::mat4& modelMatrix)
+	{
+		for (const Mesh& mesh : model->GetMeshes())
+		{
+			mesh.GetVertexArray()->Bind();
+			mesh.GetMaterial()->Bind();
+
+			// This is just a work around for now because we do not have a transform system.
+			mesh.GetMaterial()->GetShader()->SetUniformMatrix4Float("u_ModelMatrix", (float*)&modelMatrix[0][0]);
+			mesh.GetMaterial()->GetShader()->SetUniformMatrix3Float("u_NormalMatrix", (float*)&(glm::transpose(glm::inverse(glm::mat3(modelMatrix))))[0][0]);
+
+			RenderCommand::DrawIndexed(mesh.GetVertexArray());
+		}
+	}
 }
