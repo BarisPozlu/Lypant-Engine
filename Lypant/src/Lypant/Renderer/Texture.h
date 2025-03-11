@@ -34,4 +34,20 @@ namespace lypant
 		int m_Width;
 		int m_Height;
 	};
+
+	class Cubemap
+	{
+	public:
+		// the path expected is the path of the right texture. Other textures should be named as "top", "bottom" etc and they should be in the same directory as the right texture.
+		Cubemap(const std::string& path);
+		~Cubemap();
+		void Bind() const;
+
+		inline int GetWidth() const { return m_Width; }
+		inline int GetHeight() const { return m_Height; }
+	private:
+		uint32_t m_RendererID;
+		int m_Width;
+		int m_Height;
+	};
 }

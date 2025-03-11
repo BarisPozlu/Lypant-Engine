@@ -90,7 +90,7 @@ namespace lypant
 
 		vertexArray->SetIndexBuffer(indexBuffer);
 		
-		std::string directory = m_Path.substr(0, m_Path.find_last_of("/") + 1);
+		std::string directory = m_Path.substr(0, m_Path.find_last_of('/') + 1);
 
 		aiMaterial* aiMaterial = scene->mMaterials[mesh->mMaterialIndex];
 

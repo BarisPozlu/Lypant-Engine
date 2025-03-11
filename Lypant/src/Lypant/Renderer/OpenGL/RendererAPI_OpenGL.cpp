@@ -10,6 +10,7 @@ namespace lypant
 	void RendererAPI::Init()
 	{
 		glEnable(GL_DEPTH_TEST);
+		glDepthFunc(GL_LEQUAL);
 		glEnable(GL_CULL_FACE);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -28,6 +29,11 @@ namespace lypant
 	void RendererAPI::SetClearColor(float r, float g, float b, float a)
 	{
 		glClearColor(r, g, b, a);
+	}
+
+	void RendererAPI::SetDepthTest(bool value)
+	{
+		value ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
 	}
 
 	void RendererAPI::DrawIndexed(const std::shared_ptr<VertexArray>& vertexArray)

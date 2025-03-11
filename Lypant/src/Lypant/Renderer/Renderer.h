@@ -9,6 +9,7 @@
 #include "Lypant/Light/Light.h"
 #include "Mesh.h"
 #include "Model.h"
+#include "Skybox.h"
 
 namespace lypant
 {
@@ -21,6 +22,7 @@ namespace lypant
 		static void EndScene();
 		static void Submit(const std::shared_ptr<Mesh>& mesh, const glm::mat4& modelMatrix);
 		static void Submit(const std::shared_ptr<Model>& model, const glm::mat4& modelMatrix);
+		static void Submit(const std::shared_ptr<Skybox>& skybox);
 	private:
 		static void Init();
 		static void Shutdown();

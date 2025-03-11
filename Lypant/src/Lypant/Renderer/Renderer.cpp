@@ -174,4 +174,13 @@ namespace lypant
 			RenderCommand::DrawIndexed(mesh.GetVertexArray());
 		}
 	}
+
+	void Renderer::Submit(const std::shared_ptr<Skybox>& skybox)
+	{
+		skybox->GetVertexArray()->Bind();
+		skybox->GetShader()->Bind();
+		skybox->GetCubemap()->Bind();
+
+		RenderCommand::DrawIndexed(skybox->GetVertexArray());
+	}
 }

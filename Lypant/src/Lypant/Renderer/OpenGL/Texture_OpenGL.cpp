@@ -14,8 +14,9 @@ namespace lypant
 	{
 		glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
 
-		stbi_set_flip_vertically_on_load(1);
 		int channels;
+		stbi_set_flip_vertically_on_load(1);
+
 		unsigned char* buffer = stbi_load(path.c_str(), &m_Width, &m_Height, &channels, 0);
 		LY_CORE_ASSERT(buffer, "Failed to load the image!");
 
@@ -42,10 +43,10 @@ namespace lypant
 		}
 
 		LY_CORE_ASSERT(channels == 3 || channels == 4, "Number of channels in the texture is not supported.");
-	
+
 		glTextureStorage2D(m_RendererID, levels, internalFormat, m_Width, m_Height);
 		glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, dataFormat, GL_UNSIGNED_BYTE, buffer);
-	
+
 		glGenerateTextureMipmap(m_RendererID);
 
 		stbi_image_free(buffer);
@@ -60,6 +61,52 @@ namespace lypant
 	void Texture2D::Bind(uint32_t slot) const
 	{
 		glBindTextureUnit(slot, m_RendererID);
+	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////
+
+	Cubemap::Cubemap(const std::string& path)
+	{
+		glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &m_RendererID);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, m_RendererID);
+
+		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+		glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		constexpr int numberOfFaces = 6;
+		const char* fileNames[]
+		{
+			"right", "left", "top", "bottom", "front", "back"
+		};
+		int channels;
+
+		std::string directory = path.substr(0, path.find_last_of('/') + 1);
+		std::string extension = path.substr(path.find_last_of('.'));
+
+		stbi_set_flip_vertically_on_load(0);
+
+		for (int i = 0; i < numberOfFaces; i++)
+		{
+			unsigned char* buffer = stbi_load((directory + fileNames[i] + extension).c_str(), &m_Width, &m_Height, &channels, 0);
+			LY_CORE_ASSERT(buffer, "Failed to load the image!");
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB8, m_Width, m_Height, 0, GL_RGB, GL_UNSIGNED_BYTE, buffer);
+			stbi_image_free(buffer);
+		}
+	}
+
+	Cubemap::~Cubemap()
+	{
+		glDeleteTextures(1, &m_RendererID);
+	}
+
+	void Cubemap::Bind() const
+	{
+		glBindTexture(GL_TEXTURE_CUBE_MAP, m_RendererID);
 	}
 }
 

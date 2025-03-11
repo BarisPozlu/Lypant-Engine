@@ -19,6 +19,7 @@ namespace lypant
             case GL_FLOAT_MAT4:     return ShaderDataType::Mat4;
             case GL_INT:            return ShaderDataType::Int;
             case GL_SAMPLER_2D:     return ShaderDataType::Sampler2D;
+            case GL_SAMPLER_CUBE:   return ShaderDataType::Samplercube;
         }
 
         LY_CORE_ASSERT(false, "Invalid OpenGL data type!");
