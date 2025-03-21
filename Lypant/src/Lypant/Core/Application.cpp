@@ -17,7 +17,7 @@ namespace lypant
 		s_Instance = this;
 
 		m_Window->SetEventCallback(std::bind(&Application::OnEvent, this, std::placeholders::_1));
-		Renderer::Init();
+		Renderer::Init(m_Window->GetWidth(), m_Window->GetHeight());
 
 		m_ImGuiLayer = new ImGuiLayer();
 		PushOverlay(m_ImGuiLayer);

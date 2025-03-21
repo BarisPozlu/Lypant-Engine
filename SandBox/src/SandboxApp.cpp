@@ -82,7 +82,7 @@ public:
 		m_SpotLight = std::make_shared<lypant::SpotLight>(glm::vec3(0.1f), glm::vec3(1.0f), glm::vec3(1.0f), glm::vec3(-5.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, -1.0f));
 		m_Lights.reserve(4);
 		m_Lights.push_back(m_DirectionalLight);
-		m_DirectionalLight->SetDirection(glm::vec3(0.2f, -0.2f, 0.5f));
+		m_DirectionalLight->SetDirection(glm::vec3(0.3f, -0.5f, -0.5f));
 
 		std::shared_ptr<lypant::Material> lightMaterial = std::make_shared<lypant::Material>("shaders/LightObject.glsl", glm::vec3(m_PointLight->Diffuse));
 		std::shared_ptr<lypant::Material> groundMaterial = std::make_shared<lypant::Material>("shaders/Object.glsl", glm::vec3(0.3f, 0.3f, 0.3f));
@@ -100,10 +100,9 @@ public:
 
 	virtual void Tick(float deltaTime) override
 	{
-		lypant::RenderCommand::SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-		lypant::RenderCommand::Clear();
-
 		m_Camera->Tick(deltaTime);
+
+		lypant::Renderer::SetAntiAliasing(m_AASetting);
 
 		lypant::Renderer::BeginScene(m_Camera, m_Lights);
 
@@ -225,6 +224,13 @@ public:
 
 		ImGui::DragFloat3("Backpack position", (float*)&m_BackpackPosition, 0.05f, -20, 20);
 
+		static const char* options[]
+		{
+			"None", "MSAA4X", "MSAA8X"
+		};
+
+		ImGui::Combo("Anti Aliasing", (int*)&m_AASetting, options, 3);
+
 		ImGui::End();
 	}
 
@@ -245,6 +251,8 @@ private:
 	std::shared_ptr<lypant::DirectionalLight> m_DirectionalLight;
 	std::shared_ptr<lypant::SpotLight> m_SpotLight;
 	std::vector<std::shared_ptr<lypant::Light>> m_Lights;
+
+	lypant::AntiAliasingSetting m_AASetting = lypant::AntiAliasingSetting::None;
 };
 
 class SandboxApp : public lypant::Application

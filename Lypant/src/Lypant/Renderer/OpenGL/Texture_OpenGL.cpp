@@ -10,7 +10,7 @@
 
 namespace lypant
 {
-	Texture2D::Texture2D(const std::string& path) : m_Path(path)
+	Texture2D::Texture2D(const std::string& path, bool generateMipmap) : m_Path(path)
 	{
 		glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
 
@@ -24,8 +24,6 @@ namespace lypant
 		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-		int levels = glm::floor(glm::log2(glm::max(m_Width, m_Height))) + 1;
 
 		GLenum internalFormat = 0;
 		GLenum dataFormat = 0;
@@ -44,18 +42,43 @@ namespace lypant
 
 		LY_CORE_ASSERT(channels == 3 || channels == 4, "Number of channels in the texture is not supported.");
 
-		glTextureStorage2D(m_RendererID, levels, internalFormat, m_Width, m_Height);
-		glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, dataFormat, GL_UNSIGNED_BYTE, buffer);
+		if (generateMipmap)
+		{
+			int levels = glm::floor(glm::log2(glm::max(m_Width, m_Height))) + 1;
+			glTextureStorage2D(m_RendererID, levels, internalFormat, m_Width, m_Height);
+			glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, dataFormat, GL_UNSIGNED_BYTE, buffer);
+			glGenerateTextureMipmap(m_RendererID);
+		}
 
-		glGenerateTextureMipmap(m_RendererID);
+		else
+		{
+			glTextureStorage2D(m_RendererID, 1, internalFormat, m_Width, m_Height);
+			glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, dataFormat, GL_UNSIGNED_BYTE, buffer);
+		}
 
 		stbi_image_free(buffer);
+	}
+
+	Texture2D::Texture2D(int width, int height)
+	{
+		m_Width = width;
+		m_Height = height;
+
+		glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
+
+		glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		glTextureStorage2D(m_RendererID, 1, GL_RGBA8, width, height);
 	}
 
 	Texture2D::~Texture2D()
 	{
 		glDeleteTextures(1, &m_RendererID);
-		s_Cache.erase(m_Path);
+		if (m_Path.size())
+		{
+			s_Cache.erase(m_Path);
+		}
 	}
 
 	void Texture2D::Bind(uint32_t slot) const
@@ -63,9 +86,37 @@ namespace lypant
 		glBindTextureUnit(slot, m_RendererID);
 	}
 
+
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////
+
+
+	Texture2DMultiSample::Texture2DMultiSample(int width, int height, int samples)
+	{
+		m_Width = width;
+		m_Height = height;
+
+		glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &m_RendererID);
+		glTextureStorage2DMultisample(m_RendererID, samples, GL_RGBA8, width, height, GL_TRUE);
+	}
+
+	Texture2DMultiSample::~Texture2DMultiSample()
+	{
+		glDeleteTextures(1, &m_RendererID);
+	}
+
+	void Texture2DMultiSample::Bind(uint32_t slot) const
+	{
+		glActiveTexture(GL_TEXTURE0 + slot);
+		glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, m_RendererID);
+	}
+
+
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////
+
 
 	Cubemap::Cubemap(const std::string& path)
 	{

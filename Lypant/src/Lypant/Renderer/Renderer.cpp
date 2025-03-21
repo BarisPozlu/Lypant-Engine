@@ -4,6 +4,10 @@
 namespace lypant
 {
 	Renderer::SceneData Renderer::s_SceneData;
+	uint32_t Renderer::s_WindowWidth;
+	uint32_t Renderer::s_WindowHeight;
+	AntiAliasingSetting Renderer::s_AntiAliasingSetting = AntiAliasingSetting::None;
+	FrameBuffer* Renderer::s_MSAAFrameBuffer = nullptr;
 
 	// getting rid of the vpointer, because it is not needed in the gpu.
 	static constexpr int s_PurePointLightSize = sizeof(PointLight) - sizeof(void*);
@@ -11,9 +15,13 @@ namespace lypant
 	static constexpr int s_PureDirectionalLightSize = sizeof(DirectionalLight) - sizeof(void*);
 	static constexpr int s_BufferSize = s_PurePointLightSize * 10 + s_PureDirectionalLightSize * 10;
 
-	void Renderer::Init()
+	void Renderer::Init(uint32_t windowWidth, uint32_t windowHeight)
 	{
 		RenderCommand::Init();
+		RenderCommand::SetClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+
+		s_WindowWidth = windowWidth;
+		s_WindowHeight = windowHeight;
 
 		s_SceneData.EnvironmentBuffer = new char[s_BufferSize];
 		s_SceneData.EnvironmentUniformBuffer = std::make_unique<UniformBuffer>(s_BufferSize, nullptr);
@@ -25,15 +33,48 @@ namespace lypant
 		s_SceneData.Camera.reset();
 		s_SceneData.EnvironmentUniformBuffer.release();
 		delete[] s_SceneData.EnvironmentBuffer;
+
+		delete s_MSAAFrameBuffer;
 	}
 
 	void Renderer::OnWindowResize(uint32_t width, uint32_t height)
 	{
 		RenderCommand::SetViewport(0, 0, width, height);
+
+		s_WindowWidth = width;
+		s_WindowHeight = height;
+
+		switch (s_AntiAliasingSetting)
+		{
+			case AntiAliasingSetting::MSAA4X:
+				delete s_MSAAFrameBuffer;
+				CreateMSAAFrameBuffer(4);
+				break;
+			case AntiAliasingSetting::MSAA8X:
+				delete s_MSAAFrameBuffer;
+				CreateMSAAFrameBuffer(8);
+				break;
+		}
+	}
+
+	void Renderer::CreateMSAAFrameBuffer(uint32_t samples)
+	{
+		s_MSAAFrameBuffer = new FrameBuffer();
+		std::shared_ptr<Texture2DMultiSample> texture = std::make_shared<Texture2DMultiSample>(s_WindowWidth, s_WindowHeight, samples);
+		std::shared_ptr<RenderBufferMultiSample> renderBuffer = std::make_shared<RenderBufferMultiSample>(s_WindowWidth, s_WindowHeight, samples);
+		s_MSAAFrameBuffer->AttachColorBuffer(texture);
+		s_MSAAFrameBuffer->AttachDepthStencilBuffer(renderBuffer);
 	}
 
 	void Renderer::BeginScene(const std::shared_ptr<PerspectiveCamera>& camera, const std::vector<std::shared_ptr<Light>>& lights)
 	{
+		if (s_MSAAFrameBuffer)
+		{
+			s_MSAAFrameBuffer->BindDraw();
+		}
+
+		RenderCommand::Clear();
+
 		s_SceneData.Camera = camera;
 		s_SceneData.Lights.clear();
 		s_SceneData.Lights.reserve(lights.size());
@@ -145,7 +186,10 @@ namespace lypant
 
 	void Renderer::EndScene()
 	{
-		
+		if (s_MSAAFrameBuffer)
+		{
+			s_MSAAFrameBuffer->BlitToDefault(0, 0, s_MSAAFrameBuffer->GetColorBufferWidth(), s_MSAAFrameBuffer->GetColorBufferHeight(), 0, 0, s_MSAAFrameBuffer->GetColorBufferWidth(), s_MSAAFrameBuffer->GetColorBufferHeight());
+		}
 	}
 
 	void Renderer::Submit(const std::shared_ptr<Mesh>& mesh, const glm::mat4& modelMatrix)
@@ -182,5 +226,29 @@ namespace lypant
 		skybox->GetCubemap()->Bind();
 
 		RenderCommand::DrawIndexed(skybox->GetVertexArray());
+	}
+
+	void Renderer::SetAntiAliasing(AntiAliasingSetting setting)
+	{
+		if (setting == s_AntiAliasingSetting) return;
+
+		switch (setting)
+		{
+			case AntiAliasingSetting::None:
+				delete s_MSAAFrameBuffer;
+				s_MSAAFrameBuffer = nullptr;
+				FrameBuffer::BindDefaultFrameBuffer();
+				break;
+			case AntiAliasingSetting::MSAA4X:
+				delete s_MSAAFrameBuffer;
+				CreateMSAAFrameBuffer(4);
+				break;
+			case AntiAliasingSetting::MSAA8X:
+				delete s_MSAAFrameBuffer;
+				CreateMSAAFrameBuffer(8);
+				break;
+		}
+
+		s_AntiAliasingSetting = setting;
 	}
 }

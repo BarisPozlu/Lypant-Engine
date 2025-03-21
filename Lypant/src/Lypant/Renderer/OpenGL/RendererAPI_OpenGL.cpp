@@ -14,6 +14,7 @@ namespace lypant
 		glEnable(GL_CULL_FACE);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+		glEnable(GL_MULTISAMPLE);
 	}
 
 	void RendererAPI::SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height)

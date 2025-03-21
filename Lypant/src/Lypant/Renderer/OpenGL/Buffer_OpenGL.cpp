@@ -3,6 +3,7 @@
 #ifdef LYPANT_OPENGL
 
 #include "Lypant/Renderer/Buffer.h"
+#include "Lypant/Renderer/Texture.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
@@ -102,6 +103,115 @@ namespace lypant
 		glBindBuffer(GL_UNIFORM_BUFFER, 0);
 	}
 
+
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////
+
+
+	RenderBuffer::RenderBuffer(int width, int height)
+	{
+		m_Width = width;
+		m_Height = height;
+
+		glCreateRenderbuffers(1, &m_RendererID);
+		glBindRenderbuffer(GL_RENDERBUFFER, m_RendererID);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+	}
+
+	RenderBuffer::~RenderBuffer()
+	{
+		glDeleteRenderbuffers(1, &m_RendererID);
+	}
+
+
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////
+
+
+	RenderBufferMultiSample::RenderBufferMultiSample(int width, int height, int samples)
+	{
+		m_Width = width;
+		m_Height = height;
+
+		glCreateRenderbuffers(1, &m_RendererID);
+		glBindRenderbuffer(GL_RENDERBUFFER, m_RendererID);
+		glRenderbufferStorageMultisample(GL_RENDERBUFFER, samples, GL_DEPTH24_STENCIL8, width, height);
+	}
+
+	RenderBufferMultiSample::~RenderBufferMultiSample()
+	{
+		glDeleteRenderbuffers(1, &m_RendererID);
+	}
+
+
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////
+
+
+	FrameBuffer::FrameBuffer()
+	{
+		glCreateFramebuffers(1, &m_RendererID);
+	}
+
+	FrameBuffer::~FrameBuffer()
+	{
+		glDeleteFramebuffers(1, &m_RendererID);
+	}
+
+	void FrameBuffer::BindDefaultFrameBuffer()
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	}
+
+	void FrameBuffer::Bind() const
+	{
+		glBindFramebuffer(GL_FRAMEBUFFER, m_RendererID);
+	}
+
+	void FrameBuffer::BindDraw() const
+	{
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, m_RendererID);
+	}
+
+	void FrameBuffer::BindRead() const
+	{
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, m_RendererID);
+	}
+
+	void FrameBuffer::AttachColorBuffer(const std::shared_ptr<ColorAttachment>& attachment)
+	{
+		Bind();
+
+		if (dynamic_cast<Texture2D*>(attachment.get()))
+		{
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, attachment->GetID(), 0);
+		}
+
+		else if (dynamic_cast<Texture2DMultiSample*>(attachment.get()))
+		{
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, attachment->GetID(), 0);
+		}
+
+		m_ColorAttachment = attachment;
+	}
+
+	void FrameBuffer::AttachDepthStencilBuffer(const std::shared_ptr<DepthStencilAttachment>& attachment) // will be the same imp for each attachment for now.
+	{
+		Bind();
+
+		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, attachment->GetID());
+		m_DepthStencilAttachment = attachment;
+	}
+
+	void FrameBuffer::BlitToDefault(int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1) const
+	{
+		BindRead();
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+		glBlitFramebuffer(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	}
 }
 
 #endif 

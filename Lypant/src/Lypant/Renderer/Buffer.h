@@ -1,6 +1,10 @@
 #pragma once
 
 #include "Shader.h"
+#include "FrameBufferAttachmentBase.h"
+
+// this is not supposed to be included in the application in the future when the engine matures.
+// when that happens make the asserts core again.
 
 namespace lypant
 {
@@ -87,5 +91,51 @@ namespace lypant
 		void Unbind() const;
 	private:
 		uint32_t m_RendererID;
+	};
+
+	class RenderBuffer : public DepthStencilAttachment
+	{
+	public:
+		RenderBuffer(int width, int height);
+		~RenderBuffer();
+	};
+
+	class RenderBufferMultiSample : public DepthStencilAttachment
+	{
+	public:
+		RenderBufferMultiSample(int width, int height, int samples);
+		~RenderBufferMultiSample();
+	};
+
+	class FrameBuffer
+	{
+	public:
+		FrameBuffer();
+		~FrameBuffer();
+
+		static void BindDefaultFrameBuffer();
+		void Bind() const;
+		void BindDraw() const;
+		void BindRead() const;
+
+		inline uint32_t GetColorBufferWidth() const
+		{
+			LY_ASSERT(m_ColorAttachment, "There is not a colorbuffer attached to the framebuffer.");
+			return m_ColorAttachment->GetWidth();
+		};
+
+		inline uint32_t GetColorBufferHeight() const
+		{
+			LY_ASSERT(m_ColorAttachment, "There is not a colorbuffer attached to the framebuffer.");
+			return m_ColorAttachment->GetHeight();
+		}
+
+		void AttachColorBuffer(const std::shared_ptr<ColorAttachment>& attachment);
+		void AttachDepthStencilBuffer(const std::shared_ptr<DepthStencilAttachment>& attachment);
+		void BlitToDefault(int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1) const;
+	private:
+		uint32_t m_RendererID;
+		std::shared_ptr<ColorAttachment> m_ColorAttachment;
+		std::shared_ptr<DepthStencilAttachment> m_DepthStencilAttachment;
 	};
 }
