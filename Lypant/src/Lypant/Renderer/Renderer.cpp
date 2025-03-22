@@ -46,6 +46,10 @@ namespace lypant
 
 		switch (s_AntiAliasingSetting)
 		{
+			case AntiAliasingSetting::MSAA2X:
+				delete s_MSAAFrameBuffer;
+				CreateMSAAFrameBuffer(2);
+				break;
 			case AntiAliasingSetting::MSAA4X:
 				delete s_MSAAFrameBuffer;
 				CreateMSAAFrameBuffer(4);
@@ -53,6 +57,10 @@ namespace lypant
 			case AntiAliasingSetting::MSAA8X:
 				delete s_MSAAFrameBuffer;
 				CreateMSAAFrameBuffer(8);
+				break;
+			case AntiAliasingSetting::MSAA16X:
+				delete s_MSAAFrameBuffer;
+				CreateMSAAFrameBuffer(16);
 				break;
 		}
 	}
@@ -239,6 +247,10 @@ namespace lypant
 				s_MSAAFrameBuffer = nullptr;
 				FrameBuffer::BindDefaultFrameBuffer();
 				break;
+			case AntiAliasingSetting::MSAA2X:
+				delete s_MSAAFrameBuffer;
+				CreateMSAAFrameBuffer(2);
+				break;
 			case AntiAliasingSetting::MSAA4X:
 				delete s_MSAAFrameBuffer;
 				CreateMSAAFrameBuffer(4);
@@ -246,6 +258,10 @@ namespace lypant
 			case AntiAliasingSetting::MSAA8X:
 				delete s_MSAAFrameBuffer;
 				CreateMSAAFrameBuffer(8);
+				break;
+			case AntiAliasingSetting::MSAA16X:
+				delete s_MSAAFrameBuffer;
+				CreateMSAAFrameBuffer(16);
 				break;
 		}
 

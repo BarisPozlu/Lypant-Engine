@@ -1,5 +1,4 @@
 #include <Lypant.h>
-#include <glm/glm.hpp>
 
 class ExampleLayer : public lypant::Layer
 {
@@ -226,10 +225,10 @@ public:
 
 		static const char* options[]
 		{
-			"None", "MSAA4X", "MSAA8X"
+			"None", "MSAA2X", "MSAA4X", "MSAA8X", "MSAA16X"
 		};
 
-		ImGui::Combo("Anti Aliasing", (int*)&m_AASetting, options, 3);
+		ImGui::Combo("Anti Aliasing", (int*)&m_AASetting, options, 5);
 
 		ImGui::End();
 	}

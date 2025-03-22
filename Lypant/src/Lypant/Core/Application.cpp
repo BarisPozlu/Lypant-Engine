@@ -11,12 +11,16 @@ namespace lypant
 {
 	Application* Application::s_Instance = nullptr;
 
-	Application::Application() : m_Window(std::make_unique<Window>())
+	Application::Application()
 	{
 		LY_CORE_ASSERT(!s_Instance, "Application already exists.");
 		s_Instance = this;
 
+		Log::Init();
+
+		m_Window = std::make_unique<Window>();
 		m_Window->SetEventCallback(std::bind(&Application::OnEvent, this, std::placeholders::_1));
+
 		Renderer::Init(m_Window->GetWidth(), m_Window->GetHeight());
 
 		m_ImGuiLayer = new ImGuiLayer();

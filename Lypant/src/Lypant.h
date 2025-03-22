@@ -11,10 +11,12 @@
 #include "imgui.h"
 
 #include "Lypant/Core/Layer.h"
+#include "Lypant/Core/Application.h"
 #include "Lypant/Core/EntryPoint.h"
 
 
 // temp
+#include <glm/glm.hpp>
 #include "Lypant/Renderer/Buffer.h"
 #include "Lypant/Renderer/Shader.h"
 #include "Lypant/Renderer/Texture.h"

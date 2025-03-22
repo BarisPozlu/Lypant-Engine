@@ -15,7 +15,7 @@ namespace lypant
 {
 	enum class AntiAliasingSetting
 	{
-		None, MSAA4X, MSAA8X
+		None, MSAA2X, MSAA4X, MSAA8X, MSAA16X
 	};
 
 	class Renderer
