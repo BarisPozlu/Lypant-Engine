@@ -10,7 +10,7 @@
 
 namespace lypant
 {
-	Texture2D::Texture2D(const std::string& path, bool generateMipmap) : m_Path(path)
+	Texture2D::Texture2D(const std::string& path, bool linearSpace, bool generateMipmap) : m_Path(path)
 	{
 		glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
 
@@ -30,13 +30,13 @@ namespace lypant
 
 		if (channels == 3)
 		{
-			internalFormat = GL_RGB8;
+			linearSpace ? internalFormat = GL_RGB8 : internalFormat = GL_SRGB8;
 			dataFormat = GL_RGB;
 		}
 
 		else if (channels == 4)
 		{
-			internalFormat = GL_RGBA8;
+			linearSpace ? internalFormat = GL_RGBA8 : internalFormat = GL_SRGB8_ALPHA8;
 			dataFormat = GL_RGBA;
 		}
 
@@ -69,7 +69,7 @@ namespace lypant
 		glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-		glTextureStorage2D(m_RendererID, 1, GL_RGBA8, width, height);
+		glTextureStorage2D(m_RendererID, 1, GL_RGBA16, width, height);
 	}
 
 	Texture2D::~Texture2D()
@@ -98,7 +98,7 @@ namespace lypant
 		m_Height = height;
 
 		glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &m_RendererID);
-		glTextureStorage2DMultisample(m_RendererID, samples, GL_RGBA8, width, height, GL_TRUE);
+		glTextureStorage2DMultisample(m_RendererID, samples, GL_RGBA16, width, height, GL_TRUE);
 	}
 
 	Texture2DMultiSample::~Texture2DMultiSample()
@@ -145,7 +145,7 @@ namespace lypant
 		{
 			unsigned char* buffer = stbi_load((directory + fileNames[i] + extension).c_str(), &m_Width, &m_Height, &channels, 0);
 			LY_CORE_ASSERT(buffer, "Failed to load the image!");
-			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB8, m_Width, m_Height, 0, GL_RGB, GL_UNSIGNED_BYTE, buffer);
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_SRGB8, m_Width, m_Height, 0, GL_RGB, GL_UNSIGNED_BYTE, buffer);
 			stbi_image_free(buffer);
 		}
 	}

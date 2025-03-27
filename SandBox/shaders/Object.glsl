@@ -128,12 +128,11 @@ vec3 CalculatePointLight(int i, vec3 normal, vec3 viewDirection)
 	vec3 lightDirection = normalize(u_PointLights[i].Position - v_WorldPosition);
 	vec3 diffuse = max(dot(normal, lightDirection), 0) * u_ObjectColor * u_PointLights[i].Diffuse;
 
-	vec3 reflectDirection = reflect(-lightDirection, normal);
-
-	vec3 specular = pow(max(dot(viewDirection, reflectDirection), 0), 32) * 0.5 * u_PointLights[i].Specular;
+	vec3 halfwayDirection = normalize(lightDirection + viewDirection);
+	vec3 specular = pow(max(dot(halfwayDirection, normal), 0), 64) * 0.5 * u_PointLights[i].Specular;
 
 	float pointLightDistance = distance(v_WorldPosition, u_PointLights[i].Position);
-	float attenuation = 1.0 / (1.0 + u_PointLights[i].Linear * pointLightDistance + u_PointLights[i].Quadratic * pointLightDistance * pointLightDistance);
+	float attenuation = 1.0 / (u_PointLights[i].Linear * pointLightDistance + u_PointLights[i].Quadratic * pointLightDistance * pointLightDistance);
 
 	return (ambient + diffuse + specular) * attenuation;
 }
@@ -150,8 +149,8 @@ vec3 CalculateSpotLight(int i, vec3 normal, vec3 viewDirection)
 
 	vec3 diffuse = max(dot(normal, lightDirection), 0) * u_ObjectColor * u_SpotLights[i].Diffuse;
 
-	vec3 reflectDirection = reflect(-lightDirection, normal);
-	vec3 specular = pow(max(dot(viewDirection, reflectDirection), 0), 32) * 0.5 * u_SpotLights[i].Specular;
+	vec3 halfwayDirection = normalize(lightDirection + viewDirection);
+	vec3 specular = pow(max(dot(halfwayDirection, normal), 0), 64) * 0.5 * u_SpotLights[i].Specular;
 
 	return (ambient + diffuse + specular) * intensity;
 }
@@ -162,8 +161,8 @@ vec3 CalculateDirectionalLight(int i, vec3 normal, vec3 viewDirection)
 	
 	vec3 diffuse = max(dot(-u_DirectionalLights[i].Direction, normal), 0) * u_ObjectColor * u_DirectionalLights[i].Diffuse;
 
-	vec3 reflectDirection = reflect(u_DirectionalLights[i].Direction, normal);
-	vec3 specular = pow(max(dot(reflectDirection, viewDirection), 0), 32) * 0.5 * u_DirectionalLights[i].Specular;
+	vec3 halfwayDirection = normalize(-u_DirectionalLights[i].Direction + viewDirection);
+	vec3 specular = pow(max(dot(halfwayDirection, normal), 0), 64) * 0.5 * u_DirectionalLights[i].Specular;
 
 	return ambient + diffuse + specular;
 }

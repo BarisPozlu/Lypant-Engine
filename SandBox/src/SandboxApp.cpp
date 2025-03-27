@@ -9,10 +9,10 @@ public:
 	{
 		m_Camera = std::make_shared<EditorPerspectiveCamera>(glm::vec3(-1.8f, 0.7f, 4.0f), glm::radians(45.0f), 1280.0f / 720.0f, 0.1f, 100.0f);
 
-		m_PointLight = std::make_shared<PointLight>(glm::vec3(0.1f), glm::vec3(1.0f), glm::vec3(1.0f), glm::vec3(-2.0f, 0.0f, -2.5f));
-		m_PointLight2 = std::make_shared<PointLight>(glm::vec3(0.1f), glm::vec3(1.0f), glm::vec3(1.0f), glm::vec3(1.0f, 0.0f, -3.5f));
-		m_DirectionalLight = std::make_shared<DirectionalLight>(glm::vec3(0.1f), glm::vec3(1.0f), glm::vec3(1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-		m_SpotLight = std::make_shared<SpotLight>(glm::vec3(0.1f), glm::vec3(1.0f), glm::vec3(1.0f), glm::vec3(-5.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, -1.0f));
+		m_PointLight = std::make_shared<PointLight>(glm::vec3(0.01f), glm::vec3(1.0f), glm::vec3(0.75f), glm::vec3(-2.0f, 0.0f, -2.5f));
+		m_PointLight2 = std::make_shared<PointLight>(glm::vec3(0.01f), glm::vec3(1.0f), glm::vec3(0.75f), glm::vec3(1.0f, 0.0f, -3.5f));
+		m_DirectionalLight = std::make_shared<DirectionalLight>(glm::vec3(0.01f), glm::vec3(1.0f), glm::vec3(0.75f), glm::vec3(0.0f, -1.0f, 0.0f));
+		m_SpotLight = std::make_shared<SpotLight>(glm::vec3(0.01f), glm::vec3(1.0f), glm::vec3(0.75f), glm::vec3(-5.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, -1.0f));
 		m_Lights.reserve(4);
 		m_Lights.push_back(m_DirectionalLight);
 		m_DirectionalLight->SetDirection(glm::vec3(0.3f, -0.5f, -0.5f));

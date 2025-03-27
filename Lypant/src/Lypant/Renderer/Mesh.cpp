@@ -7,16 +7,14 @@ namespace lypant
 {
 	std::weak_ptr<VertexArray> Mesh::s_CubeVertexArray;
 
-	Mesh::Mesh(DefaultGeometry geometry, const std::shared_ptr<Material>& material)
+	Mesh::Mesh(DefaultGeometry geometry, const std::shared_ptr<Material>& material) : m_Material(material)
 	{
-		m_Material = material;
-
 		switch (geometry)
 		{
 		case DefaultGeometry::Cube:
 			if (s_CubeVertexArray.expired())
 			{
-				std::shared_ptr<lypant::VertexArray> vertexArray = std::make_shared<lypant::VertexArray>();
+				std::shared_ptr<VertexArray> vertexArray = std::make_shared<VertexArray>();
 
 				float vertexData[]
 				{
@@ -63,11 +61,11 @@ namespace lypant
 					-0.5f,  0.5f,  0.5f,   0.0f, 1.0f, 0.0f,   0.0f, 0.0f
 				};
 
-				std::shared_ptr<VertexBuffer> vertexBuffer = std::make_shared<lypant::VertexBuffer>(vertexData, sizeof(vertexData));
+				std::shared_ptr<VertexBuffer> vertexBuffer = std::make_shared<VertexBuffer>(vertexData, sizeof(vertexData));
 
-				lypant::BufferLayout layout
+				BufferLayout layout
 				{
-					{lypant::ShaderDataType::Float3, "a_Position"}, {lypant::ShaderDataType::Float3, "a_Normal"}, {lypant::ShaderDataType::Float2, "a_TexCoord"}
+					{ShaderDataType::Float3, "a_Position"}, {ShaderDataType::Float3, "a_Normal"}, {ShaderDataType::Float2, "a_TexCoord"}
 				};
 
 				vertexBuffer->SetLayout(layout);
@@ -80,7 +78,7 @@ namespace lypant
 					indexData[i] = i;
 				}
 
-				std::shared_ptr<lypant::IndexBuffer> indexBuffer = std::make_shared<lypant::IndexBuffer>(indexData, 36);
+				std::shared_ptr<IndexBuffer> indexBuffer = std::make_shared<IndexBuffer>(indexData, 36);
 
 				vertexArray->SetIndexBuffer(indexBuffer);
 

@@ -13,6 +13,7 @@ namespace lypant
 		inline static void SetClearColor(float r, float g, float b, float a) { RendererAPI::SetClearColor(r, g, b, a); }
 		inline static void Clear() { RendererAPI::Clear(); }
 		inline static void SetDepthTest(bool value) { RendererAPI::SetDepthTest(value); }
+		inline static void SetBlending(bool value) { RendererAPI::SetBlending(value); }
 		inline static void DrawIndexed(const std::shared_ptr<VertexArray>& vertexArray) { RendererAPI::DrawIndexed(vertexArray); }
 	};
 }

@@ -8,7 +8,7 @@ namespace lypant
 	class Texture2D : public ColorAttachment
 	{
 	public:
-		inline static std::shared_ptr<Texture2D> Load(const std::string& path, bool generateMipmap = true)
+		inline static std::shared_ptr<Texture2D> Load(const std::string& path, bool linearSpace = true, bool generateMipmap = true)
 		{
 			const auto it = s_Cache.find(path);
 			if (it != s_Cache.end())
@@ -16,12 +16,12 @@ namespace lypant
 				return std::shared_ptr<Texture2D>(it->second);
 			}
 
-			std::shared_ptr<Texture2D> texture = std::make_shared<Texture2D>(path, generateMipmap);
+			std::shared_ptr<Texture2D> texture = std::make_shared<Texture2D>(path, linearSpace, generateMipmap);
 			s_Cache[path] = std::weak_ptr<Texture2D>(texture);
 			return texture;
 		}
 	public:
-		Texture2D(const std::string& path, bool generateMipmap);
+		Texture2D(const std::string& path, bool linearSpace, bool generateMipmap);
 		Texture2D(int width, int height);
 		~Texture2D();
 		void Bind(uint32_t slot) const;

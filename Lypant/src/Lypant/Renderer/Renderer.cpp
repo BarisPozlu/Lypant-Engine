@@ -6,8 +6,13 @@ namespace lypant
 	Renderer::SceneData Renderer::s_SceneData;
 	uint32_t Renderer::s_WindowWidth;
 	uint32_t Renderer::s_WindowHeight;
+
 	AntiAliasingSetting Renderer::s_AntiAliasingSetting = AntiAliasingSetting::None;
 	FrameBuffer* Renderer::s_MSAAFrameBuffer = nullptr;
+
+	FrameBuffer* Renderer::s_PostProcessFrameBuffer = nullptr;
+	std::shared_ptr<VertexArray> Renderer::s_PostProcessQuadVertexArray;
+	std::shared_ptr<Shader> Renderer::s_PostProcessShader;
 
 	// getting rid of the vpointer, because it is not needed in the gpu.
 	static constexpr int s_PurePointLightSize = sizeof(PointLight) - sizeof(void*);
@@ -24,17 +29,25 @@ namespace lypant
 		s_WindowHeight = windowHeight;
 
 		s_SceneData.EnvironmentBuffer = new char[s_BufferSize];
-		s_SceneData.EnvironmentUniformBuffer = std::make_unique<UniformBuffer>(s_BufferSize, nullptr);
+		s_SceneData.EnvironmentUniformBuffer = new UniformBuffer(s_BufferSize, nullptr);
+
+		CreatePostProcessFrameBuffer();
+		CreatePostProcessQuadVertexArray();
+		s_PostProcessShader = Shader::Load("shaders/PostProcess.glsl");
 	}
 
-	void Renderer::Shutdown()
+	void Renderer::Shutdown() // NOTE: AMBIENT IS HUGE RIGHT NOW WHICH LOOKED LIKE THE LIGHTING WAS WRONG AT FIRST TALK ABOUT WHY AND FIX.
 	{
 		s_SceneData.Lights.swap(std::vector<std::shared_ptr<Light>>());
 		s_SceneData.Camera.reset();
-		s_SceneData.EnvironmentUniformBuffer.release();
+		delete s_SceneData.EnvironmentUniformBuffer;
 		delete[] s_SceneData.EnvironmentBuffer;
 
 		delete s_MSAAFrameBuffer;
+
+		delete s_PostProcessFrameBuffer;
+		s_PostProcessQuadVertexArray.reset();
+		s_PostProcessShader.reset();
 	}
 
 	void Renderer::OnWindowResize(uint32_t width, uint32_t height)
@@ -63,6 +76,9 @@ namespace lypant
 				CreateMSAAFrameBuffer(16);
 				break;
 		}
+
+		delete s_PostProcessFrameBuffer;
+		CreatePostProcessFrameBuffer();
 	}
 
 	void Renderer::CreateMSAAFrameBuffer(uint32_t samples)
@@ -74,11 +90,60 @@ namespace lypant
 		s_MSAAFrameBuffer->AttachDepthStencilBuffer(renderBuffer);
 	}
 
+	void Renderer::CreatePostProcessFrameBuffer()
+	{
+		s_PostProcessFrameBuffer = new FrameBuffer();
+		std::shared_ptr<Texture2D> texture = std::make_shared<Texture2D>(s_WindowWidth, s_WindowHeight);
+		std::shared_ptr<RenderBuffer> renderBuffer = std::make_shared<RenderBuffer>(s_WindowWidth, s_WindowHeight);
+		s_PostProcessFrameBuffer->AttachColorBuffer(texture);
+		s_PostProcessFrameBuffer->AttachDepthStencilBuffer(renderBuffer);
+	}
+
+	void Renderer::CreatePostProcessQuadVertexArray()
+	{
+		s_PostProcessQuadVertexArray = std::make_shared<VertexArray>();
+
+		float vertexData[]
+		{
+			-1.0f, -1.0f, 0.0f,  0.0f, 0.0f,
+			 1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
+			 1.0f,  1.0f, 0.0f,  1.0f, 1.0f,
+			-1.0f,  1.0f, 0.0f,  0.0f, 1.0f
+		};
+
+		std::shared_ptr<VertexBuffer> vertexBuffer = std::make_shared<VertexBuffer>(vertexData, sizeof(vertexData));
+
+		BufferLayout layout
+		{
+			{ShaderDataType::Float3, "a_Position"}, {ShaderDataType::Float2, "a_TexCoord"}
+		};
+
+		vertexBuffer->SetLayout(layout);
+
+		s_PostProcessQuadVertexArray->AddVertexBuffer(vertexBuffer);
+
+		unsigned int indexData[]
+		{
+			0, 1, 2,
+			2, 3, 0
+		};
+
+		std::shared_ptr<IndexBuffer> indexBuffer = std::make_shared<IndexBuffer>(indexData, 6);
+		s_PostProcessQuadVertexArray->SetIndexBuffer(indexBuffer);
+	}
+
 	void Renderer::BeginScene(const std::shared_ptr<PerspectiveCamera>& camera, const std::vector<std::shared_ptr<Light>>& lights)
 	{
+		RenderCommand::SetDepthTest(true);
+
 		if (s_MSAAFrameBuffer)
 		{
-			s_MSAAFrameBuffer->BindDraw();
+			s_MSAAFrameBuffer->Bind();
+		}
+
+		else
+		{
+			s_PostProcessFrameBuffer->Bind();
 		}
 
 		RenderCommand::Clear();
@@ -196,8 +261,15 @@ namespace lypant
 	{
 		if (s_MSAAFrameBuffer)
 		{
-			s_MSAAFrameBuffer->BlitToDefault(0, 0, s_MSAAFrameBuffer->GetColorBufferWidth(), s_MSAAFrameBuffer->GetColorBufferHeight(), 0, 0, s_MSAAFrameBuffer->GetColorBufferWidth(), s_MSAAFrameBuffer->GetColorBufferHeight());
+			s_MSAAFrameBuffer->BlitToFrameBuffer(s_PostProcessFrameBuffer, 0, 0, s_MSAAFrameBuffer->GetColorBufferWidth(), s_MSAAFrameBuffer->GetColorBufferHeight(), 0, 0, s_MSAAFrameBuffer->GetColorBufferWidth(), s_MSAAFrameBuffer->GetColorBufferHeight());
 		}
+
+		RenderCommand::SetDepthTest(false);
+		FrameBuffer::BindDefaultFrameBuffer();
+		s_PostProcessFrameBuffer->GetColorBuffer()->Bind(0);
+		s_PostProcessQuadVertexArray->Bind();
+		s_PostProcessShader->Bind();
+		RenderCommand::DrawIndexed(s_PostProcessQuadVertexArray);
 	}
 
 	void Renderer::Submit(const std::shared_ptr<Mesh>& mesh, const glm::mat4& modelMatrix)

@@ -6,7 +6,7 @@ namespace lypant
 	Material::Material(const std::string& shaderPath, const std::string& diffuseMapPath, const std::string& specularMapPath)
 	{
 		m_Shader = Shader::Load(shaderPath);
-		m_DiffuseMap = Texture2D::Load(diffuseMapPath);
+		m_DiffuseMap = Texture2D::Load(diffuseMapPath, false);
 		m_SpecularMap = Texture2D::Load(specularMapPath);
 		m_Buffer = nullptr;
 	}

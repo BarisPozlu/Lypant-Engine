@@ -26,7 +26,7 @@ namespace lypant
 
 	struct PointLight : public Light
 	{
-		PointLight(const glm::vec3& ambient, const glm::vec3& diffuse, const glm::vec3& specular, const glm::vec3& position, float linear = 0.09f, float quadratic = 0.032)
+		PointLight(const glm::vec3& ambient, const glm::vec3& diffuse, const glm::vec3& specular, const glm::vec3& position, float linear = 0.0f, float quadratic = 1.0f)
 			: Light(ambient, diffuse, specular), Position(position), Linear(linear), Quadratic(quadratic)
 		{
 

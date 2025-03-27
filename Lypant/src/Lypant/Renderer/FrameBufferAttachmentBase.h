@@ -8,6 +8,8 @@ namespace lypant
 		inline uint32_t GetID() const { return m_RendererID; }
 		inline int GetWidth() const { return m_Width; }
 		inline int GetHeight() const { return m_Height; }
+
+		virtual void Bind(uint32_t slot) const = 0;
 	protected:
 		ColorAttachment() = default;
 		virtual ~ColorAttachment() = default;

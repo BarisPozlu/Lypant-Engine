@@ -9,12 +9,10 @@ namespace lypant
 {
 	void RendererAPI::Init()
 	{
-		glEnable(GL_DEPTH_TEST);
-		glDepthFunc(GL_LEQUAL);
 		glEnable(GL_CULL_FACE);
-		glEnable(GL_BLEND);
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glEnable(GL_MULTISAMPLE);
+		glDepthFunc(GL_LEQUAL);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	}
 
 	void RendererAPI::SetViewport(uint32_t x, uint32_t y, uint32_t width, uint32_t height)
@@ -35,6 +33,11 @@ namespace lypant
 	void RendererAPI::SetDepthTest(bool value)
 	{
 		value ? glEnable(GL_DEPTH_TEST) : glDisable(GL_DEPTH_TEST);
+	}
+
+	void RendererAPI::SetBlending(bool value)
+	{
+		value ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
 	}
 
 	void RendererAPI::DrawIndexed(const std::shared_ptr<VertexArray>& vertexArray)

@@ -206,6 +206,13 @@ namespace lypant
 		m_DepthStencilAttachment = attachment;
 	}
 
+	void FrameBuffer::BlitToFrameBuffer(FrameBuffer* otherBuffer, int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1) const
+	{
+		BindRead();
+		otherBuffer->BindDraw();
+		glBlitFramebuffer(srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, GL_COLOR_BUFFER_BIT, GL_NEAREST);
+	}
+
 	void FrameBuffer::BlitToDefault(int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1) const
 	{
 		BindRead();

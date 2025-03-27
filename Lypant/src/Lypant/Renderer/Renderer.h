@@ -35,20 +35,27 @@ namespace lypant
 		static void Shutdown();
 		static void OnWindowResize(uint32_t width, uint32_t height);
 		static void CreateMSAAFrameBuffer(uint32_t samples);
+		static void CreatePostProcessFrameBuffer();
+		static void CreatePostProcessQuadVertexArray();
 	private:
 		struct SceneData
 		{
 			std::vector<std::shared_ptr<Light>> Lights;
 			std::shared_ptr<PerspectiveCamera> Camera;
 
-			std::unique_ptr<UniformBuffer> EnvironmentUniformBuffer;
+			UniformBuffer* EnvironmentUniformBuffer;
 			char* EnvironmentBuffer;
 		};
 
 		static SceneData s_SceneData;
 		static uint32_t s_WindowWidth;
 		static uint32_t s_WindowHeight;
+
 		static AntiAliasingSetting s_AntiAliasingSetting;
 		static FrameBuffer* s_MSAAFrameBuffer;
+
+		static FrameBuffer* s_PostProcessFrameBuffer;
+		static std::shared_ptr<VertexArray> s_PostProcessQuadVertexArray;
+		static std::shared_ptr<Shader> s_PostProcessShader;
 	};
 }
