@@ -180,7 +180,7 @@ namespace lypant
                 glGetActiveUniform(m_Program, i, maxLength, &length, &size, &currentType, nameBuffer);
                 nameBuffer[length] = '\0';
                 std::string currentName = nameBuffer;
-                if (currentName.find("Model") == std::string::npos && currentName.find("Normal") == std::string::npos)
+                if (currentName.find("ModelMatrix") == std::string::npos && currentName.find("NormalMatrix") == std::string::npos)
                 {
                     m_UniformNamesToTypesMap[std::move(currentName)] = GetTypeFromOpenGLType(currentType);
                 }

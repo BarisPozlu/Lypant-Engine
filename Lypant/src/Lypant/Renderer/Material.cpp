@@ -3,11 +3,15 @@
 
 namespace lypant
 {
-	Material::Material(const std::string& shaderPath, const std::string& diffuseMapPath, const std::string& specularMapPath)
+	Material::Material(const std::string& shaderPath, const std::string& diffuseMapPath, const std::string& specularMapPath, const std::string& normalMapPath)
 	{
 		m_Shader = Shader::Load(shaderPath);
 		m_DiffuseMap = Texture2D::Load(diffuseMapPath, false);
 		m_SpecularMap = Texture2D::Load(specularMapPath);
+		if (normalMapPath.size() > 0)
+		{
+			m_NormalMap = Texture2D::Load(normalMapPath);
+		}
 		m_Buffer = nullptr;
 	}
 
@@ -52,14 +56,20 @@ namespace lypant
 				case ShaderDataType::Sampler2D:
 					if (name.find("Diffuse") != std::string::npos)
 					{
-						LY_CORE_ASSERT(m_DiffuseMap.get(), "Diffuse map is nullptr despite the shader having a diffuse map.")
+						LY_CORE_ASSERT(m_DiffuseMap, "Diffuse map is nullptr despite the shader having a diffuse map.")
 						m_DiffuseMap->Bind(m_Shader->GetUniformValueInt(name));
 					}
 					
 					else if (name.find("Specular") != std::string::npos)
 					{
-						LY_CORE_ASSERT(m_SpecularMap.get(), "Specular map is nullptr despite the shader having a specular map.")
+						LY_CORE_ASSERT(m_SpecularMap, "Specular map is nullptr despite the shader having a specular map.")
 						m_SpecularMap->Bind(m_Shader->GetUniformValueInt(name));
+					}
+
+					else if (name.find("Normal") != std::string::npos)
+					{
+						LY_CORE_ASSERT(m_NormalMap, "Normal map is nullptr despite the shader having a normal map.")
+						m_NormalMap->Bind(m_Shader->GetUniformValueInt(name));
 					}
 			}
 		}

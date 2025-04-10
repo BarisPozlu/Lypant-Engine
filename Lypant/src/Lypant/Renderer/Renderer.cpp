@@ -36,7 +36,7 @@ namespace lypant
 		s_PostProcessShader = Shader::Load("shaders/PostProcess.glsl");
 	}
 
-	void Renderer::Shutdown() // NOTE: AMBIENT IS HUGE RIGHT NOW WHICH LOOKED LIKE THE LIGHTING WAS WRONG AT FIRST TALK ABOUT WHY AND FIX.
+	void Renderer::Shutdown()
 	{
 		s_SceneData.Lights.swap(std::vector<std::shared_ptr<Light>>());
 		s_SceneData.Camera.reset();

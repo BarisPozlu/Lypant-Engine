@@ -12,7 +12,7 @@ namespace lypant
 	Model::Model(const std::string& path) : m_Path(path)
 	{
 		Assimp::Importer importer;
-		const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+		const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
 		LY_CORE_ASSERT(scene && !(scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) && scene->mRootNode, importer.GetErrorString());
 
 		m_Meshes.reserve(scene->mNumMeshes);
@@ -53,6 +53,10 @@ namespace lypant
 			vertex.Normal.y = mesh->mNormals[i].y;
 			vertex.Normal.z = mesh->mNormals[i].z;
 
+			vertex.Tangent.x = mesh->mTangents[i].x;
+			vertex.Tangent.y = mesh->mTangents[i].y;
+			vertex.Tangent.z = mesh->mTangents[i].z;
+
 			vertex.TexCoord.x = mesh->mTextureCoords[0][i].x;
 			vertex.TexCoord.y = mesh->mTextureCoords[0][i].y;
 		}
@@ -62,7 +66,7 @@ namespace lypant
 
 		BufferLayout layout
 		{
-			{ShaderDataType::Float3, "a_Position"}, {ShaderDataType::Float3, "a_Normal"}, {ShaderDataType::Float2, "a_TexCoord"}
+			{ShaderDataType::Float3, "a_Position"}, {ShaderDataType::Float3, "a_Normal"}, {ShaderDataType::Float3, "a_Tangent"}, {ShaderDataType::Float2, "a_TexCoord"}
 		};
 
 		vertexBuffer->SetLayout(layout);
@@ -94,7 +98,7 @@ namespace lypant
 
 		aiMaterial* aiMaterial = scene->mMaterials[mesh->mMaterialIndex];
 
-		LY_CORE_ASSERT(aiMaterial->GetTextureCount(aiTextureType_DIFFUSE) == 1 && aiMaterial->GetTextureCount(aiTextureType_SPECULAR) == 1, "There are more than 1 texture per map in the mesh");
+		LY_CORE_ASSERT(aiMaterial->GetTextureCount(aiTextureType_DIFFUSE) == 1 && aiMaterial->GetTextureCount(aiTextureType_SPECULAR) == 1 && aiMaterial->GetTextureCount(aiTextureType_HEIGHT) == 1, "There are more than 1 texture per map in the mesh");
 
 		aiString localPath;
 		aiMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &localPath);
@@ -105,7 +109,11 @@ namespace lypant
 
 		std::string specularMapPath = directory + localPath.C_Str();
 
-		std::shared_ptr<Material> material = std::make_shared<Material>("shaders/TexturedObject.glsl", diffuseMapPath, specularMapPath);
+		aiMaterial->GetTexture(aiTextureType_HEIGHT, 0, &localPath);
+
+		std::string normalMapPath = directory + localPath.C_Str();
+
+		std::shared_ptr<Material> material = std::make_shared<Material>("shaders/Model.glsl", diffuseMapPath, specularMapPath, normalMapPath);
 
 		m_Meshes.emplace_back(vertexArray, material);
 	}
