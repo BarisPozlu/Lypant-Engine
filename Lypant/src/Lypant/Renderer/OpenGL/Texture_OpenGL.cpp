@@ -59,7 +59,7 @@ namespace lypant
 		stbi_image_free(buffer);
 	}
 
-	Texture2D::Texture2D(int width, int height)
+	Texture2D::Texture2D(int width, int height, unsigned char* data, bool linearSpace, bool floatingBuffer)
 	{
 		m_Width = width;
 		m_Height = height;
@@ -68,8 +68,27 @@ namespace lypant
 
 		glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		
+		if (data)
+		{
+			GLenum internalFormat;
+			linearSpace ? internalFormat = GL_RGB8 : internalFormat = GL_SRGB8;
+			glTextureStorage2D(m_RendererID, 1, internalFormat, width, height);
+			glTextureSubImage2D(m_RendererID, 0, 0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, data);
+		}
 
-		glTextureStorage2D(m_RendererID, 1, GL_RGBA16, width, height);
+		else
+		{
+			if (floatingBuffer)
+			{
+				glTextureStorage2D(m_RendererID, 1, GL_RGBA16F, width, height);
+			}
+			
+			else
+			{
+				glTextureStorage2D(m_RendererID, 1, GL_RGBA16, width, height);
+			}
+		}
 	}
 
 	Texture2D::~Texture2D()
@@ -92,13 +111,22 @@ namespace lypant
 	/////////////////////////////////////////////////////////////////////////////////////////////
 
 
-	Texture2DMultiSample::Texture2DMultiSample(int width, int height, int samples)
+	Texture2DMultiSample::Texture2DMultiSample(int width, int height, int samples, bool floatingBuffer)
 	{
 		m_Width = width;
 		m_Height = height;
 
 		glCreateTextures(GL_TEXTURE_2D_MULTISAMPLE, 1, &m_RendererID);
-		glTextureStorage2DMultisample(m_RendererID, samples, GL_RGBA16, width, height, GL_TRUE);
+
+		if (floatingBuffer)
+		{
+			glTextureStorage2DMultisample(m_RendererID, samples, GL_RGBA16F, width, height, GL_TRUE);
+		}
+
+		else
+		{
+			glTextureStorage2DMultisample(m_RendererID, samples, GL_RGBA16, width, height, GL_TRUE);
+		}
 	}
 
 	Texture2DMultiSample::~Texture2DMultiSample()

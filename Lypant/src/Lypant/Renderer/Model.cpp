@@ -6,6 +6,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <stb_image.h>
 
 namespace lypant
 {
@@ -93,27 +94,36 @@ namespace lypant
 		delete[] indices;
 
 		vertexArray->SetIndexBuffer(indexBuffer);
-		
-		std::string directory = m_Path.substr(0, m_Path.find_last_of('/') + 1);
 
 		aiMaterial* aiMaterial = scene->mMaterials[mesh->mMaterialIndex];
 
-		LY_CORE_ASSERT(aiMaterial->GetTextureCount(aiTextureType_DIFFUSE) == 1 && aiMaterial->GetTextureCount(aiTextureType_SPECULAR) == 1 && aiMaterial->GetTextureCount(aiTextureType_HEIGHT) == 1, "There are more than 1 texture per map in the mesh");
+		LY_CORE_ASSERT(aiMaterial->GetTextureCount(aiTextureType_DIFFUSE) == 1 && aiMaterial->GetTextureCount(aiTextureType_UNKNOWN) == 1 && aiMaterial->GetTextureCount(aiTextureType_NORMALS) == 1, "Model textures are not in the expected format.");
+
+		int width;
+		int height;
+		int channels;
 
 		aiString localPath;
+
 		aiMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &localPath);
+		const aiTexture* texture = scene->GetEmbeddedTexture(localPath.C_Str());
+		unsigned char* buffer = stbi_load_from_memory(reinterpret_cast<unsigned char*>(texture->pcData), texture->mWidth, &width, &height, &channels, 0);
+		std::shared_ptr<Texture2D> albedoMap = std::make_shared<Texture2D>(width, height, buffer);
+		stbi_image_free(buffer);
 
-		std::string diffuseMapPath = directory + localPath.C_Str();
+		aiMaterial->GetTexture(aiTextureType_UNKNOWN, 0, &localPath);
+		texture = scene->GetEmbeddedTexture(localPath.C_Str());
+		buffer = stbi_load_from_memory(reinterpret_cast<unsigned char*>(texture->pcData), texture->mWidth, &width, &height, &channels, 0);
+		std::shared_ptr<Texture2D> aoRoughnessMetallicMap = std::make_shared<Texture2D>(width, height, buffer);
+		stbi_image_free(buffer);
 
-		aiMaterial->GetTexture(aiTextureType_SPECULAR, 0, &localPath);
+		aiMaterial->GetTexture(aiTextureType_NORMALS, 0, &localPath);
+		texture = scene->GetEmbeddedTexture(localPath.C_Str());
+		buffer = stbi_load_from_memory(reinterpret_cast<unsigned char*>(texture->pcData), texture->mWidth, &width, &height, &channels, 0);
+		std::shared_ptr<Texture2D> normalMap = std::make_shared<Texture2D>(width, height, buffer);
+		stbi_image_free(buffer);
 
-		std::string specularMapPath = directory + localPath.C_Str();
-
-		aiMaterial->GetTexture(aiTextureType_HEIGHT, 0, &localPath);
-
-		std::string normalMapPath = directory + localPath.C_Str();
-
-		std::shared_ptr<Material> material = std::make_shared<Material>("shaders/Model.glsl", diffuseMapPath, specularMapPath, normalMapPath);
+		std::shared_ptr<Material> material = std::make_shared<Material>("shaders/Model_PBR.glsl", albedoMap, aoRoughnessMetallicMap, normalMap);
 
 		m_Meshes.emplace_back(vertexArray, material);
 	}

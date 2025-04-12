@@ -15,16 +15,18 @@ void main()
 
 #ifdef FRAGMENT_SHADER
 
-layout (location = 0) out vec4 color;
+layout (location = 0) out vec4 o_Color;
 
 in vec2 v_TexCoord;
 
 uniform sampler2D u_SceneTexture;
+uniform float u_Exposure;
 
 void main()
 {
-	vec3 sampledColor = vec3(texture(u_SceneTexture, v_TexCoord));
-	color = vec4(pow(sampledColor, vec3(1.0 / 2.2)), 1.0);
+	vec3 color = texture(u_SceneTexture, v_TexCoord).rgb;
+	color = vec3(1.0) - exp(-color * u_Exposure); // tone mapping
+	o_Color = vec4(pow(color, vec3(1.0 / 2.2)), 1.0); // gamma correction
 }
 
 #endif

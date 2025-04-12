@@ -3,15 +3,21 @@
 
 namespace lypant
 {
-	Material::Material(const std::string& shaderPath, const std::string& diffuseMapPath, const std::string& specularMapPath, const std::string& normalMapPath)
+	Material::Material(const std::string& shaderPath, const std::string& albedoMapPath, const std::string& AORoughnessMetallicMapPath, const std::string& normalMapPath)
 	{
 		m_Shader = Shader::Load(shaderPath);
-		m_DiffuseMap = Texture2D::Load(diffuseMapPath, false);
-		m_SpecularMap = Texture2D::Load(specularMapPath);
-		if (normalMapPath.size() > 0)
-		{
-			m_NormalMap = Texture2D::Load(normalMapPath);
-		}
+		m_AlbedoMap = Texture2D::Load(albedoMapPath, false);
+		m_AORoughnessMetallicMap = Texture2D::Load(AORoughnessMetallicMapPath);
+		m_NormalMap = Texture2D::Load(normalMapPath);
+		m_Buffer = nullptr;
+	}
+
+	Material::Material(const std::string& shaderPath, const std::shared_ptr<Texture2D>& albedoMap, const std::shared_ptr<Texture2D>& aoRoughnessMetallicMap, const std::shared_ptr<Texture2D>& normalMap)
+	{
+		m_Shader = Shader::Load(shaderPath);
+		m_AlbedoMap = albedoMap;
+		m_AORoughnessMetallicMap = aoRoughnessMetallicMap;
+		m_NormalMap = normalMap;
 		m_Buffer = nullptr;
 	}
 
@@ -54,21 +60,21 @@ namespace lypant
 					offset += GetSizeFromShaderDataType(type);
 					break;
 				case ShaderDataType::Sampler2D:
-					if (name.find("Diffuse") != std::string::npos)
+					if (name.find("Albedo") != std::string::npos)
 					{
-						LY_CORE_ASSERT(m_DiffuseMap, "Diffuse map is nullptr despite the shader having a diffuse map.")
-						m_DiffuseMap->Bind(m_Shader->GetUniformValueInt(name));
+						LY_CORE_ASSERT(m_AlbedoMap, "Albedo map is nullptr despite the shader having a Albedo map.")
+						m_AlbedoMap->Bind(m_Shader->GetUniformValueInt(name));
 					}
 					
-					else if (name.find("Specular") != std::string::npos)
+					else if (name.find("AORoughnessMetallic") != std::string::npos)
 					{
-						LY_CORE_ASSERT(m_SpecularMap, "Specular map is nullptr despite the shader having a specular map.")
-						m_SpecularMap->Bind(m_Shader->GetUniformValueInt(name));
+						LY_CORE_ASSERT(m_AORoughnessMetallicMap, "AORoughnessMetallic map is nullptr despite the shader having a AORoughnessMetallic map.")
+						m_AORoughnessMetallicMap->Bind(m_Shader->GetUniformValueInt(name));
 					}
 
 					else if (name.find("Normal") != std::string::npos)
 					{
-						LY_CORE_ASSERT(m_NormalMap, "Normal map is nullptr despite the shader having a normal map.")
+						LY_CORE_ASSERT(m_NormalMap, "Normal map is nullptr despite the shader having a Normal map.")
 						m_NormalMap->Bind(m_Shader->GetUniformValueInt(name));
 					}
 			}

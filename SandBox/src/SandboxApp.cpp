@@ -7,26 +7,25 @@ class ExampleLayer : public Layer
 public:
 	ExampleLayer()
 	{
-		m_Camera = std::make_shared<EditorPerspectiveCamera>(glm::vec3(-1.8f, 0.7f, 4.0f), glm::radians(45.0f), 1280.0f / 720.0f, 0.1f, 100.0f);
+		m_Camera = std::make_shared<EditorPerspectiveCamera>(glm::vec3(0.0f), glm::radians(45.0f), 1280.0f / 720.0f, 0.1f, 100.0f);
 
-		m_PointLight = std::make_shared<PointLight>(glm::vec3(0.01f), glm::vec3(1.0f), glm::vec3(0.75f), glm::vec3(-2.0f, 0.0f, -2.5f));
+		m_PointLight = std::make_shared<PointLight>(glm::vec3(0.01f), glm::vec3(4.0, 0.2, 0.3), glm::vec3(0.75f), glm::vec3(-2.0f, 0.0f, -2.5f));
 		m_PointLight2 = std::make_shared<PointLight>(glm::vec3(0.01f), glm::vec3(1.0f), glm::vec3(0.75f), glm::vec3(1.0f, 0.0f, -3.5f));
-		m_DirectionalLight = std::make_shared<DirectionalLight>(glm::vec3(0.01f), glm::vec3(1.0f), glm::vec3(0.75f), glm::vec3(0.0f, -1.0f, 0.0f));
-		m_SpotLight = std::make_shared<SpotLight>(glm::vec3(0.01f), glm::vec3(1.0f), glm::vec3(0.75f), glm::vec3(-5.0f, 0.0f, 0.0f), glm::vec3(1.0f, 0.0f, -1.0f));
+		m_DirectionalLight = std::make_shared<DirectionalLight>(glm::vec3(0.01f), glm::vec3(10.0f), glm::vec3(0.75f), glm::vec3(0.0f, -1.0f, 0.0f));
+		m_SpotLight = std::make_shared<SpotLight>(glm::vec3(0.01f), glm::vec3(4.0), glm::vec3(0.75f), glm::vec3(0.0f, 1.5f, -2.0f), glm::vec3(0.2f, -0.5f, -1.0f));
 		m_Lights.reserve(4);
 		m_Lights.push_back(m_DirectionalLight);
 		m_DirectionalLight->SetDirection(glm::vec3(0.3f, -0.5f, -0.5f));
 
+		m_Lights.push_back(m_SpotLight);
+
 		std::shared_ptr<Material> lightMaterial = std::make_shared<Material>("shaders/LightObject.glsl", glm::vec3(m_PointLight->Diffuse));
-		std::shared_ptr<Material> groundMaterial = std::make_shared<Material>("shaders/Object.glsl", glm::vec3(0.3f, 0.3f, 0.3f));
-		std::shared_ptr<Material> cubeMaterial = std::make_shared<Material>("shaders/TexturedObject.glsl", "textures/container2.png", "textures/container2_specular.png");
 
 		m_LightMesh = std::make_shared<Mesh>(DefaultGeometry::Cube, lightMaterial);
-		m_GroundMesh = std::make_shared<Mesh>(DefaultGeometry::Cube, groundMaterial);
-		m_CubeMesh = std::make_shared<Mesh>(DefaultGeometry::Cube, cubeMaterial);
 
-		m_Backpack = std::make_shared<Model>("models/backpack/backpack.obj");
-		m_BackpackPosition = glm::vec3(-2.5f, 1.0f, -2.0f);
+		m_Weapon = std::make_shared<Model>("models/weapon/weapon1.glb");
+		m_WeaponPosition = glm::vec3(1.0f, 0.0f, -4.0f);
+		m_WeaponOrientation = glm::angleAxis(glm::radians(-90.0f), glm::vec3(0, 1, 0)) * glm::angleAxis(glm::radians(-90.0f), glm::vec3(1, 0, 0));
 
 		m_Skybox = std::make_shared<Skybox>("textures/skybox/right.jpg");
 	}
@@ -36,6 +35,7 @@ public:
 		m_Camera->Tick(deltaTime);
 
 		Renderer::SetAntiAliasing(m_AASetting);
+		Renderer::SetExposure(m_Exposure);
 
 		Renderer::BeginScene(m_Camera, m_Lights);
 
@@ -57,13 +57,7 @@ public:
 			Renderer::Submit(m_LightMesh, glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), (glm::vec3)m_SpotLight->Position), glm::radians(0.0f), glm::vec3(0, 1, 0)), glm::vec3(0.3f)));
 		}
 
-		Renderer::Submit(m_CubeMesh, glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, 0.0f)), glm::radians(0.0f), glm::vec3(0, 1, 0)));
-		Renderer::Submit(m_CubeMesh, glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(-5.0f, 0.0f, -5.0f)), glm::radians(45.0f), glm::vec3(0, 1, 0)));
-		Renderer::Submit(m_CubeMesh, glm::rotate(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -7.0f)), glm::radians(180.0f), glm::vec3(0, 1, 0)));
-		
-		Renderer::Submit(m_GroundMesh, glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(-0.8f, -0.55f, -5.0f)), glm::vec3(10.0f, 0.1f, 11.0f)));
-
-		Renderer::Submit(m_Backpack, glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), m_BackpackPosition), glm::radians(0.0f), glm::vec3(0, 1, 0)), glm::vec3(0.45f)));
+		Renderer::Submit(m_Weapon, glm::translate(glm::mat4(1.0f), m_WeaponPosition) * glm::scale(glm::mat4_cast(m_WeaponOrientation), glm::vec3(0.02f)));
 
 		Renderer::Submit(m_Skybox);
 
@@ -155,7 +149,7 @@ public:
 			m_DirectionalLight->SetDirection(m_DirectionalLight->Direction);
 		}
 
-		ImGui::DragFloat3("Backpack position", (float*)&m_BackpackPosition, 0.05f, -20, 20);
+		ImGui::DragFloat3("Weapon position", (float*)&m_WeaponPosition, 0.05f, -20, 20);
 
 		static const char* options[]
 		{
@@ -164,16 +158,17 @@ public:
 
 		ImGui::Combo("Anti Aliasing", (int*)&m_AASetting, options, 5);
 
+		ImGui::DragFloat("Exposure", &m_Exposure, 0.01f, 0.1f, 5.0f);
+
 		ImGui::End();
 	}
 
 private:
-	std::shared_ptr<Model> m_Backpack;
-	glm::vec3 m_BackpackPosition;
+	std::shared_ptr<Model> m_Weapon;
+	glm::vec3 m_WeaponPosition;
+	glm::quat m_WeaponOrientation;
 
 	std::shared_ptr<Mesh> m_LightMesh;
-	std::shared_ptr<Mesh> m_GroundMesh;
-	std::shared_ptr<Mesh> m_CubeMesh;
 
 	std::shared_ptr<Skybox> m_Skybox;
 
@@ -185,7 +180,8 @@ private:
 	std::shared_ptr<SpotLight> m_SpotLight;
 	std::vector<std::shared_ptr<Light>> m_Lights;
 
-	AntiAliasingSetting m_AASetting = AntiAliasingSetting::None;
+	AntiAliasingSetting m_AASetting = AntiAliasingSetting::MSAA16X;
+	float m_Exposure = 1.0f;
 };
 
 class SandboxApp : public Application

@@ -30,6 +30,7 @@ namespace lypant
 		static void Submit(const std::shared_ptr<Skybox>& skybox);
 		// You should set anti aliasing before you call BeginScene().
 		static void SetAntiAliasing(AntiAliasingSetting setting);
+		static void SetExposure(float exposure);
 	private:
 		static void Init(uint32_t windowWidth, uint32_t windowHeight);
 		static void Shutdown();
@@ -57,5 +58,6 @@ namespace lypant
 		static FrameBuffer* s_PostProcessFrameBuffer;
 		static std::shared_ptr<VertexArray> s_PostProcessQuadVertexArray;
 		static std::shared_ptr<Shader> s_PostProcessShader;
+		static float s_Exposure;
 	};
 }

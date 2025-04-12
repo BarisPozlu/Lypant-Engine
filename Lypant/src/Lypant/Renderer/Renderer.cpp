@@ -13,6 +13,7 @@ namespace lypant
 	FrameBuffer* Renderer::s_PostProcessFrameBuffer = nullptr;
 	std::shared_ptr<VertexArray> Renderer::s_PostProcessQuadVertexArray;
 	std::shared_ptr<Shader> Renderer::s_PostProcessShader;
+	float Renderer::s_Exposure = 1.0f;
 
 	// getting rid of the vpointer, because it is not needed in the gpu.
 	static constexpr int s_PurePointLightSize = sizeof(PointLight) - sizeof(void*);
@@ -84,7 +85,7 @@ namespace lypant
 	void Renderer::CreateMSAAFrameBuffer(uint32_t samples)
 	{
 		s_MSAAFrameBuffer = new FrameBuffer();
-		std::shared_ptr<Texture2DMultiSample> texture = std::make_shared<Texture2DMultiSample>(s_WindowWidth, s_WindowHeight, samples);
+		std::shared_ptr<Texture2DMultiSample> texture = std::make_shared<Texture2DMultiSample>(s_WindowWidth, s_WindowHeight, samples, true);
 		std::shared_ptr<RenderBufferMultiSample> renderBuffer = std::make_shared<RenderBufferMultiSample>(s_WindowWidth, s_WindowHeight, samples);
 		s_MSAAFrameBuffer->AttachColorBuffer(texture);
 		s_MSAAFrameBuffer->AttachDepthStencilBuffer(renderBuffer);
@@ -93,7 +94,7 @@ namespace lypant
 	void Renderer::CreatePostProcessFrameBuffer()
 	{
 		s_PostProcessFrameBuffer = new FrameBuffer();
-		std::shared_ptr<Texture2D> texture = std::make_shared<Texture2D>(s_WindowWidth, s_WindowHeight);
+		std::shared_ptr<Texture2D> texture = std::make_shared<Texture2D>(s_WindowWidth, s_WindowHeight, nullptr, true, true);
 		std::shared_ptr<RenderBuffer> renderBuffer = std::make_shared<RenderBuffer>(s_WindowWidth, s_WindowHeight);
 		s_PostProcessFrameBuffer->AttachColorBuffer(texture);
 		s_PostProcessFrameBuffer->AttachDepthStencilBuffer(renderBuffer);
@@ -269,6 +270,7 @@ namespace lypant
 		s_PostProcessFrameBuffer->GetColorBuffer()->Bind(0);
 		s_PostProcessQuadVertexArray->Bind();
 		s_PostProcessShader->Bind();
+		s_PostProcessShader->SetUniformFloat("u_Exposure", s_Exposure);
 		RenderCommand::DrawIndexed(s_PostProcessQuadVertexArray);
 	}
 
@@ -338,5 +340,10 @@ namespace lypant
 		}
 
 		s_AntiAliasingSetting = setting;
+	}
+
+	void Renderer::SetExposure(float exposure)
+	{
+		s_Exposure = exposure;
 	}
 }

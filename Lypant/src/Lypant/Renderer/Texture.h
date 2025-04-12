@@ -22,7 +22,7 @@ namespace lypant
 		}
 	public:
 		Texture2D(const std::string& path, bool linearSpace, bool generateMipmap);
-		Texture2D(int width, int height);
+		Texture2D(int width, int height, unsigned char* data = nullptr, bool linearSpace = true, bool floatingBuffer = false);
 		~Texture2D();
 		void Bind(uint32_t slot) const;
 	private:
@@ -34,7 +34,7 @@ namespace lypant
 	class Texture2DMultiSample : public ColorAttachment
 	{
 	public:
-		Texture2DMultiSample(int width, int height, int samples);
+		Texture2DMultiSample(int width, int height, int samples, bool floatingBuffer = false);
 		~Texture2DMultiSample();
 		void Bind(uint32_t slot) const;
 	};
