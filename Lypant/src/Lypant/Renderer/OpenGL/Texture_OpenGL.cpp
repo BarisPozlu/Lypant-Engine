@@ -10,84 +10,163 @@
 
 namespace lypant
 {
-	Texture2D::Texture2D(const std::string& path, bool linearSpace, bool generateMipmap) : m_Path(path)
+	static GLenum GetOpenGLTextureWrappingOption(TextureWrappingOption wrappingOption)
+	{
+		switch (wrappingOption)
+		{
+			case TextureWrappingOption::Repeat: return GL_REPEAT;
+			case TextureWrappingOption::Clamp:  return GL_CLAMP_TO_BORDER;
+		}
+
+		LY_CORE_ASSERT(false, "Invalid texture wrapping option");
+		return -1;
+	}
+
+	Texture2D::Texture2D(const std::string& path, bool linearSpace, bool generateMipmap, bool floatingBuffer) : m_Path(path)
 	{
 		glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
 
 		int channels;
 		stbi_set_flip_vertically_on_load(1);
 
-		unsigned char* buffer = stbi_load(path.c_str(), &m_Width, &m_Height, &channels, 0);
+		void* buffer;
+
+		GLenum type;
+
+		if (floatingBuffer)
+		{
+			buffer = stbi_loadf(path.c_str(), &m_Width, &m_Height, &channels, 0);
+			type = GL_FLOAT;
+		}
+
+		else
+		{
+			buffer = stbi_load(path.c_str(), &m_Width, &m_Height, &channels, 0);
+			type = GL_UNSIGNED_BYTE;
+		}
+
 		LY_CORE_ASSERT(buffer, "Failed to load the image!");
 
 		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 		glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-		GLenum internalFormat = 0;
-		GLenum dataFormat = 0;
+		GLenum internalFormat;
+		GLenum dataFormat;
 
-		if (channels == 3)
+		if (channels == 1)
 		{
-			linearSpace ? internalFormat = GL_RGB8 : internalFormat = GL_SRGB8;
+			floatingBuffer ? internalFormat = GL_R16F : internalFormat = GL_R8;
+			dataFormat = GL_RED;
+		}
+
+		else if (channels == 3)
+		{
+			floatingBuffer ? internalFormat = GL_RGB16F : linearSpace ? internalFormat = GL_RGB8 : internalFormat = GL_SRGB8;
 			dataFormat = GL_RGB;
 		}
 
 		else if (channels == 4)
 		{
-			linearSpace ? internalFormat = GL_RGBA8 : internalFormat = GL_SRGB8_ALPHA8;
+			floatingBuffer ? internalFormat = GL_RGBA16F : linearSpace ? internalFormat = GL_RGBA8 : internalFormat = GL_SRGB8_ALPHA8;
 			dataFormat = GL_RGBA;
 		}
 
-		LY_CORE_ASSERT(channels == 3 || channels == 4, "Number of channels in the texture is not supported.");
+		LY_CORE_ASSERT(channels == 1 || channels == 3 || channels == 4, "Number of channels in the texture is not supported.");
 
 		if (generateMipmap)
 		{
+			glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
 			int levels = glm::floor(glm::log2(glm::max(m_Width, m_Height))) + 1;
 			glTextureStorage2D(m_RendererID, levels, internalFormat, m_Width, m_Height);
-			glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, dataFormat, GL_UNSIGNED_BYTE, buffer);
+			glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, dataFormat, type, buffer);
 			glGenerateTextureMipmap(m_RendererID);
 		}
 
 		else
 		{
+			glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
 			glTextureStorage2D(m_RendererID, 1, internalFormat, m_Width, m_Height);
-			glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, dataFormat, GL_UNSIGNED_BYTE, buffer);
+			glTextureSubImage2D(m_RendererID, 0, 0, 0, m_Width, m_Height, dataFormat, type, buffer);
 		}
 
 		stbi_image_free(buffer);
 	}
 
-	Texture2D::Texture2D(int width, int height, unsigned char* data, bool linearSpace, bool floatingBuffer)
+	Texture2D::Texture2D(int width, int height, unsigned char* data, bool linearSpace, bool floatingBuffer, int channels, TextureWrappingOption wrappingOption)
 	{
 		m_Width = width;
 		m_Height = height;
 
 		glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
 
+		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GetOpenGLTextureWrappingOption(wrappingOption));
+		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GetOpenGLTextureWrappingOption(wrappingOption));
 		glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		
-		if (data)
-		{
-			GLenum internalFormat;
-			linearSpace ? internalFormat = GL_RGB8 : internalFormat = GL_SRGB8;
-			glTextureStorage2D(m_RendererID, 1, internalFormat, width, height);
-			glTextureSubImage2D(m_RendererID, 0, 0, 0, width, height, GL_RGB, GL_UNSIGNED_BYTE, data);
-		}
 
-		else
+		GLenum internalFormat;
+		GLenum dataFormat;
+		GLenum type;
+
+		if (channels == 4)
 		{
+			dataFormat = GL_RGBA;
+
 			if (floatingBuffer)
 			{
-				glTextureStorage2D(m_RendererID, 1, GL_RGBA16F, width, height);
+				type = GL_FLOAT;
+				internalFormat = GL_RGBA16F;
 			}
-			
+
 			else
 			{
-				glTextureStorage2D(m_RendererID, 1, GL_RGBA16, width, height);
+				type = GL_UNSIGNED_BYTE;
+				linearSpace ? internalFormat = GL_RGBA16 : internalFormat = GL_SRGB8_ALPHA8;
 			}
+		}
+
+		else if (channels == 3)
+		{
+			dataFormat = GL_RGB;
+
+			if (floatingBuffer)
+			{
+				type = GL_FLOAT;
+				internalFormat = GL_RGB16F;
+			}
+
+			else
+			{
+				type = GL_UNSIGNED_BYTE;
+				linearSpace ? internalFormat = GL_RGB16 : internalFormat = GL_SRGB8;
+			}
+		}
+
+		else if (channels == 2)
+		{
+			dataFormat = GL_RG;
+
+			if (floatingBuffer)
+			{
+				type = GL_FLOAT;
+				internalFormat = GL_RG16F;
+			}
+
+			else
+			{
+				type = GL_UNSIGNED_BYTE;
+				internalFormat = GL_RG8;
+			}
+		}
+
+		glTextureStorage2D(m_RendererID, 1, internalFormat, width, height);
+
+		if (data)
+		{	
+			glTextureSubImage2D(m_RendererID, 0, 0, 0, width, height, dataFormat, type, data);
 		}
 	}
 
@@ -178,13 +257,66 @@ namespace lypant
 		}
 	}
 
+	Cubemap::Cubemap(int width, int height, bool generateMipmap, bool floatingBuffer)
+	{
+		m_Width = width;
+		m_Height = height;
+
+		glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &m_RendererID);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, m_RendererID);
+
+		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+		if (generateMipmap)
+		{
+			glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+		}
+
+		else
+		{
+			glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		}
+
+		glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		GLenum internalFormat;
+		GLenum type;
+
+		if (floatingBuffer)
+		{
+			internalFormat = GL_RGB16F;
+			type = GL_FLOAT;
+		}
+
+		else
+		{
+			internalFormat = GL_SRGB8;
+			type = GL_UNSIGNED_BYTE;
+		}
+
+		constexpr int numberOfFaces = 6;
+
+		for (int i = 0; i < numberOfFaces; i++)
+		{
+			glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, internalFormat, width, height, 0, GL_RGB, type, nullptr);
+		}
+
+		if (generateMipmap)
+		{
+			glGenerateMipmap(GL_TEXTURE_CUBE_MAP);
+		}
+	}
+
 	Cubemap::~Cubemap()
 	{
 		glDeleteTextures(1, &m_RendererID);
 	}
 
-	void Cubemap::Bind() const
+	void Cubemap::Bind(uint32_t slot) const
 	{
+		glActiveTexture(GL_TEXTURE0 + slot);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, m_RendererID);
 	}
 }

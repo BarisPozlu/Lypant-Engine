@@ -13,11 +13,12 @@ namespace lypant
 	class Model
 	{
 	public:
-		Model(const std::string& path);
-		void ProcessNode(aiNode* node, const aiScene* scene);
-		void ProcessMesh(aiMesh* mesh, const aiScene* scene);
+		Model(const std::string& path, bool loadMaterials = true);
 
 		inline const std::vector<Mesh>& GetMeshes() const { return m_Meshes; }
+	private:
+		void ProcessNode(aiNode* node, const aiScene* scene, bool loadMaterials);
+		void ProcessMesh(aiMesh* mesh, const aiScene* scene, bool loadMaterials);
 	private:
 		struct Vertex
 		{
@@ -28,6 +29,5 @@ namespace lypant
 		};
 	private:
 		std::vector<Mesh> m_Meshes;
-		std::string m_Path;
 	};
 }

@@ -18,6 +18,7 @@ namespace lypant
             case GL_FLOAT_MAT3:     return ShaderDataType::Mat3;
             case GL_FLOAT_MAT4:     return ShaderDataType::Mat4;
             case GL_INT:            return ShaderDataType::Int;
+            case GL_BOOL:           return ShaderDataType::Bool;
             case GL_SAMPLER_2D:     return ShaderDataType::Sampler2D;
             case GL_SAMPLER_CUBE:   return ShaderDataType::Samplercube;
         }
@@ -141,7 +142,31 @@ namespace lypant
 
         for (auto& [name, type] : m_UniformNamesToTypesMap)
         {
-            if (type == ShaderDataType::Sampler2D)
+            if (type == ShaderDataType::Samplercube)
+            {
+                if (name.find("DiffuseIrradiance") != std::string::npos)
+                {
+                    SetUniformInt(name, 0);
+                    samplerValue++;
+                }
+
+                else if (name.find("PreFilter") != std::string::npos)
+                {
+                    SetUniformInt(name, 1);
+                    samplerValue++;
+                }
+            }
+
+            else if (type == ShaderDataType::Sampler2D && name.find("BRDF") != std::string::npos)
+            {
+                SetUniformInt(name, 2);
+                samplerValue++;
+            }
+        }
+
+        for (auto& [name, type] : m_UniformNamesToTypesMap)
+        {
+            if (type == ShaderDataType::Sampler2D && name.find("BRDF") == std::string::npos)
             {
                 SetUniformInt(name, samplerValue++);
             }
@@ -193,6 +218,11 @@ namespace lypant
     void Shader::Bind() const
     {
         glUseProgram(m_Program);
+    }
+
+    void Shader::Unbind() const
+    {
+        glUseProgram(0);
     }
 
     int Shader::GetUniformLocation(const std::string& name) const

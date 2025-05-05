@@ -133,7 +133,8 @@ namespace lypant
 		inline const std::shared_ptr<ColorAttachment>& GetColorBuffer() { return m_ColorAttachment; }
 		inline const std::shared_ptr<DepthStencilAttachment>& GetDepthStencilBuffer() { return m_DepthStencilAttachment; }
 
-		void AttachColorBuffer(const std::shared_ptr<ColorAttachment>& attachment);
+		// cubemapface is only relevant if you are attaching a cubemap as the ColorAttachment.
+		void AttachColorBuffer(const std::shared_ptr<ColorAttachment>& attachment, int level = 0, int cubemapFace = -1);
 		void AttachDepthStencilBuffer(const std::shared_ptr<DepthStencilAttachment>& attachment);
 
 		void BlitToFrameBuffer(FrameBuffer* otherBuffer, int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1) const;

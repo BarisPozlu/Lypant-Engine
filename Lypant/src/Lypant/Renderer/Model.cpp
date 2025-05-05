@@ -10,7 +10,7 @@
 
 namespace lypant
 {
-	Model::Model(const std::string& path) : m_Path(path)
+	Model::Model(const std::string& path, bool loadMaterials)
 	{
 		Assimp::Importer importer;
 		const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
@@ -18,23 +18,23 @@ namespace lypant
 
 		m_Meshes.reserve(scene->mNumMeshes);
 
-		ProcessNode(scene->mRootNode, scene);
+		ProcessNode(scene->mRootNode, scene, loadMaterials);
 	}
 
-	void Model::ProcessNode(aiNode* node, const aiScene* scene)
+	void Model::ProcessNode(aiNode* node, const aiScene* scene, bool loadMaterials)
 	{
 		for (int i = 0; i < node->mNumMeshes; i++)
 		{
-			ProcessMesh(scene->mMeshes[node->mMeshes[i]], scene);
+			ProcessMesh(scene->mMeshes[node->mMeshes[i]], scene, loadMaterials);
 		}
 
 		for (int i = 0; i < node->mNumChildren; i++)
 		{
-			ProcessNode(node->mChildren[i], scene);
+			ProcessNode(node->mChildren[i], scene, loadMaterials);
 		}
 	}
 
-	void Model::ProcessMesh(aiMesh* mesh, const aiScene* scene)
+	void Model::ProcessMesh(aiMesh* mesh, const aiScene* scene, bool loadMaterials)
 	{
 		LY_CORE_ASSERT(mesh->mTextureCoords[0], "Mesh loaded does not have texture coordinates.");
 
@@ -95,8 +95,15 @@ namespace lypant
 
 		vertexArray->SetIndexBuffer(indexBuffer);
 
-		aiMaterial* aiMaterial = scene->mMaterials[mesh->mMaterialIndex];
+		if (!loadMaterials)
+		{
+			std::shared_ptr<Material> material = std::make_shared<Material>("shaders/FlatColor.glsl", glm::vec3(1.0, 0.0, 0.0));
+			m_Meshes.emplace_back(vertexArray, material);
+			return;
+		}
 
+		aiMaterial* aiMaterial = scene->mMaterials[mesh->mMaterialIndex];
+		
 		LY_CORE_ASSERT(aiMaterial->GetTextureCount(aiTextureType_DIFFUSE) == 1 && aiMaterial->GetTextureCount(aiTextureType_UNKNOWN) == 1 && aiMaterial->GetTextureCount(aiTextureType_NORMALS) == 1, "Model textures are not in the expected format.");
 
 		int width;
@@ -108,7 +115,7 @@ namespace lypant
 		aiMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &localPath);
 		const aiTexture* texture = scene->GetEmbeddedTexture(localPath.C_Str());
 		unsigned char* buffer = stbi_load_from_memory(reinterpret_cast<unsigned char*>(texture->pcData), texture->mWidth, &width, &height, &channels, 0);
-		std::shared_ptr<Texture2D> albedoMap = std::make_shared<Texture2D>(width, height, buffer);
+		std::shared_ptr<Texture2D> albedoMap = std::make_shared<Texture2D>(width, height, buffer, false);
 		stbi_image_free(buffer);
 
 		aiMaterial->GetTexture(aiTextureType_UNKNOWN, 0, &localPath);

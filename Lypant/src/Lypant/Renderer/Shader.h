@@ -9,7 +9,7 @@ namespace lypant
 {
 	enum class ShaderDataType
 	{
-		None, Float, Float2, Float3, Float4, Mat3, Mat4, Int, Sampler2D, Samplercube
+		None, Float, Float2, Float3, Float4, Mat3, Mat4, Int, Bool, Sampler2D, Samplercube
 	};
 
 	inline uint32_t GetSizeFromShaderDataType(ShaderDataType type)
@@ -24,6 +24,7 @@ namespace lypant
 			case ShaderDataType::Mat3:		return 4 * 3 * 3;
 			case ShaderDataType::Mat4:		return 4 * 4 * 4;
 			case ShaderDataType::Int:		return 4;
+			case ShaderDataType::Bool:		return 1;
 		}
 
 		LY_ASSERT(false, "Invalid Shader data type!");
@@ -72,6 +73,7 @@ namespace lypant
 
 		void PopulateUniformTypes();
 		void Bind() const;
+		void Unbind() const;
 		int GetUniformLocation(const std::string& name) const;
 
 		int GetUniformValueInt(const std::string& name) const;

@@ -181,18 +181,23 @@ namespace lypant
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, m_RendererID);
 	}
 
-	void FrameBuffer::AttachColorBuffer(const std::shared_ptr<ColorAttachment>& attachment)
+	void FrameBuffer::AttachColorBuffer(const std::shared_ptr<ColorAttachment>& attachment, int level, int cubemapFace)
 	{
 		Bind();
 
 		if (dynamic_cast<Texture2D*>(attachment.get()))
 		{
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, attachment->GetID(), 0);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, attachment->GetID(), level);
 		}
 
 		else if (dynamic_cast<Texture2DMultiSample*>(attachment.get()))
 		{
-			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, attachment->GetID(), 0);
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D_MULTISAMPLE, attachment->GetID(), level);
+		}
+
+		else if (dynamic_cast<Cubemap*>(attachment.get()))
+		{
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_CUBE_MAP_POSITIVE_X + cubemapFace, attachment->GetID(), level);
 		}
 
 		m_ColorAttachment = attachment;

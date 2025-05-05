@@ -2,10 +2,12 @@
 #include "Mesh.h"
 #include "VertexArray.h"
 #include "Buffer.h"
+#include "Model.h"
 
 namespace lypant
 {
 	std::weak_ptr<VertexArray> Mesh::s_CubeVertexArray;
+	std::weak_ptr<VertexArray> Mesh::s_SphereVertexArray;
 
 	Mesh::Mesh(DefaultGeometry geometry, const std::shared_ptr<Material>& material) : m_Material(material)
 	{
@@ -93,6 +95,20 @@ namespace lypant
 			}
 
 			break;
+
+			case DefaultGeometry::Sphere:
+				if (s_SphereVertexArray.expired())
+				{
+					Model model("models/sphere/sphere.glb", false);
+					m_VertexArray = model.GetMeshes()[0].GetVertexArray();
+					s_SphereVertexArray = m_VertexArray;
+				}
+				
+				else
+				{
+					std::shared_ptr<VertexArray> vertexArray(s_SphereVertexArray);
+					m_VertexArray.swap(vertexArray);
+				}
 		}
 	}
 }

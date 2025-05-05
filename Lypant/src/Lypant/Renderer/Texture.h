@@ -5,10 +5,15 @@
 
 namespace lypant
 {
+	enum class TextureWrappingOption
+	{
+		Repeat, Clamp
+	};
+
 	class Texture2D : public ColorAttachment
 	{
 	public:
-		inline static std::shared_ptr<Texture2D> Load(const std::string& path, bool linearSpace = true, bool generateMipmap = true)
+		inline static std::shared_ptr<Texture2D> Load(const std::string& path, bool linearSpace = true, bool generateMipmap = true, bool floatingBuffer = false)
 		{
 			const auto it = s_Cache.find(path);
 			if (it != s_Cache.end())
@@ -16,15 +21,15 @@ namespace lypant
 				return std::shared_ptr<Texture2D>(it->second);
 			}
 
-			std::shared_ptr<Texture2D> texture = std::make_shared<Texture2D>(path, linearSpace, generateMipmap);
+			std::shared_ptr<Texture2D> texture = std::make_shared<Texture2D>(path, linearSpace, generateMipmap, floatingBuffer);
 			s_Cache[path] = std::weak_ptr<Texture2D>(texture);
 			return texture;
 		}
 	public:
-		Texture2D(const std::string& path, bool linearSpace, bool generateMipmap);
-		Texture2D(int width, int height, unsigned char* data = nullptr, bool linearSpace = true, bool floatingBuffer = false);
-		~Texture2D();
-		void Bind(uint32_t slot) const;
+		Texture2D(const std::string& path, bool linearSpace, bool generateMipmap, bool floatingBuffer);
+		Texture2D(int width, int height, unsigned char* data = nullptr, bool linearSpace = true, bool floatingBuffer = false, int channels = 3, TextureWrappingOption wrappingOption = TextureWrappingOption::Repeat);
+		virtual ~Texture2D();
+		virtual void Bind(uint32_t slot) const;
 	private:
 		inline static std::unordered_map<std::string, std::weak_ptr<Texture2D>> s_Cache;
 	private:
@@ -35,23 +40,22 @@ namespace lypant
 	{
 	public:
 		Texture2DMultiSample(int width, int height, int samples, bool floatingBuffer = false);
-		~Texture2DMultiSample();
-		void Bind(uint32_t slot) const;
+		virtual ~Texture2DMultiSample();
+		virtual void Bind(uint32_t slot) const;
 	};
 
-	class Cubemap
+	class Cubemap : public ColorAttachment
 	{
 	public:
 		// The path expected is the path of one of the textures. Textures should be named as "top", "bottom" etc and they should be in the same directory.
 		Cubemap(const std::string& path);
-		~Cubemap();
-		void Bind() const;
-
-		inline int GetWidth() const { return m_Width; }
-		inline int GetHeight() const { return m_Height; }
-	private:
-		uint32_t m_RendererID;
-		int m_Width;
-		int m_Height;
+		Cubemap(int width, int height, bool generateMipMap = false, bool floatingBuffer = false);
+		virtual ~Cubemap();
+		virtual void Bind(uint32_t slot) const;
+		std::shared_ptr<Cubemap> GetDiffuseIrradianceMap() const;
+		std::shared_ptr<Cubemap> GetPreFilteredMap() const;
+	public:
+		// Has to render to a different render target. Make sure to only call this before any other rendering is done. Binds the default framebuffer when it is done.
+		static std::shared_ptr<Cubemap> CreateFromEquirectangularTexture(const std::string& path);
 	};
 }

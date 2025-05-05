@@ -11,33 +11,64 @@ public:
 
 		m_PointLight = std::make_shared<PointLight>(glm::vec3(0.01f), glm::vec3(4.0, 0.2, 0.3), glm::vec3(0.75f), glm::vec3(-2.0f, 0.0f, -2.5f));
 		m_PointLight2 = std::make_shared<PointLight>(glm::vec3(0.01f), glm::vec3(1.0f), glm::vec3(0.75f), glm::vec3(1.0f, 0.0f, -3.5f));
-		m_DirectionalLight = std::make_shared<DirectionalLight>(glm::vec3(0.01f), glm::vec3(10.0f), glm::vec3(0.75f), glm::vec3(0.0f, -1.0f, 0.0f));
-		m_SpotLight = std::make_shared<SpotLight>(glm::vec3(0.01f), glm::vec3(4.0), glm::vec3(0.75f), glm::vec3(0.0f, 1.5f, -2.0f), glm::vec3(0.2f, -0.5f, -1.0f));
+		m_DirectionalLight = std::make_shared<DirectionalLight>(glm::vec3(0.01f), glm::vec3(0.3f), glm::vec3(0.75f), glm::vec3(0.0f, -1.0f, 0.0f));
+		m_SpotLight = std::make_shared<SpotLight>(glm::vec3(0.01f), glm::vec3(4.0, 4.0, 10.0), glm::vec3(0.75f), glm::vec3(0.0f, 1.5f, -2.0f), glm::vec3(0.2f, -0.5f, -1.0f));
 		m_Lights.reserve(4);
-		m_Lights.push_back(m_DirectionalLight);
+		
 		m_DirectionalLight->SetDirection(glm::vec3(0.3f, -0.5f, -0.5f));
 
-		m_Lights.push_back(m_SpotLight);
-
-		std::shared_ptr<Material> lightMaterial = std::make_shared<Material>("shaders/LightObject.glsl", glm::vec3(m_PointLight->Diffuse));
+		std::shared_ptr<Material> lightMaterial = std::make_shared<Material>("shaders/FlatColor.glsl", glm::vec3(m_PointLight->Diffuse));
 
 		m_LightMesh = std::make_shared<Mesh>(DefaultGeometry::Cube, lightMaterial);
 
 		m_Weapon = std::make_shared<Model>("models/weapon/weapon1.glb");
 		m_WeaponPosition = glm::vec3(1.0f, 0.0f, -4.0f);
-		m_WeaponOrientation = glm::angleAxis(glm::radians(-90.0f), glm::vec3(0, 1, 0)) * glm::angleAxis(glm::radians(-90.0f), glm::vec3(1, 0, 0));
+		m_WeaponOrientation = glm::normalize(glm::angleAxis(glm::radians(-90.0f), glm::vec3(0, 1, 0)) * glm::angleAxis(glm::radians(-90.0f), glm::vec3(1, 0, 0)));
 
-		m_Skybox = std::make_shared<Skybox>("textures/skybox/right.jpg");
+		m_Helmet = std::make_shared<Model>("models/helmet/DamagedHelmet.gltf");
+		m_HelmetOrientation = glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0)));
+
+		m_Skybox1 = std::make_shared<Skybox>("textures/skybox/flamingo_pan_4k.hdr", true);
+		m_Skybox2 = std::make_shared<Skybox>("textures/skybox/example2.jpeg", true);
+		m_Skybox3 = std::make_shared<Skybox>("textures/skybox/example1.hdr", true);
+
+		std::shared_ptr<Material> sphereMaterial = std::make_shared<Material>("shaders/Model_PBR.glsl", "textures/light-gold/albedo.png", "textures/light-gold/ao.png", "textures/light-gold/roughness.png", "textures/light-gold/metallic.png", "textures/light-gold/normal.png");
+		std::shared_ptr<Material> rustedIronMaterial = std::make_shared<Material>("shaders/Model_PBR.glsl", "textures/rusted-iron/albedo.png", "textures/rusted-iron/ao.png", "textures/rusted-iron/roughness.png", "textures/rusted-iron/metallic.png", "textures/rusted-iron/normal.png");
+		
+		m_SpherePosition = glm::vec3(1.0, 0.0, -2.0);
+		m_GoldSphere = std::make_shared<Mesh>(DefaultGeometry::Sphere, sphereMaterial);
+		m_RustedIronSphere = std::make_shared<Mesh>(DefaultGeometry::Sphere, rustedIronMaterial);
 	}
 
 	virtual void Tick(float deltaTime) override
 	{
 		m_Camera->Tick(deltaTime);
 
+		if (Input::IsKeyPressed(LY_KEY_SPACE)) // rotating the weapon with the space key
+		{	
+			m_WeaponOrientation = glm::normalize(glm::angleAxis(glm::radians(Input::GetMouseXOffset() * 0.08f), glm::vec3(0, 1, 0)) * m_WeaponOrientation);
+		}
+
 		Renderer::SetAntiAliasing(m_AASetting);
 		Renderer::SetExposure(m_Exposure);
 
-		Renderer::BeginScene(m_Camera, m_Lights);
+		if (m_ExampleCounter == 0)
+		{
+			Renderer::BeginScene(m_Camera, m_Lights, m_Skybox1);
+		}
+
+		else if (m_ExampleCounter == 1)
+		{
+			Renderer::BeginScene(m_Camera, m_Lights, m_Skybox2);
+		}
+
+		else
+		{
+			Renderer::BeginScene(m_Camera, m_Lights, m_Skybox3);
+		}
+
+		Renderer::Submit(m_GoldSphere, glm::scale(glm::translate(glm::mat4(1.0), m_SpherePosition + glm::vec3(0.0, 0.0, 0.0)), glm::vec3(0.2)));
+		Renderer::Submit(m_RustedIronSphere, glm::scale(glm::translate(glm::mat4(1.0), m_SpherePosition + glm::vec3(0.8, 0.0, 0.0)), glm::vec3(0.2)));
 
 		if (std::find(m_Lights.begin(), m_Lights.end(), m_PointLight) != m_Lights.end())
 		{
@@ -58,8 +89,7 @@ public:
 		}
 
 		Renderer::Submit(m_Weapon, glm::translate(glm::mat4(1.0f), m_WeaponPosition) * glm::scale(glm::mat4_cast(m_WeaponOrientation), glm::vec3(0.02f)));
-
-		Renderer::Submit(m_Skybox);
+		Renderer::Submit(m_Helmet, glm::translate(glm::mat4(1.0f), glm::vec3(5.0, 0.0, -2.0)) * glm::scale(glm::mat4_cast(m_HelmetOrientation), glm::vec3(1.0f)));
 
 		Renderer::EndScene();
 	}
@@ -72,7 +102,12 @@ public:
 
 		dispatcher.Dispatch<KeyPressEvent>([this](KeyPressEvent event)
 			{
-				if (event.GetKeyCode() == LY_KEY_1)
+				if (event.GetKeyCode() == LY_KEY_C)
+				{
+					m_ExampleCounter == 2 ? m_ExampleCounter = 0 : m_ExampleCounter++;
+				}
+
+				else if (event.GetKeyCode() == LY_KEY_1)
 				{
 					if (std::find(m_Lights.begin(), m_Lights.end(), m_PointLight) != m_Lights.end())
 					{
@@ -88,14 +123,14 @@ public:
 				else if (event.GetKeyCode() == LY_KEY_2)
 				{
 					
-					if (std::find(m_Lights.begin(), m_Lights.end(), m_PointLight2) != m_Lights.end())
+					if (std::find(m_Lights.begin(), m_Lights.end(), m_SpotLight) != m_Lights.end())
 					{
-						m_Lights.erase(std::find(m_Lights.begin(), m_Lights.end(), m_PointLight2));
+						m_Lights.erase(std::find(m_Lights.begin(), m_Lights.end(), m_SpotLight));
 					}
 
 					else
 					{
-						m_Lights.emplace_back(m_PointLight2);
+						m_Lights.emplace_back(m_SpotLight);
 					}
 				}
 
@@ -168,9 +203,20 @@ private:
 	glm::vec3 m_WeaponPosition;
 	glm::quat m_WeaponOrientation;
 
+	std::shared_ptr<Model> m_Helmet;
+	glm::quat m_HelmetOrientation;
+
+	std::shared_ptr<Mesh> m_GoldSphere;
+	std::shared_ptr<Mesh> m_RustedIronSphere;
+	glm::vec3 m_SpherePosition;
+
 	std::shared_ptr<Mesh> m_LightMesh;
 
-	std::shared_ptr<Skybox> m_Skybox;
+	std::shared_ptr<Skybox> m_Skybox1;
+	std::shared_ptr<Skybox> m_Skybox2;
+	std::shared_ptr<Skybox> m_Skybox3;
+
+	int m_ExampleCounter = 0;
 
 	std::shared_ptr<EditorPerspectiveCamera> m_Camera;
 

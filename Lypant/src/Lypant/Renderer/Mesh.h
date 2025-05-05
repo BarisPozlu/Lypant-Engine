@@ -9,7 +9,7 @@ namespace lypant
 
 	enum class DefaultGeometry
 	{
-		Cube
+		Cube, Sphere
 	};
 
 	class Mesh
@@ -26,6 +26,7 @@ namespace lypant
 		inline void SetMaterial(const std::shared_ptr<Material>& material) { m_Material = material; }
 	private:
 		static std::weak_ptr<VertexArray> s_CubeVertexArray;
+		static std::weak_ptr<VertexArray> s_SphereVertexArray;
 	private:
 		std::shared_ptr<VertexArray> m_VertexArray;
 		std::shared_ptr<Material> m_Material;

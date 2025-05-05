@@ -102,9 +102,18 @@ layout (std140, binding = 3) uniform NumberOfLights
 	int u_NumberOfDirectionalLights;
 };
 
+uniform bool u_UseCombinedORM;
+
 uniform sampler2D u_AlbedoMap;
-uniform sampler2D u_AORoughnessMetallicMap;
+uniform sampler2D u_ORMMap;
+uniform sampler2D u_AmbientOcclusionMap;
+uniform sampler2D u_RoughnessMap;
+uniform sampler2D u_MetallicMap;
 uniform sampler2D u_NormalMap;
+
+uniform samplerCube u_DiffuseIrradianceMap;
+uniform samplerCube u_PreFilteredMap;
+uniform sampler2D u_BRDFIntegrationMap;
 
 vec3 CalculatePointLight(int i, vec3 normal, vec3 viewDirection, vec3 albedo, float roughness, float metallic, vec3 F0);
 vec3 CalculateSpotLight(int i, vec3 normal, vec3 viewDirection, vec3 albedo, float roughness, float metallic, vec3 F0);
@@ -114,6 +123,7 @@ float DistributionGGX(vec3 normal, vec3 halfwayDirection, float roughness);
 float GeometrySchlickGGX(float NdotV, float roughness);
 float GeometrySmith(vec3 normal, vec3 viewDirection, vec3 lightDirection, float roughness);
 vec3 fresnelSchlick(float cosTheta, vec3 F0);
+vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness);
 
 const float PI = 3.14159265359;
 
@@ -124,11 +134,25 @@ void main()
 	vec3 viewDirection = normalize(u_ViewPosition - v_WorldPosition);
 
 	vec3 albedo = texture(u_AlbedoMap, v_TexCoord).rgb;
-	vec3 aoRoughnessMetallic = texture(u_AORoughnessMetallicMap, v_TexCoord).rgb;
 
-	float ao = aoRoughnessMetallic.r;
-	float roughness = aoRoughnessMetallic.g;
-	float metallic = aoRoughnessMetallic.b;
+	float ao;
+	float roughness;
+	float metallic;
+
+	if (u_UseCombinedORM)
+	{
+		vec3 orm = texture(u_ORMMap, v_TexCoord).rgb;
+		ao = orm.r;
+		roughness = orm.g;
+		metallic = orm.b;
+	}
+
+	else
+	{
+		ao = texture(u_AmbientOcclusionMap, v_TexCoord).r;
+		roughness = texture(u_RoughnessMap, v_TexCoord).r;
+		metallic = texture(u_MetallicMap, v_TexCoord).r;		
+	}
 
 	vec3 F0 = vec3(0.04);
 	F0 = mix(F0, albedo, metallic);
@@ -151,7 +175,24 @@ void main()
 		Lo += CalculateDirectionalLight(i, normal, viewDirection, albedo, roughness, metallic, F0);
 	}
 
-	vec3 ambient = vec3(0.03) * albedo * ao;
+	vec3 Ks = fresnelSchlickRoughness(max(dot(normal, viewDirection), 0.0), F0, roughness);
+	vec3 Kd = 1.0 - Ks;
+	Kd *= 1.0 - metallic;
+
+	vec3 irradiance = texture(u_DiffuseIrradianceMap, normal).rgb;
+	vec3 diffuse = albedo * Kd * irradiance;
+
+	const float maxMipmapLevel = 4.0;
+	vec3 reflectionVector = reflect(-viewDirection, normal);
+	vec3 preFilteredSample = textureLod(u_PreFilteredMap, reflectionVector, roughness * maxMipmapLevel).rgb;
+
+	vec2 BRDFSample = texture(u_BRDFIntegrationMap, vec2(max(dot(normal, viewDirection), 0.0), roughness)).rg;
+
+	vec3 specular = preFilteredSample * (BRDFSample.x * Ks + BRDFSample.y);
+
+	//vec3 ambient = (diffuse + specular) * ao;
+	vec3 ambient = (diffuse + specular);
+
 	o_Color = vec4(Lo + ambient, 1.0);
 }
 
@@ -172,7 +213,7 @@ vec3 CalculatePointLight(int i, vec3 normal, vec3 viewDirection, vec3 albedo, fl
 	float G = GeometrySmith(normal, viewDirection, lightDirection, roughness);
 
 	vec3 Kd = vec3(1.0) - F;
-	Kd *= 1.0 - metallic; 
+	Kd *= 1.0 - metallic;
 
 	vec3 numerator = D * F * G;
 	float denominator = 4.0 * max(dot(normal, viewDirection), 0.0) * max(dot(normal, lightDirection), 0.0) + 0.0001;
@@ -273,6 +314,11 @@ float GeometrySmith(vec3 normal, vec3 viewDirection, vec3 lightDirection, float 
 vec3 fresnelSchlick(float cosTheta, vec3 F0)
 {
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
+
+vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+{
+    return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }  
 
 #endif
