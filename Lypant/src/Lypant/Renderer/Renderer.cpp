@@ -5,11 +5,11 @@ namespace lypant
 {
 	Renderer::RendererData* Renderer::s_RendererData = nullptr;
 
-	// getting rid of the vpointer, because it is not needed in the gpu.
-	static constexpr int s_PurePointLightSize = sizeof(PointLight) - sizeof(void*);
-	static constexpr int s_PureSpotLightSize = sizeof(SpotLight) - sizeof(void*);
-	static constexpr int s_PureDirectionalLightSize = sizeof(DirectionalLight) - sizeof(void*);
-	static constexpr int s_BufferSize = s_PurePointLightSize * 10 + s_PureDirectionalLightSize * 10;
+	// getting rid of the type, because it is not needed in the gpu.
+	static constexpr int s_PurePointLightSize = sizeof(PointLight) - sizeof(LightType);
+	static constexpr int s_PureSpotLightSize = sizeof(SpotLight) - sizeof(LightType);
+	static constexpr int s_PureDirectionalLightSize = sizeof(DirectionalLight) - sizeof(LightType);
+	static constexpr int s_BufferSize = s_PurePointLightSize * 40;
 
 	void Renderer::Init(uint32_t windowWidth, uint32_t windowHeight)
 	{
@@ -244,7 +244,7 @@ namespace lypant
 
 		for (const auto& light : lights)
 		{
-			if (dynamic_cast<PointLight*>(light.get()))
+			if (light->GetType() == LightTypePoint)
 			{
 				s_RendererData->Lights.emplace(s_RendererData->Lights.begin() + pointLightInsertIndex, light);
 				pointLightInsertIndex++;
@@ -252,7 +252,7 @@ namespace lypant
 				numberOfLights[LightTypePoint]++;
 			}
 
-			else if (dynamic_cast<SpotLight*>(light.get()))
+			else if (light->GetType() == LightTypeSpot)
 			{
 				s_RendererData->Lights.emplace(s_RendererData->Lights.begin() + spotLightInsertIndex, light);
 				spotLightInsertIndex++;
@@ -280,7 +280,7 @@ namespace lypant
 
 		for (i = 0; i < numberOfLights[LightTypePoint]; i++)
 		{
-			memcpy(&s_RendererData->EnvironmentBuffer[offset], ((char*)s_RendererData->Lights.at(i).get()) + sizeof(void*), s_PurePointLightSize);
+			memcpy(&s_RendererData->EnvironmentBuffer[offset], ((char*)s_RendererData->Lights.at(i).get()) + sizeof(LightType), s_PurePointLightSize);
 			offset += s_PurePointLightSize;
 		}
 
@@ -289,7 +289,7 @@ namespace lypant
 
 		for (; i < numberOfLights[LightTypePoint] + numberOfLights[LightTypeSpot]; i++)
 		{
-			memcpy(&s_RendererData->EnvironmentBuffer[offset], ((char*)s_RendererData->Lights.at(i).get()) + sizeof(void*), s_PureSpotLightSize);
+			memcpy(&s_RendererData->EnvironmentBuffer[offset], ((char*)s_RendererData->Lights.at(i).get()) + sizeof(LightType), s_PureSpotLightSize);
 			offset += s_PureSpotLightSize;
 		}
 
@@ -298,7 +298,7 @@ namespace lypant
 
 		for (; i < s_RendererData->Lights.size(); i++)
 		{
-			memcpy(&s_RendererData->EnvironmentBuffer[offset], ((char*)s_RendererData->Lights.at(i).get()) + sizeof(void*), s_PureDirectionalLightSize);
+			memcpy(&s_RendererData->EnvironmentBuffer[offset], ((char*)s_RendererData->Lights.at(i).get()) + sizeof(LightType), s_PureDirectionalLightSize);
 			offset += s_PureDirectionalLightSize;
 		}
 

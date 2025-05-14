@@ -53,9 +53,7 @@ layout (std140, binding = 4) uniform Camera
 
 struct PointLight
 {
-	vec3 Ambient;
-	vec3 Diffuse;
-	vec3 Specular;
+	vec3 Color;
 	vec3 Position;
 	float Linear;
 	float Quadratic;
@@ -68,9 +66,7 @@ layout (std140, binding = 0) uniform PointLights
 
 struct SpotLight
 {
-	vec3 Ambient;
-	vec3 Diffuse;
-	vec3 Specular;
+	vec3 Color;
 	vec3 Position;
 	vec3 Direction;
 	float OuterCutOff;
@@ -84,9 +80,7 @@ layout (std140, binding = 1) uniform SpotLights
 
 struct DirectionalLight
 {
-	vec3 Ambient;
-	vec3 Diffuse;
-	vec3 Specular;
+	vec3 Color;
 	vec3 Direction;
 };
 
@@ -205,7 +199,7 @@ vec3 CalculatePointLight(int i, vec3 normal, vec3 viewDirection, vec3 albedo, fl
 	float pointLightDistance = distance(v_WorldPosition, u_PointLights[i].Position);
 	float attenuation = 1.0 / (u_PointLights[i].Linear * pointLightDistance + u_PointLights[i].Quadratic * pointLightDistance * pointLightDistance);
 
-	vec3 radiance = u_PointLights[i].Diffuse * attenuation;
+	vec3 radiance = u_PointLights[i].Color * attenuation;
 	
 	// calculate cook-torrance BRDF
 	float D = DistributionGGX(normal, halfwayDirection, roughness);
@@ -236,7 +230,7 @@ vec3 CalculateSpotLight(int i, vec3 normal, vec3 viewDirection, vec3 albedo, flo
 	float intensity = (cosOfAngle - u_SpotLights[i].OuterCutOff) / (u_SpotLights[i].InnerCutOff - u_SpotLights[i].OuterCutOff);
 	intensity = clamp(intensity, 0.0, 1.0);
 
-	vec3 radiance = u_SpotLights[i].Diffuse * attenuation * intensity;
+	vec3 radiance = u_SpotLights[i].Color * attenuation * intensity;
 
 	// calculate cook-torrance BRDF
 	float D = DistributionGGX(normal, halfwayDirection, roughness);
@@ -258,7 +252,7 @@ vec3 CalculateDirectionalLight(int i, vec3 normal, vec3 viewDirection, vec3 albe
 {
 	// calculate radiance
 	vec3 halfwayDirection = normalize(-u_DirectionalLights[i].Direction + viewDirection);
-	vec3 radiance = u_DirectionalLights[i].Diffuse;
+	vec3 radiance = u_DirectionalLights[i].Color;
 
 	// calculate cook-torrance BRDF
 	float D = DistributionGGX(normal, halfwayDirection, roughness);

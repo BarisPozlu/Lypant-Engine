@@ -6,7 +6,7 @@
 #include "Lypant/Camera/PerspectiveCamera.h"
 #include "Material.h"
 #include "glm/glm.hpp"
-#include "Lypant/Light/Light.h"
+#include "Light.h"
 #include "Mesh.h"
 #include "Model.h"
 #include "Skybox.h"

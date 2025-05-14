@@ -9,15 +9,15 @@ public:
 	{
 		m_Camera = std::make_shared<EditorPerspectiveCamera>(glm::vec3(0.0f), glm::radians(45.0f), 1280.0f / 720.0f, 0.1f, 100.0f);
 
-		m_PointLight = std::make_shared<PointLight>(glm::vec3(0.01f), glm::vec3(10.0, 0.0, 0.0), glm::vec3(0.75f), glm::vec3(-2.0f, 0.0f, -2.5f));
-		m_PointLight2 = std::make_shared<PointLight>(glm::vec3(0.01f), glm::vec3(1.0f), glm::vec3(0.75f), glm::vec3(1.0f, 0.0f, -3.5f));
-		m_DirectionalLight = std::make_shared<DirectionalLight>(glm::vec3(0.01f), glm::vec3(0.3f), glm::vec3(0.75f), glm::vec3(0.0f, -1.0f, 0.0f));
-		m_SpotLight = std::make_shared<SpotLight>(glm::vec3(0.01f), glm::vec3(4.0, 4.0, 10.0), glm::vec3(0.75f), glm::vec3(0.0f, 1.5f, -2.0f), glm::vec3(0.2f, -0.5f, -1.0f));
+		m_PointLight = std::make_shared<PointLight>(glm::vec3(10.0, 0.0, 0.0), glm::vec3(-2.0f, 0.0f, -2.5f));
+		m_PointLight2 = std::make_shared<PointLight>(glm::vec3(1.0f), glm::vec3(1.0f, 0.0f, -3.5f));
+		m_DirectionalLight = std::make_shared<DirectionalLight>(glm::vec3(0.3f), glm::vec3(0.0f, -1.0f, 0.0f));
+		m_SpotLight = std::make_shared<SpotLight>(glm::vec3(4.0, 4.0, 10.0), glm::vec3(0.0f, 1.5f, -2.0f), glm::vec3(0.2f, -0.5f, -1.0f));
 		m_Lights.reserve(4);
 		
 		m_DirectionalLight->SetDirection(glm::vec3(0.3f, -0.5f, -0.5f));
 
-		std::shared_ptr<Material> lightMaterial = std::make_shared<Material>("shaders/FlatColor.glsl", glm::vec3(m_PointLight->Diffuse));
+		std::shared_ptr<Material> lightMaterial = std::make_shared<Material>("shaders/FlatColor.glsl", glm::vec3(m_PointLight->Color));
 
 		m_LightMesh = std::make_shared<Mesh>(DefaultGeometry::Cube, lightMaterial);
 
@@ -73,19 +73,19 @@ public:
 
 		if (std::find(m_Lights.begin(), m_Lights.end(), m_PointLight) != m_Lights.end())
 		{
-			m_LightMesh->GetMaterial()->UpdateColor(m_PointLight->Diffuse);
+			m_LightMesh->GetMaterial()->UpdateColor(m_PointLight->Color);
 			Renderer::Submit(m_LightMesh, glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), (glm::vec3)m_PointLight->Position), glm::radians(0.0f), glm::vec3(0, 1, 0)), glm::vec3(0.3f)));
 		}
 
 		if (std::find(m_Lights.begin(), m_Lights.end(), m_PointLight2) != m_Lights.end())
 		{
-			m_LightMesh->GetMaterial()->UpdateColor(m_PointLight2->Diffuse);
+			m_LightMesh->GetMaterial()->UpdateColor(m_PointLight2->Color);
 			Renderer::Submit(m_LightMesh, glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), (glm::vec3)m_PointLight2->Position), glm::radians(0.0f), glm::vec3(0, 1, 0)), glm::vec3(0.3f)));
 		}
 
 		if (std::find(m_Lights.begin(), m_Lights.end(), m_SpotLight) != m_Lights.end())
 		{
-			m_LightMesh->GetMaterial()->UpdateColor(m_SpotLight->Diffuse);
+			m_LightMesh->GetMaterial()->UpdateColor(m_SpotLight->Color);
 			Renderer::Submit(m_LightMesh, glm::scale(glm::rotate(glm::translate(glm::mat4(1.0f), (glm::vec3)m_SpotLight->Position), glm::radians(0.0f), glm::vec3(0, 1, 0)), glm::vec3(0.3f)));
 		}
 
@@ -159,22 +159,19 @@ public:
 		if (std::find(m_Lights.begin(), m_Lights.end(), m_PointLight) != m_Lights.end())
 		{
 			ImGui::DragFloat3("Light1 position", (float*)&m_PointLight->Position, 0.05f, -20.0f, 20.0f);
-			ImGui::ColorEdit3("Light1 color", &m_PointLight->Diffuse[0]);
-			m_PointLight->Ambient = m_PointLight->Diffuse * 0.1f;
+			ImGui::ColorEdit3("Light1 color", &m_PointLight->Color[0]);
 		}
 		
 		if (std::find(m_Lights.begin(), m_Lights.end(), m_PointLight2) != m_Lights.end())
 		{
 			ImGui::DragFloat3("Light2 position", (float*)&m_PointLight2->Position, 0.05f, -20.0f, 20.0f);		
-			ImGui::ColorEdit3("Light2 color", &m_PointLight2->Diffuse[0]);
-			m_PointLight2->Ambient = m_PointLight2->Diffuse * 0.1f;
+			ImGui::ColorEdit3("Light2 color", &m_PointLight2->Color[0]);
 		}
 
 		if (std::find(m_Lights.begin(), m_Lights.end(), m_SpotLight) != m_Lights.end())
 		{
 			ImGui::DragFloat3("SpotLight position", (float*)&m_SpotLight->Position, 0.05f, -20.0f, 20.0f);
-			ImGui::ColorEdit3("SpotLight color", &m_SpotLight->Diffuse[0]);
-			m_SpotLight->Ambient = m_SpotLight->Diffuse * 0.1f;
+			ImGui::ColorEdit3("SpotLight color", &m_SpotLight->Color[0]);
 			ImGui::SliderFloat3("SpotLight Direction", (float*)&m_SpotLight->Direction, -1, 1);
 			m_SpotLight->SetDirection(m_SpotLight->Direction);
 		}
