@@ -42,6 +42,19 @@ namespace lypant
 		value ? glEnable(GL_BLEND) : glDisable(GL_BLEND);
 	}
 
+	void RendererAPI::SetBlendFunc(BlendFunc function)
+	{
+		switch (function)
+		{
+			case BlendFunc::SourceAlpha_OneMinusSourceAlpha:
+				glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+				break;
+			case BlendFunc::One_One:
+				glBlendFunc(GL_ONE, GL_ONE);
+				break;
+		}
+	}
+
 	void RendererAPI::DrawIndexed(const std::shared_ptr<VertexArray>& vertexArray)
 	{
 		glDrawElements(GL_TRIANGLES, vertexArray->GetIndexBuffer()->GetCount(), GL_UNSIGNED_INT, nullptr);

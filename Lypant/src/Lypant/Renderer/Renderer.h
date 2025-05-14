@@ -31,14 +31,20 @@ namespace lypant
 		// You should set anti aliasing before you call BeginScene().
 		static void SetAntiAliasing(AntiAliasingSetting setting);
 		static void SetExposure(float exposure);
+		static void SetBloom(bool enabled);
 	private:
 		static void Init(uint32_t windowWidth, uint32_t windowHeight);
 		static void Shutdown();
 		static void OnWindowResize(uint32_t width, uint32_t height);
 		static void UpdateEnvironmentBuffers(const std::vector<std::shared_ptr<Light>>& lights);
 		static void CreateMSAAFrameBuffer(uint32_t samples);
+		static void UpdateMSAAFrameBufferAttachments(uint32_t samples);
 		static void CreatePostProcessFrameBuffer();
+		static void UpdatePostProcessFrameBufferAttachments();
 		static void CreatePostProcessQuadVertexArray();
+		static void CreateBloomResources();
+		static void DeleteBloomResources();
+		static void CreateBloomTexture(const std::shared_ptr<Texture2D>& sceneTexture);
 		static void CreateBRDFIntegrationMap();
 	private:
 		struct RendererData
@@ -53,6 +59,8 @@ namespace lypant
 
 				delete MSAAFrameBuffer;
 				delete PostProcessFrameBuffer;
+
+				delete BloomFrameBuffer;
 			}
 		public:
 			std::vector<std::shared_ptr<Light>> Lights;
@@ -75,6 +83,12 @@ namespace lypant
 			std::shared_ptr<VertexArray> PostProcessQuadVertexArray;
 			std::shared_ptr<Shader> PostProcessShader;
 			float Exposure = 1.0f;
+
+			FrameBuffer* BloomFrameBuffer = nullptr;
+			std::array<std::shared_ptr<Texture2D>, 6> BloomMipTextures; // more mip levels mean larger bloom radius, can be adjusted here
+			std::shared_ptr<Shader> BloomDownsampleShader;
+			std::shared_ptr<Shader> BloomUpsampleShader;
+			bool IsBloomEnabled = false;
 		};
 
 		static RendererData* s_RendererData;

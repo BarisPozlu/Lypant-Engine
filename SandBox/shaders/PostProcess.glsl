@@ -20,11 +20,20 @@ layout (location = 0) out vec4 o_Color;
 in vec2 v_TexCoord;
 
 uniform sampler2D u_SceneTexture;
+uniform sampler2D u_BloomTexture;
+
+uniform bool u_IsBloomEnabled;
 uniform float u_Exposure;
 
 void main()
 {
 	vec3 color = texture(u_SceneTexture, v_TexCoord).rgb;
+	if (u_IsBloomEnabled)
+	{
+		vec3 bloomSample = texture(u_BloomTexture, v_TexCoord).rgb;
+		color = mix(color, bloomSample, 0.04);
+	}
+	
 	color = vec3(1.0) - exp(-color * u_Exposure); // tone mapping
 	o_Color = vec4(pow(color, vec3(1.0 / 2.2)), 1.0); // gamma correction
 }

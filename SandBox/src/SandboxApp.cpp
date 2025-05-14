@@ -9,7 +9,7 @@ public:
 	{
 		m_Camera = std::make_shared<EditorPerspectiveCamera>(glm::vec3(0.0f), glm::radians(45.0f), 1280.0f / 720.0f, 0.1f, 100.0f);
 
-		m_PointLight = std::make_shared<PointLight>(glm::vec3(0.01f), glm::vec3(4.0, 0.2, 0.3), glm::vec3(0.75f), glm::vec3(-2.0f, 0.0f, -2.5f));
+		m_PointLight = std::make_shared<PointLight>(glm::vec3(0.01f), glm::vec3(10.0, 0.0, 0.0), glm::vec3(0.75f), glm::vec3(-2.0f, 0.0f, -2.5f));
 		m_PointLight2 = std::make_shared<PointLight>(glm::vec3(0.01f), glm::vec3(1.0f), glm::vec3(0.75f), glm::vec3(1.0f, 0.0f, -3.5f));
 		m_DirectionalLight = std::make_shared<DirectionalLight>(glm::vec3(0.01f), glm::vec3(0.3f), glm::vec3(0.75f), glm::vec3(0.0f, -1.0f, 0.0f));
 		m_SpotLight = std::make_shared<SpotLight>(glm::vec3(0.01f), glm::vec3(4.0, 4.0, 10.0), glm::vec3(0.75f), glm::vec3(0.0f, 1.5f, -2.0f), glm::vec3(0.2f, -0.5f, -1.0f));
@@ -51,6 +51,7 @@ public:
 
 		Renderer::SetAntiAliasing(m_AASetting);
 		Renderer::SetExposure(m_Exposure);
+		Renderer::SetBloom(m_IsBloomEnabled);
 
 		if (m_ExampleCounter == 0)
 		{
@@ -195,6 +196,8 @@ public:
 
 		ImGui::DragFloat("Exposure", &m_Exposure, 0.01f, 0.1f, 5.0f);
 
+		ImGui::Checkbox("Bloom", &m_IsBloomEnabled);
+
 		ImGui::End();
 	}
 
@@ -228,6 +231,7 @@ private:
 
 	AntiAliasingSetting m_AASetting = AntiAliasingSetting::MSAA16X;
 	float m_Exposure = 1.0f;
+	bool m_IsBloomEnabled = true;
 };
 
 class SandboxApp : public Application

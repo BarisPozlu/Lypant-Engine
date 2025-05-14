@@ -257,6 +257,11 @@ namespace lypant
         glUniform3f(GetUniformLocation(name), value[0], value[1], value[2]);
     }
 
+    void Shader::SetUniformVec2Float(const std::string& name, float* value) const
+    {
+        glUniform2f(GetUniformLocation(name), value[0], value[1]);
+    }
+
     void Shader::SetUniformFloat(const std::string& name, float value) const
     {
         glUniform1f(GetUniformLocation(name), value);

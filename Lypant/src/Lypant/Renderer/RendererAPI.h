@@ -5,6 +5,11 @@
 
 namespace lypant
 {
+	enum class BlendFunc
+	{
+		SourceAlpha_OneMinusSourceAlpha, One_One
+	};
+
 	class RendererAPI
 	{
 	public:
@@ -14,6 +19,7 @@ namespace lypant
 		static void Clear();
 		static void SetDepthTest(bool value);
 		static void SetBlending(bool value);
+		static void SetBlendFunc(BlendFunc function);
 		static void DrawIndexed(const std::shared_ptr<VertexArray>& vertexArray);
 	};
 }

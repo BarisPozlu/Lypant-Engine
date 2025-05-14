@@ -1,6 +1,5 @@
 #include "lypch.h"
 #include "Renderer.h"
-#include "Lypant/Core/Application.h"
 
 namespace lypant
 {
@@ -47,25 +46,38 @@ namespace lypant
 		switch (s_RendererData->AntiAliasingSetting)
 		{
 			case AntiAliasingSetting::MSAA2X:
-				delete s_RendererData->MSAAFrameBuffer;
-				CreateMSAAFrameBuffer(2);
+				UpdateMSAAFrameBufferAttachments(2);
 				break;
 			case AntiAliasingSetting::MSAA4X:
-				delete s_RendererData->MSAAFrameBuffer;
-				CreateMSAAFrameBuffer(4);
+				UpdateMSAAFrameBufferAttachments(4);
 				break;
 			case AntiAliasingSetting::MSAA8X:
-				delete s_RendererData->MSAAFrameBuffer;
-				CreateMSAAFrameBuffer(8);
+				UpdateMSAAFrameBufferAttachments(8);
 				break;
 			case AntiAliasingSetting::MSAA16X:
-				delete s_RendererData->MSAAFrameBuffer;
-				CreateMSAAFrameBuffer(16);
+				UpdateMSAAFrameBufferAttachments(16);
 				break;
 		}
 
-		delete s_RendererData->PostProcessFrameBuffer;
-		CreatePostProcessFrameBuffer();
+		UpdatePostProcessFrameBufferAttachments();
+
+		if (s_RendererData->IsBloomEnabled)
+		{
+			int currentWidth = width;
+			int currentHeight = height;
+
+			for (auto& texture : s_RendererData->BloomMipTextures)
+			{
+				currentWidth /= 2;
+				currentHeight /= 2;
+
+				texture.reset(new Texture2D(currentWidth, currentHeight, nullptr, true, true, 3, TextureWrappingOption::Clamp));
+			}
+
+			s_RendererData->BloomUpsampleShader->Bind();
+			s_RendererData->BloomUpsampleShader->SetUniformFloat("u_AspectRatio", static_cast<float>(s_RendererData->WindowWidth) / s_RendererData->WindowHeight);
+		}
+
 	}
 
 	void Renderer::BeginScene(const std::shared_ptr<PerspectiveCamera>& camera, const std::vector<std::shared_ptr<Light>>& lights, const std::shared_ptr<Skybox>& environmentMap)
@@ -107,12 +119,23 @@ namespace lypant
 			s_RendererData->MSAAFrameBuffer->BlitToFrameBuffer(s_RendererData->PostProcessFrameBuffer, 0, 0, s_RendererData->MSAAFrameBuffer->GetColorBufferWidth(), s_RendererData->MSAAFrameBuffer->GetColorBufferHeight(), 0, 0, s_RendererData->MSAAFrameBuffer->GetColorBufferWidth(), s_RendererData->MSAAFrameBuffer->GetColorBufferHeight());
 		}
 
+		const std::shared_ptr<ColorAttachment>& sceneTexture = s_RendererData->PostProcessFrameBuffer->GetColorBuffer();
+
+		if (s_RendererData->IsBloomEnabled)
+		{
+			CreateBloomTexture(reinterpret_cast<const std::shared_ptr<Texture2D>&>(sceneTexture));
+			s_RendererData->BloomMipTextures[0]->Bind(s_RendererData->PostProcessShader->GetUniformValueInt("u_BloomTexture"));
+		}
+
+		sceneTexture->Bind(s_RendererData->PostProcessShader->GetUniformValueInt("u_SceneTexture"));
+
 		RenderCommand::SetDepthTest(false);
 		FrameBuffer::BindDefaultFrameBuffer();
-		s_RendererData->PostProcessFrameBuffer->GetColorBuffer()->Bind(0);
+
 		s_RendererData->PostProcessQuadVertexArray->Bind();
 		s_RendererData->PostProcessShader->Bind();
 		s_RendererData->PostProcessShader->SetUniformFloat("u_Exposure", s_RendererData->Exposure);
+		s_RendererData->PostProcessShader->SetUniformInt("u_IsBloomEnabled", s_RendererData->IsBloomEnabled);
 		RenderCommand::DrawIndexed(s_RendererData->PostProcessQuadVertexArray);
 	}
 
@@ -174,20 +197,16 @@ namespace lypant
 			FrameBuffer::BindDefaultFrameBuffer();
 			break;
 		case AntiAliasingSetting::MSAA2X:
-			delete s_RendererData->MSAAFrameBuffer;
-			CreateMSAAFrameBuffer(2);
+			s_RendererData->AntiAliasingSetting == AntiAliasingSetting::None ? CreateMSAAFrameBuffer(2) : UpdateMSAAFrameBufferAttachments(2);
 			break;
 		case AntiAliasingSetting::MSAA4X:
-			delete s_RendererData->MSAAFrameBuffer;
-			CreateMSAAFrameBuffer(4);
+			s_RendererData->AntiAliasingSetting == AntiAliasingSetting::None ? CreateMSAAFrameBuffer(4) : UpdateMSAAFrameBufferAttachments(4);
 			break;
 		case AntiAliasingSetting::MSAA8X:
-			delete s_RendererData->MSAAFrameBuffer;
-			CreateMSAAFrameBuffer(8);
+			s_RendererData->AntiAliasingSetting == AntiAliasingSetting::None ? CreateMSAAFrameBuffer(8) : UpdateMSAAFrameBufferAttachments(8);
 			break;
 		case AntiAliasingSetting::MSAA16X:
-			delete s_RendererData->MSAAFrameBuffer;
-			CreateMSAAFrameBuffer(16);
+			s_RendererData->AntiAliasingSetting == AntiAliasingSetting::None ? CreateMSAAFrameBuffer(16) : UpdateMSAAFrameBufferAttachments(16);
 			break;
 		}
 
@@ -197,6 +216,23 @@ namespace lypant
 	void Renderer::SetExposure(float exposure)
 	{
 		s_RendererData->Exposure = exposure;
+	}
+
+	void Renderer::SetBloom(bool enabled)
+	{
+		if (s_RendererData->IsBloomEnabled == enabled) return;
+
+		if (enabled)
+		{
+			CreateBloomResources();
+		}
+
+		else
+		{
+			DeleteBloomResources();
+		}
+
+		s_RendererData->IsBloomEnabled = enabled;
 	}
 
 	void Renderer::UpdateEnvironmentBuffers(const std::vector<std::shared_ptr<Light>>& lights)
@@ -309,6 +345,11 @@ namespace lypant
 	void Renderer::CreateMSAAFrameBuffer(uint32_t samples)
 	{
 		s_RendererData->MSAAFrameBuffer = new FrameBuffer();
+		UpdateMSAAFrameBufferAttachments(samples);
+	}
+
+	void Renderer::UpdateMSAAFrameBufferAttachments(uint32_t samples)
+	{
 		std::shared_ptr<Texture2DMultiSample> texture = std::make_shared<Texture2DMultiSample>(s_RendererData->WindowWidth, s_RendererData->WindowHeight, samples, true);
 		std::shared_ptr<RenderBufferMultiSample> renderBuffer = std::make_shared<RenderBufferMultiSample>(s_RendererData->WindowWidth, s_RendererData->WindowHeight, samples);
 		s_RendererData->MSAAFrameBuffer->AttachColorBuffer(texture);
@@ -318,6 +359,11 @@ namespace lypant
 	void Renderer::CreatePostProcessFrameBuffer()
 	{
 		s_RendererData->PostProcessFrameBuffer = new FrameBuffer();
+		UpdatePostProcessFrameBufferAttachments();
+	}
+
+	void Renderer::UpdatePostProcessFrameBufferAttachments()
+	{
 		std::shared_ptr<Texture2D> texture = std::make_shared<Texture2D>(s_RendererData->WindowWidth, s_RendererData->WindowHeight, nullptr, true, true);
 		std::shared_ptr<RenderBuffer> renderBuffer = std::make_shared<RenderBuffer>(s_RendererData->WindowWidth, s_RendererData->WindowHeight);
 		s_RendererData->PostProcessFrameBuffer->AttachColorBuffer(texture);
@@ -357,6 +403,91 @@ namespace lypant
 		s_RendererData->PostProcessQuadVertexArray->SetIndexBuffer(indexBuffer);
 	}
 
+	void Renderer::CreateBloomResources()
+	{
+		s_RendererData->BloomFrameBuffer = new FrameBuffer();
+
+		int currentWidth = s_RendererData->WindowWidth;
+		int currentHeight = s_RendererData->WindowHeight;
+
+		for (int i = 0; i < s_RendererData->BloomMipTextures.size(); i++)
+		{
+			// handle when the window size is too low
+			currentWidth /= 2;
+			currentHeight /= 2;
+
+			s_RendererData->BloomMipTextures[i] = std::make_shared<Texture2D>(currentWidth, currentHeight, nullptr, true, true, 3, TextureWrappingOption::Clamp);
+		}
+
+		s_RendererData->BloomDownsampleShader = Shader::Load("shaders/BloomDownsample.glsl");
+		s_RendererData->BloomUpsampleShader = Shader::Load("shaders/BloomUpsample.glsl");
+		constexpr float filterRadius = 0.004f;
+		s_RendererData->BloomUpsampleShader->Bind();
+		s_RendererData->BloomUpsampleShader->SetUniformFloat("u_FilterRadius", filterRadius);
+		s_RendererData->BloomUpsampleShader->SetUniformFloat("u_AspectRatio", static_cast<float>(s_RendererData->WindowWidth) / s_RendererData->WindowHeight);
+	}
+
+	void Renderer::DeleteBloomResources()
+	{
+		delete s_RendererData->BloomFrameBuffer;
+		s_RendererData->BloomFrameBuffer = nullptr;
+		s_RendererData->BloomDownsampleShader.reset();
+		for (auto& texture : s_RendererData->BloomMipTextures)
+		{
+			texture.reset();
+		}
+	}
+
+	void Renderer::CreateBloomTexture(const std::shared_ptr<Texture2D>& sceneTexture)
+	{
+		s_RendererData->PostProcessQuadVertexArray->Bind();
+
+		// downsample
+		s_RendererData->BloomDownsampleShader->Bind();
+
+		glm::vec2 texelSize = 1.0f / sceneTexture->GetDimensions(); // texel size in texture coordinates
+		s_RendererData->BloomDownsampleShader->SetUniformVec2Float("u_TexelSize", reinterpret_cast<float*>(&texelSize));
+
+		sceneTexture->Bind(0);
+
+		for (int i = 0; i < s_RendererData->BloomMipTextures.size(); i++)
+		{
+			auto& currentTexture = s_RendererData->BloomMipTextures[i];
+
+			s_RendererData->BloomFrameBuffer->AttachColorBuffer(currentTexture);
+			RenderCommand::SetViewport(0, 0, currentTexture->GetWidth(), currentTexture->GetHeight());
+			RenderCommand::DrawIndexed(s_RendererData->PostProcessQuadVertexArray);
+
+			texelSize = 1.0f / currentTexture->GetDimensions(); // texel size in texture coordinates
+			s_RendererData->BloomDownsampleShader->SetUniformVec2Float("u_TexelSize", reinterpret_cast<float*>(&texelSize));
+
+			currentTexture->Bind(0);
+		}
+
+		//upsample
+		s_RendererData->BloomUpsampleShader->Bind();
+
+		RenderCommand::SetBlending(true);
+		RenderCommand::SetBlendFunction(BlendFunc::One_One);
+
+		for (int i = s_RendererData->BloomMipTextures.size() - 1; i > 0; i--)
+		{
+			auto& currentTexture = s_RendererData->BloomMipTextures[i];
+			auto& nextTexture = s_RendererData->BloomMipTextures[i - 1];
+
+			currentTexture->Bind(0);
+
+			s_RendererData->BloomFrameBuffer->AttachColorBuffer(nextTexture);
+			RenderCommand::SetViewport(0, 0, nextTexture->GetWidth(), nextTexture->GetHeight());
+			RenderCommand::DrawIndexed(s_RendererData->PostProcessQuadVertexArray);
+		}
+
+		RenderCommand::SetBlending(false);
+		RenderCommand::SetBlendFunction(BlendFunc::SourceAlpha_OneMinusSourceAlpha);
+		RenderCommand::SetViewport(0, 0, s_RendererData->WindowWidth, s_RendererData->WindowHeight);
+		FrameBuffer::BindDefaultFrameBuffer();
+	}
+
 	void Renderer::CreateBRDFIntegrationMap()
 	{
 		s_RendererData->BRDFIntegrationMap = std::make_shared<Texture2D>(512, 512, nullptr, true, true, 2, TextureWrappingOption::Clamp);
@@ -373,6 +504,6 @@ namespace lypant
 		RenderCommand::DrawIndexed(s_RendererData->PostProcessQuadVertexArray);
 
 		FrameBuffer::BindDefaultFrameBuffer();
-		RenderCommand::SetViewport(0, 0, Application::Get().GetWindow().GetWidth(), Application::Get().GetWindow().GetHeight());
+		RenderCommand::SetViewport(0, 0, s_RendererData->WindowWidth, s_RendererData->WindowHeight);
 	}
 }

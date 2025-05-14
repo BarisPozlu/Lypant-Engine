@@ -83,6 +83,7 @@ namespace lypant
 
 		void SetUniformVec4Float(const std::string& name, float* value) const;
 		void SetUniformVec3Float(const std::string& name, float* value) const;
+		void SetUniformVec2Float(const std::string& name, float* value) const;
 
 		void SetUniformFloat(const std::string& name, float value) const;
 		void SetUniformInt(const std::string& name, int value) const;
