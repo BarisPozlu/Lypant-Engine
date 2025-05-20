@@ -142,31 +142,7 @@ namespace lypant
 
         for (auto& [name, type] : m_UniformNamesToTypesMap)
         {
-            if (type == ShaderDataType::Samplercube)
-            {
-                if (name.find("DiffuseIrradiance") != std::string::npos)
-                {
-                    SetUniformInt(name, 0);
-                    samplerValue++;
-                }
-
-                else if (name.find("PreFilter") != std::string::npos)
-                {
-                    SetUniformInt(name, 1);
-                    samplerValue++;
-                }
-            }
-
-            else if (type == ShaderDataType::Sampler2D && name.find("BRDF") != std::string::npos)
-            {
-                SetUniformInt(name, 2);
-                samplerValue++;
-            }
-        }
-
-        for (auto& [name, type] : m_UniformNamesToTypesMap)
-        {
-            if (type == ShaderDataType::Sampler2D && name.find("BRDF") == std::string::npos)
+            if (type == ShaderDataType::Sampler2D || type == ShaderDataType::Samplercube)
             {
                 SetUniformInt(name, samplerValue++);
             }

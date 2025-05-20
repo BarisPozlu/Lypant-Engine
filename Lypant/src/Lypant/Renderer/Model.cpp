@@ -106,6 +106,8 @@ namespace lypant
 		
 		LY_CORE_ASSERT(aiMaterial->GetTextureCount(aiTextureType_DIFFUSE) == 1 && aiMaterial->GetTextureCount(aiTextureType_UNKNOWN) == 1 && aiMaterial->GetTextureCount(aiTextureType_NORMALS) == 1, "Model textures are not in the expected format.");
 
+		stbi_set_flip_vertically_on_load(0);
+
 		int width;
 		int height;
 		int channels;

@@ -47,7 +47,8 @@ project "Lypant"
 		"%{prj.name}/vendor/ImGui",
 		"%{prj.name}/vendor/glm",
 		"%{prj.name}/vendor/stb_image",
-		"%{prj.name}/vendor/assimp/include"
+		"%{prj.name}/vendor/assimp/include",
+		"%{prj.name}/vendor/entt/include"
 	}
 
 	links
@@ -123,7 +124,8 @@ project "Sandbox"
 		"Lypant/src",
 		"Lypant/vendor/spdlog/include",
 		"Lypant/vendor/ImGui",
-		"Lypant/vendor/glm"
+		"Lypant/vendor/glm",
+		"Lypant/vendor/entt/include"
 	}
 
 	filter "system:windows"

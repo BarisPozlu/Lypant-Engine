@@ -1,15 +1,15 @@
 #pragma once
 
 #include "lypch.h"
-#include "VertexArray.h"
 #include "RenderCommand.h"
 #include "Lypant/Camera/PerspectiveCamera.h"
 #include "Material.h"
-#include "glm/glm.hpp"
+#include <glm/glm.hpp>
 #include "Light.h"
 #include "Mesh.h"
 #include "Model.h"
 #include "Skybox.h"
+#include "Lypant/Scene/Scene.h"
 
 namespace lypant
 {
@@ -21,12 +21,9 @@ namespace lypant
 	class Renderer
 	{
 	public:
-		friend class Application;
-
-		static void BeginScene(const std::shared_ptr<PerspectiveCamera>& camera, const std::vector<std::shared_ptr<Light>>& lights, const std::shared_ptr<Skybox>& environmentMap);
+		static void BeginScene(const Scene::SceneData& sceneData);
 		static void EndScene();
-		static void Submit(const std::shared_ptr<Mesh>& mesh, const glm::mat4& modelMatrix);
-		static void Submit(const std::shared_ptr<Model>& model, const glm::mat4& modelMatrix);
+		static void Submit(const Mesh& mesh, const glm::mat4& modelMatrix);
 		static void Submit(const std::shared_ptr<Skybox>& skybox);
 		// You should set anti aliasing before you call BeginScene().
 		static void SetAntiAliasing(AntiAliasingSetting setting);
@@ -36,7 +33,7 @@ namespace lypant
 		static void Init(uint32_t windowWidth, uint32_t windowHeight);
 		static void Shutdown();
 		static void OnWindowResize(uint32_t width, uint32_t height);
-		static void UpdateEnvironmentBuffers(const std::vector<std::shared_ptr<Light>>& lights);
+		static void UpdateEnvironmentBuffers(const Scene::SceneData& sceneData);
 		static void CreateMSAAFrameBuffer(uint32_t samples);
 		static void UpdateMSAAFrameBufferAttachments(uint32_t samples);
 		static void CreatePostProcessFrameBuffer();
@@ -63,8 +60,6 @@ namespace lypant
 				delete BloomFrameBuffer;
 			}
 		public:
-			std::vector<std::shared_ptr<Light>> Lights;
-			std::shared_ptr<PerspectiveCamera> Camera;
 			std::shared_ptr<Skybox> EnvironmentMap;
 			std::shared_ptr<Cubemap> DiffuseIrradianceMap;
 			std::shared_ptr<Cubemap> PrefilteredMap;
@@ -92,5 +87,8 @@ namespace lypant
 		};
 
 		static RendererData* s_RendererData;
+	private:
+		friend class Application;
+		friend class Scene;
 	};
 }

@@ -84,8 +84,6 @@ namespace lypant
 					{
 						LY_CORE_ASSERT(m_ORMMap, "AORoughnessMetallic map is nullptr despite the shader having a AORoughnessMetallic map.")
 						m_ORMMap->Bind(m_Shader->GetUniformValueInt(name));
-
-						m_Shader->SetUniformInt("u_UseCombinedORM", 1);
 					}
 
 					else if (!m_UseCombinedORM && name.find("AmbientOcclusion") != std::string::npos)
@@ -98,8 +96,6 @@ namespace lypant
 					{
 						LY_CORE_ASSERT(m_RoughnessMap, "RoughnessMapmap is nullptr despite the shader having a Roughness map.")
 						m_RoughnessMap->Bind(m_Shader->GetUniformValueInt(name));
-
-						m_Shader->SetUniformInt("u_UseCombinedORM", 0);
 					}
 
 					else if (!m_UseCombinedORM && name.find("Metallic") != std::string::npos)

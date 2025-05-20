@@ -29,3 +29,8 @@
 #include "Lypant/Renderer/Light.h"
 #include "Lypant/Renderer/Mesh.h"
 #include "Lypant/Renderer/Model.h"
+
+#include "Lypant/Scene/Scene.h"
+#include "Lypant/Scene/Components.h"
+#include "Lypant/Scene/BehaviorComponent.h"
+#include "Lypant/Scene/Entity.h"
