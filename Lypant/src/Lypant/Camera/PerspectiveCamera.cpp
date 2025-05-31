@@ -5,7 +5,7 @@
 namespace lypant
 {
 	PerspectiveCamera::PerspectiveCamera(const glm::vec3& position, float fovy, float aspectRatio, float zNear, float zFar)
-		: m_Position(position), m_Orientation(glm::quatLookAt(glm::vec3(0, 0, -1), glm::vec3(0, 1, 0)))
+		: m_Position(position), m_Orientation(glm::quatLookAt(glm::vec3(0, 0, -1), glm::vec3(0, 1, 0))), m_Fovy(fovy), m_AspectRatio(aspectRatio), m_ZNear(zNear), m_ZFar(zFar)
 	{
 		m_ViewMatrix = glm::mat4_cast(glm::conjugate(m_Orientation)) * glm::translate(glm::mat4(1.0f), -position);
 		m_ProjectionMatrix = glm::perspective(fovy, aspectRatio, zNear, zFar);

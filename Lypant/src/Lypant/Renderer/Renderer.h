@@ -24,6 +24,7 @@ namespace lypant
 		static void BeginScene(const Scene::SceneData& sceneData);
 		static void EndScene();
 		static void Submit(const Mesh& mesh, const glm::mat4& modelMatrix);
+		static void SubmitForShadowPass(const Mesh& mesh, const glm::mat4& modelMatrix);
 		static void Submit(const std::shared_ptr<Skybox>& skybox);
 		// You should set anti aliasing before you call BeginScene().
 		static void SetAntiAliasing(AntiAliasingSetting setting);
@@ -43,6 +44,12 @@ namespace lypant
 		static void DeleteBloomResources();
 		static void CreateBloomTexture(const std::shared_ptr<Texture2D>& sceneTexture);
 		static void CreateBRDFIntegrationMap();
+
+		static void BeginShadowPass(const Light& light, const PerspectiveCamera& camera);
+		static void EndShadowPass();
+		static std::vector<glm::vec4> GetWorldPositionOfFrustumCorners(const glm::mat4& viewProjectionMatrix);
+		static void CalculateDirectionalLightSpaceMatrices(const DirectionalLight& light, const PerspectiveCamera& camera);
+		static void CalculateDirectionalLightSpaceMatrix(const DirectionalLight& light, const PerspectiveCamera& camera, float nearPlane, float farPlane, int cascade);
 	private:
 		struct RendererData
 		{
@@ -58,32 +65,46 @@ namespace lypant
 				delete PostProcessFrameBuffer;
 
 				delete BloomFrameBuffer;
+
+				delete ShadowMapFrameBuffer;
 			}
 		public:
+			// IBL data
 			std::shared_ptr<Skybox> EnvironmentMap;
 			std::shared_ptr<Cubemap> DiffuseIrradianceMap;
 			std::shared_ptr<Cubemap> PrefilteredMap;
 			std::shared_ptr<Texture2D> BRDFIntegrationMap;
 
+			// Light/camera data
 			UniformBuffer* EnvironmentUniformBuffer = nullptr;
 			char* EnvironmentBuffer = nullptr;
 
 			uint32_t WindowWidth = 0;
 			uint32_t WindowHeight = 0;
 
-			AntiAliasingSetting AntiAliasingSetting = AntiAliasingSetting::None;
+			// Anti-aliasing data
+			AntiAliasingSetting AntiAliasingSetting = AntiAliasingSetting::None; 
 			FrameBuffer* MSAAFrameBuffer = nullptr;
 
-			FrameBuffer* PostProcessFrameBuffer = nullptr;
+			// Post-process data
+			FrameBuffer* PostProcessFrameBuffer = nullptr; 
 			std::shared_ptr<VertexArray> PostProcessQuadVertexArray;
 			std::shared_ptr<Shader> PostProcessShader;
 			float Exposure = 1.0f;
 
-			FrameBuffer* BloomFrameBuffer = nullptr;
+			// Bloom data
+			FrameBuffer* BloomFrameBuffer = nullptr; 
 			std::array<std::shared_ptr<Texture2D>, 6> BloomMipTextures; // more mip levels mean larger bloom radius, can be adjusted here
 			std::shared_ptr<Shader> BloomDownsampleShader;
 			std::shared_ptr<Shader> BloomUpsampleShader;
 			bool IsBloomEnabled = false;
+
+			// Shadow map data
+			FrameBuffer* ShadowMapFrameBuffer = nullptr;
+			std::shared_ptr<Shader> CascadedShadowMapShader;
+			std::shared_ptr<Texture2DArray> DirectionalLightShadowMaps;
+			std::array<glm::mat4, 5> DirectionalLightSpaceMatrices;
+			std::array<float, 5> CascadePlaneDistances;
 		};
 
 		static RendererData* s_RendererData;

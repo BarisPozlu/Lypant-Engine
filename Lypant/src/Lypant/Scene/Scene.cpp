@@ -47,6 +47,8 @@ namespace lypant
 	{
 		UpdateSceneData(camera, skybox);
 
+		// Update Components
+
 		m_Registry.view<BehaviorComponent>().each([this, deltaTime](entt::entity entityHandle, BehaviorComponent& component)
 			{
 				if (!component.Instance)
@@ -58,9 +60,30 @@ namespace lypant
 				component.Instance->Tick(deltaTime);
 			});
 		
-		Renderer::BeginScene(m_SceneData);
 
 		auto group = m_Registry.group<TransformComponent>(entt::get<MeshComponent>);
+
+		// Shadow Pass
+		// Only one directional light will cast shadows, I will have to update this in the future after I test shadows in a broader scene
+		for (int i = 0; i < m_SceneData.NumberOfDirectionalLights; i++)
+		{
+			const DirectionalLight light(m_SceneData.DirectionalLightComponents[i]);
+
+			Renderer::BeginShadowPass(light, *m_SceneData.Camera);
+
+			for (entt::entity entity : group)
+			{
+				auto [transform, mesh] = group.get<TransformComponent, MeshComponent>(entity);
+				Renderer::SubmitForShadowPass(mesh.MeshData, transform);
+			}
+		}
+
+		Renderer::EndShadowPass();
+		
+		// 3D Render Pass
+
+		Renderer::BeginScene(m_SceneData);
+
 		for (entt::entity entity : group)
 		{
 			auto [transform, mesh] = group.get<TransformComponent, MeshComponent>(entity);

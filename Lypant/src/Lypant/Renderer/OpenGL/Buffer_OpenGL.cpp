@@ -181,7 +181,24 @@ namespace lypant
 		glBindFramebuffer(GL_READ_FRAMEBUFFER, m_RendererID);
 	}
 
-	void FrameBuffer::AttachColorBuffer(const std::shared_ptr<ColorAttachment>& attachment, int level, int cubemapFace)
+	void FrameBuffer::SetColorBufferToRender(int value) const
+	{
+		Bind();
+
+		if (value == -1)
+		{
+			glDrawBuffer(GL_NONE);
+			glReadBuffer(GL_NONE);
+		}
+
+		else
+		{
+			glDrawBuffer(GL_COLOR_ATTACHMENT0 + value);
+			glReadBuffer(GL_COLOR_ATTACHMENT0 + value);
+		}
+	}
+
+	void FrameBuffer::AttachColorBuffer(const std::shared_ptr<FrameBufferAttachment>& attachment, int level, int cubemapFace)
 	{
 		Bind();
 
@@ -203,11 +220,25 @@ namespace lypant
 		m_ColorAttachment = attachment;
 	}
 
-	void FrameBuffer::AttachDepthStencilBuffer(const std::shared_ptr<DepthStencilAttachment>& attachment) // will be the same imp for each attachment for now.
+	void FrameBuffer::AttachDepthStencilBuffer(const std::shared_ptr<FrameBufferAttachment>& attachment)
 	{
 		Bind();
 
-		glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, attachment->GetID());
+		if (dynamic_cast<RenderBuffer*>(attachment.get()) || dynamic_cast<RenderBufferMultiSample*>(attachment.get()))
+		{
+			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, attachment->GetID());
+		}
+
+		else if (dynamic_cast<Texture2D*>(attachment.get()))
+		{
+			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, attachment->GetID(), 0);
+		}
+
+		else if (dynamic_cast<Texture2DArray*>(attachment.get()))
+		{
+			glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, attachment->GetID(), 0);
+		}
+
 		m_DepthStencilAttachment = attachment;
 	}
 

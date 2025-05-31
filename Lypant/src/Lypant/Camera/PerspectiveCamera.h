@@ -15,6 +15,12 @@ namespace lypant
 		void AddYawInput(float offset);
 
 		inline const glm::vec3& GetPosition() const { return m_Position; }
+		inline float GetFovY() const { return m_Fovy; }
+		inline float GetAspectRatio() const { return m_AspectRatio; }
+		inline float GetNearPlane() const { return m_ZNear; }
+		inline float GetFarPlane() const { return m_ZFar; }
+
+		inline const glm::mat4& GetViewMatrix() const { return m_ViewMatrix; }
 		inline const glm::mat4& GetViewProjectionMatrix() const { return m_ViewProjectionMatrix; }
 
 		glm::vec3 GetRight() const;
@@ -26,6 +32,10 @@ namespace lypant
 	private:
 		glm::vec3 m_Position;
 		glm::quat m_Orientation;
+		float m_Fovy;
+		float m_AspectRatio;
+		float m_ZNear;
+		float m_ZFar;
 
 		glm::mat4 m_ViewMatrix;
 		glm::mat4 m_ProjectionMatrix;

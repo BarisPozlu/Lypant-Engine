@@ -11,16 +11,17 @@ namespace lypant
     {
         switch (type)
         {
-            case GL_FLOAT:          return ShaderDataType::Float;
-            case GL_FLOAT_VEC2:     return ShaderDataType::Float2;
-            case GL_FLOAT_VEC3:     return ShaderDataType::Float3;
-            case GL_FLOAT_VEC4:     return ShaderDataType::Float4;
-            case GL_FLOAT_MAT3:     return ShaderDataType::Mat3;
-            case GL_FLOAT_MAT4:     return ShaderDataType::Mat4;
-            case GL_INT:            return ShaderDataType::Int;
-            case GL_BOOL:           return ShaderDataType::Bool;
-            case GL_SAMPLER_2D:     return ShaderDataType::Sampler2D;
-            case GL_SAMPLER_CUBE:   return ShaderDataType::Samplercube;
+            case GL_FLOAT:              return ShaderDataType::Float;
+            case GL_FLOAT_VEC2:         return ShaderDataType::Float2;
+            case GL_FLOAT_VEC3:         return ShaderDataType::Float3;
+            case GL_FLOAT_VEC4:         return ShaderDataType::Float4;
+            case GL_FLOAT_MAT3:         return ShaderDataType::Mat3;
+            case GL_FLOAT_MAT4:         return ShaderDataType::Mat4;
+            case GL_INT:                return ShaderDataType::Int;
+            case GL_BOOL:               return ShaderDataType::Bool;
+            case GL_SAMPLER_2D:         return ShaderDataType::Sampler2D;
+            case GL_SAMPLER_CUBE:       return ShaderDataType::Samplercube;
+            case GL_SAMPLER_2D_ARRAY:   return ShaderDataType::Sampler2DArray;
         }
 
         LY_CORE_ASSERT(false, "Invalid OpenGL data type!");
@@ -75,6 +76,37 @@ namespace lypant
             return;
         }
         #endif
+
+        uint32_t geometryShader = 0; // 0 is not a valid shader id
+
+        if (source.find("GEOMETRY_SHADER") != std::string::npos)
+        {
+            sourceArray[0] = "#version 460 core\n#define GEOMETRY_SHADER\n";
+
+            geometryShader = glCreateShader(GL_GEOMETRY_SHADER);
+            glShaderSource(geometryShader, 2, sourceArray, nullptr);
+            glCompileShader(geometryShader);
+
+            #ifdef LYPANT_DEBUG
+            isCompiled = 0;
+            glGetShaderiv(geometryShader, GL_COMPILE_STATUS, &isCompiled);
+            if (isCompiled == GL_FALSE)
+            {
+                GLint maxLength = 0;
+                glGetShaderiv(geometryShader, GL_INFO_LOG_LENGTH, &maxLength);
+
+                std::vector<GLchar> infoLog(maxLength);
+                glGetShaderInfoLog(geometryShader, maxLength, &maxLength, &infoLog[0]);
+
+                glDeleteShader(vertexShader);
+                glDeleteShader(geometryShader);
+
+                LY_CORE_ERROR("Fragment shader could not compile.");
+                LY_CORE_ASSERT(false, infoLog.data());
+                return;
+            }
+            #endif
+        }
  
         sourceArray[0] = "#version 460 core\n#define FRAGMENT_SHADER\n";
 
@@ -94,6 +126,10 @@ namespace lypant
             glGetShaderInfoLog(fragmentShader, maxLength, &maxLength, &infoLog[0]);
 
             glDeleteShader(vertexShader);
+            if (geometryShader)
+            {
+                glDeleteShader(geometryShader);
+            }
             glDeleteShader(fragmentShader);
 
             LY_CORE_ERROR("Fragment shader could not compile.");
@@ -105,6 +141,10 @@ namespace lypant
         uint32_t program = glCreateProgram();
 
         glAttachShader(program, vertexShader);
+        if (geometryShader)
+        {
+            glAttachShader(program, geometryShader);
+        }
         glAttachShader(program, fragmentShader);
 
         glLinkProgram(program);
@@ -122,6 +162,10 @@ namespace lypant
 
             glDeleteProgram(program);
             glDeleteShader(vertexShader);
+            if (geometryShader)
+            {
+                glDeleteShader(geometryShader);
+            }
             glDeleteShader(fragmentShader);
 
             LY_CORE_ASSERT(false, infoLog.data());
@@ -130,6 +174,10 @@ namespace lypant
         #endif
 
         glDetachShader(program, vertexShader);
+        if (geometryShader)
+        {
+            glDetachShader(program, geometryShader);
+        }
         glDetachShader(program, fragmentShader);
 
         m_Program = program;
@@ -142,7 +190,7 @@ namespace lypant
 
         for (auto& [name, type] : m_UniformNamesToTypesMap)
         {
-            if (type == ShaderDataType::Sampler2D || type == ShaderDataType::Samplercube)
+            if (type == ShaderDataType::Sampler2D || type == ShaderDataType::Samplercube || type == ShaderDataType::Sampler2DArray)
             {
                 SetUniformInt(name, samplerValue++);
             }

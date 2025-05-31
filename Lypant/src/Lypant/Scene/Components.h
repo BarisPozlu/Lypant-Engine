@@ -68,6 +68,7 @@ namespace lypant
 		float Padding3;
 	private:
 		friend class Scene;
+		friend class PointLight;
 	};
 
 	struct SpotLightComponent
@@ -96,6 +97,7 @@ namespace lypant
 		float Padding3;
 	private:
 		friend class Scene;
+		friend class SpotLight;
 	};
 
 	struct DirectionalLightComponent
@@ -111,6 +113,8 @@ namespace lypant
 	public:
 		glm::vec4 Color;
 		glm::vec4 Direction;
+	private:
+		friend class DirectionalLight;
 	};
 
 }

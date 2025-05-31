@@ -12,6 +12,7 @@ out vec2 v_TexCoord;
 layout (std140, binding = 4) uniform Camera
 {
 	mat4 u_VP;
+	mat4 u_ViewMatrix;
 	vec3 u_ViewPosition;
 };
 
@@ -48,6 +49,7 @@ in vec2 v_TexCoord;
 layout (std140, binding = 4) uniform Camera
 {
 	mat4 u_VP;
+	mat4 u_ViewMatrix;
 	vec3 u_ViewPosition;
 };
 
@@ -109,9 +111,15 @@ uniform samplerCube u_DiffuseIrradianceMap;
 uniform samplerCube u_PreFilteredMap;
 uniform sampler2D u_BRDFIntegrationMap;
 
+uniform sampler2DArray u_DirectionalLightShadowMaps;
+uniform float u_CascadePlaneDistances[5];
+uniform mat4 u_DirectionalLightSpaceMatrices[5];
+
 vec3 CalculatePointLight(int i, vec3 normal, vec3 viewDirection, vec3 albedo, float roughness, float metallic, vec3 F0);
 vec3 CalculateSpotLight(int i, vec3 normal, vec3 viewDirection, vec3 albedo, float roughness, float metallic, vec3 F0);
 vec3 CalculateDirectionalLight(int i, vec3 normal, vec3 viewDirection, vec3 albedo, float roughness, float metallic, vec3 F0);
+
+float CalculateDirectionalLightShadowFactor(vec3 normal, vec3 lightDirection);
 
 float DistributionGGX(vec3 normal, vec3 halfwayDirection, float roughness);
 float GeometrySchlickGGX(float NdotV, float roughness);
@@ -188,6 +196,7 @@ void main()
 	vec3 ambient = (diffuse + specular);
 
 	o_Color = vec4(Lo + ambient, 1.0);
+	//o_Color = vec4(Lo, 1.0);
 }
 
 vec3 CalculatePointLight(int i, vec3 normal, vec3 viewDirection, vec3 albedo, float roughness, float metallic, vec3 F0)
@@ -267,7 +276,51 @@ vec3 CalculateDirectionalLight(int i, vec3 normal, vec3 viewDirection, vec3 albe
 
 	vec3 specular = numerator / denominator;
 
-	return (Kd * albedo / PI + specular) * radiance * max(dot(normal, -u_DirectionalLights[i].Direction), 0.0);
+	return (Kd * albedo / PI + specular) * radiance * max(dot(normal, -u_DirectionalLights[i].Direction), 0.0) * (1 - CalculateDirectionalLightShadowFactor(normal, -u_DirectionalLights[i].Direction));
+}
+
+float CalculateDirectionalLightShadowFactor(vec3 normal, vec3 lightDirection)
+{
+	vec4 worldPosition = vec4(v_WorldPosition, 1.0);
+	vec4 viewPosition = u_ViewMatrix * worldPosition;
+	float depthValue = abs(viewPosition.z);
+	
+	int layer = 4;
+
+	for (int i = 0; i < 4; i++)
+	{
+		if (depthValue < u_CascadePlaneDistances[i])
+		{
+			layer = i;
+			break;
+		}
+	}
+
+	vec4 lightSpacePosition = u_DirectionalLightSpaceMatrices[layer] * worldPosition;
+
+	float shadowFactor = 0;
+	vec3 shadowCoords = lightSpacePosition.xyz / lightSpacePosition.w * 0.5 + 0.5; // xy being texture coords and z being the depth value
+
+	if (shadowCoords.z > 1)
+	{
+		return 0.0;
+	}
+
+	float bias = max(0.05 * (1.0 - dot(normal, lightDirection)), 0.005);
+	bias *= 1 / (u_CascadePlaneDistances[layer] * 0.5);
+
+	vec2 texelSize = 1.0 / textureSize(u_DirectionalLightShadowMaps, 0).xy;
+
+	for (int x = -1; x <= 1; x++)
+	{
+		for (int y = -1; y <= 1; y++)
+		{
+			float sampledDepth = texture(u_DirectionalLightShadowMaps, vec3(shadowCoords.xy + texelSize * vec2(x, y), layer)).r;
+			shadowFactor += shadowCoords.z - bias > sampledDepth ? 1.0 : 0.0;
+		}
+	}
+	
+	return shadowFactor / 9;
 }
 
 float DistributionGGX(vec3 normal, vec3 halfwayDirection, float roughness)

@@ -15,15 +15,23 @@ namespace lypant
 		s_RendererData->WindowWidth = windowWidth;
 		s_RendererData->WindowHeight = windowHeight;
 
-		constexpr int s_BufferSize = sizeof(PointLight) * 40;
-		s_RendererData->EnvironmentBuffer = new char[s_BufferSize];
-		s_RendererData->EnvironmentUniformBuffer = new UniformBuffer(s_BufferSize, nullptr);
+		constexpr int bufferSize = sizeof(PointLight) * 40;
+		s_RendererData->EnvironmentBuffer = new char[bufferSize];
+		s_RendererData->EnvironmentUniformBuffer = new UniformBuffer(bufferSize, nullptr);
 
 		CreatePostProcessFrameBuffer();
 		CreatePostProcessQuadVertexArray();
 		s_RendererData->PostProcessShader = Shader::Load("shaders/PostProcess.glsl");
 
 		CreateBRDFIntegrationMap();
+
+		s_RendererData->ShadowMapFrameBuffer = new FrameBuffer();
+		s_RendererData->ShadowMapFrameBuffer->SetColorBufferToRender(-1);
+		s_RendererData->CascadedShadowMapShader = Shader::Load("shaders/CascadedShadowMap.glsl");
+
+		glm::vec4 borderColor(1.0f, 1.0f, 1.0f, 1.0f);
+
+		s_RendererData->DirectionalLightShadowMaps = std::make_shared<Texture2DArray>(4096, 4096, 5, TextureWrappingOption::Clamp, true, reinterpret_cast<float*>(&borderColor));
 	}
 
 	void Renderer::Shutdown()
@@ -86,8 +94,6 @@ namespace lypant
 		s_RendererData->EnvironmentMap = sceneData.Skybox;
 		UpdateEnvironmentBuffers(sceneData);
 
-		RenderCommand::SetDepthTest(true);
-
 		if (s_RendererData->MSAAFrameBuffer)
 		{
 			s_RendererData->MSAAFrameBuffer->Bind();
@@ -110,11 +116,11 @@ namespace lypant
 			s_RendererData->MSAAFrameBuffer->BlitToFrameBuffer(s_RendererData->PostProcessFrameBuffer, 0, 0, s_RendererData->MSAAFrameBuffer->GetColorBufferWidth(), s_RendererData->MSAAFrameBuffer->GetColorBufferHeight(), 0, 0, s_RendererData->MSAAFrameBuffer->GetColorBufferWidth(), s_RendererData->MSAAFrameBuffer->GetColorBufferHeight());
 		}
 
-		const std::shared_ptr<ColorAttachment>& sceneTexture = s_RendererData->PostProcessFrameBuffer->GetColorBuffer();
+		const std::shared_ptr<Texture2D>& sceneTexture = reinterpret_cast<const std::shared_ptr<Texture2D>&>(s_RendererData->PostProcessFrameBuffer->GetColorBuffer());
 
 		if (s_RendererData->IsBloomEnabled)
 		{
-			CreateBloomTexture(reinterpret_cast<const std::shared_ptr<Texture2D>&>(sceneTexture));
+			CreateBloomTexture(sceneTexture);
 			s_RendererData->BloomMipTextures[0]->Bind(s_RendererData->PostProcessShader->GetUniformValueInt("u_BloomTexture"));
 		}
 
@@ -128,12 +134,14 @@ namespace lypant
 		s_RendererData->PostProcessShader->SetUniformFloat("u_Exposure", s_RendererData->Exposure);
 		s_RendererData->PostProcessShader->SetUniformInt("u_IsBloomEnabled", s_RendererData->IsBloomEnabled);
 		RenderCommand::DrawIndexed(s_RendererData->PostProcessQuadVertexArray);
+
+		RenderCommand::SetDepthTest(true);
 	}
 
 	void Renderer::Submit(const Mesh& mesh, const glm::mat4& modelMatrix)
 	{
 		auto& shader = mesh.GetMaterial()->GetShader();
-
+		// TODO: have a get uniform value with a location parameter
 		if (shader->GetUniformLocation("u_DiffuseIrradianceMap") != -1) s_RendererData->DiffuseIrradianceMap->Bind(shader->GetUniformValueInt("u_DiffuseIrradianceMap"));
 		if (shader->GetUniformLocation("u_PreFilteredMap") != -1) s_RendererData->PrefilteredMap->Bind(shader->GetUniformValueInt("u_PreFilteredMap"));
 		if (shader->GetUniformLocation("u_BRDFIntegrationMap") != -1) s_RendererData->BRDFIntegrationMap->Bind(shader->GetUniformValueInt("u_BRDFIntegrationMap"));
@@ -143,6 +151,24 @@ namespace lypant
 
 		shader->SetUniformMatrix4Float("u_ModelMatrix", (float*)&modelMatrix[0][0]);
 		shader->SetUniformMatrix3Float("u_NormalMatrix", (float*)&(glm::transpose(glm::inverse(glm::mat3(modelMatrix))))[0][0]);
+
+		if (shader->GetUniformLocation("u_DirectionalLightShadowMaps") != -1)
+		{
+			s_RendererData->DirectionalLightShadowMaps->Bind(shader->GetUniformValueInt("u_DirectionalLightShadowMaps"));
+			for (int i = 0; i < s_RendererData->DirectionalLightSpaceMatrices.size(); i++)
+			{
+				shader->SetUniformMatrix4Float("u_DirectionalLightSpaceMatrices[" + std::to_string(i) + "]", &s_RendererData->DirectionalLightSpaceMatrices[i][0][0]);
+				shader->SetUniformFloat("u_CascadePlaneDistances[" + std::to_string(i) + "]", s_RendererData->CascadePlaneDistances[i]);
+			}
+		}
+
+		RenderCommand::DrawIndexed(mesh.GetVertexArray());
+	}
+
+	void Renderer::SubmitForShadowPass(const Mesh& mesh, const glm::mat4& modelMatrix)
+	{
+		mesh.GetVertexArray()->Bind();
+		s_RendererData->CascadedShadowMapShader->SetUniformMatrix4Float("u_ModelMatrix", (float*)&modelMatrix[0][0]);
 
 		RenderCommand::DrawIndexed(mesh.GetVertexArray());
 	}
@@ -252,6 +278,10 @@ namespace lypant
 
 		offset += sizeof(glm::mat4);
 
+		memcpy(&s_RendererData->EnvironmentBuffer[offset], &sceneData.Camera->GetViewMatrix(), sizeof(glm::mat4));
+
+		offset += sizeof(glm::mat4);
+
 		memcpy(&s_RendererData->EnvironmentBuffer[offset], &sceneData.Camera->GetPosition(), sizeof(glm::vec3));
 
 		offset += sizeof(glm::vec3);
@@ -274,7 +304,7 @@ namespace lypant
 		}
 
 		s_RendererData->EnvironmentUniformBuffer->BindRange(3, offsetForNumberOfLights, totalNumberOfLightsSize);
-		s_RendererData->EnvironmentUniformBuffer->BindRange(4, offsetForCamera, sizeof(glm::mat4) + sizeof(glm::vec3));
+		s_RendererData->EnvironmentUniformBuffer->BindRange(4, offsetForCamera, 2 * sizeof(glm::mat4) + sizeof(glm::vec3));
 	}
 
 	void Renderer::CreateMSAAFrameBuffer(uint32_t samples)
@@ -440,5 +470,114 @@ namespace lypant
 
 		FrameBuffer::BindDefaultFrameBuffer();
 		RenderCommand::SetViewport(0, 0, s_RendererData->WindowWidth, s_RendererData->WindowHeight);
+	}
+
+	void Renderer::BeginShadowPass(const Light& light, const PerspectiveCamera& camera)
+	{
+		if (light.Type == LightTypeDirectional)
+		{		
+			CalculateDirectionalLightSpaceMatrices(reinterpret_cast<const DirectionalLight&>(light), camera);
+			
+			s_RendererData->ShadowMapFrameBuffer->Bind();
+			s_RendererData->ShadowMapFrameBuffer->AttachDepthStencilBuffer(s_RendererData->DirectionalLightShadowMaps);
+
+			RenderCommand::Clear();
+			RenderCommand::SetViewport(0, 0, s_RendererData->DirectionalLightShadowMaps->GetWidth(), s_RendererData->DirectionalLightShadowMaps->GetHeight());
+
+			s_RendererData->CascadedShadowMapShader->Bind();
+			for (int i = 0; i < s_RendererData->DirectionalLightSpaceMatrices.size(); i++)
+			{
+				s_RendererData->CascadedShadowMapShader->SetUniformMatrix4Float("u_DirectionalLightSpaceMatrices[" + std::to_string(i) + "]", &s_RendererData->DirectionalLightSpaceMatrices[i][0][0]);
+			}
+
+			s_RendererData->DirectionalLightShadowMaps->Bind(0);
+		}
+	}
+
+	void Renderer::EndShadowPass()
+	{
+		RenderCommand::SetViewport(0, 0, s_RendererData->WindowWidth, s_RendererData->WindowHeight);
+	}
+
+	std::vector<glm::vec4> Renderer::GetWorldPositionOfFrustumCorners(const glm::mat4& viewProjectionMatrix)
+	{
+		std::vector<glm::vec4> positions;
+		positions.reserve(8);
+
+		glm::mat4 inverseVP = glm::inverse(viewProjectionMatrix);
+
+		for (int x = 0; x < 2; x++)
+		{
+			for (int y = 0; y < 2; y++)
+			{
+				for (int z = 0; z < 2; z++)
+				{
+					glm::vec4 position = inverseVP * glm::vec4(x * 2.0f - 1.0f, y * 2.0f - 1.0f, z * 2.0f - 1.0f, 1.0f);
+					positions.push_back(position / position.w);
+				}
+			}
+		}
+
+		return positions;
+	}
+
+	void Renderer::CalculateDirectionalLightSpaceMatrices(const DirectionalLight& light, const PerspectiveCamera& camera)
+	{
+		s_RendererData->CascadePlaneDistances = { camera.GetFarPlane() / 50.0f, camera.GetFarPlane() / 25.0f, camera.GetFarPlane() / 10.0f, camera.GetFarPlane() / 2.0f, camera.GetFarPlane()};
+
+		CalculateDirectionalLightSpaceMatrix(light, camera, camera.GetNearPlane(), s_RendererData->CascadePlaneDistances[0], 0);
+
+		for (int i = 1; i < s_RendererData->DirectionalLightSpaceMatrices.size(); i++)
+		{
+			CalculateDirectionalLightSpaceMatrix(light, camera, s_RendererData->CascadePlaneDistances[i - 1], s_RendererData->CascadePlaneDistances[i], i);
+		}
+	}
+
+	void Renderer::CalculateDirectionalLightSpaceMatrix(const DirectionalLight& light, const PerspectiveCamera& camera, float nearPlane, float farPlane, int cascade)
+	{
+		glm::mat4 cameraCascadedProjection = glm::perspective(camera.GetFovY(), camera.GetAspectRatio(), nearPlane, farPlane);
+		std::vector<glm::vec4> frustumCorners = GetWorldPositionOfFrustumCorners(cameraCascadedProjection * camera.GetViewMatrix());
+
+		glm::vec3 center(0.0f);
+		for (const glm::vec4& corner : frustumCorners)
+		{
+			center += glm::vec3(corner);
+		}
+		center /= frustumCorners.size();
+
+		glm::mat4 viewMatrix = glm::lookAt(center - glm::vec3(light.Direction), center, glm::vec3(0.0f, 1.0f, 0.0f));
+
+		float minX = std::numeric_limits<float>::max();
+		float maxX = std::numeric_limits<float>::lowest();
+		float minY = std::numeric_limits<float>::max();
+		float maxY = std::numeric_limits<float>::lowest();
+		float minZ = std::numeric_limits<float>::max();
+		float maxZ = std::numeric_limits<float>::lowest();
+		for (const glm::vec4& corner : frustumCorners)
+		{
+			glm::vec4 LightSpaceCorner = viewMatrix * corner;
+			minX = std::min(minX, LightSpaceCorner.x);
+			maxX = std::max(maxX, LightSpaceCorner.x);
+			minY = std::min(minY, LightSpaceCorner.y);
+			maxY = std::max(maxY, LightSpaceCorner.y);
+			minZ = std::min(minZ, LightSpaceCorner.z);
+			maxZ = std::max(maxZ, LightSpaceCorner.z);
+		}
+
+		// if the far plane of the camera is too low, it causes the rectangular prisms to be too small (orthographic projection)
+		// note that we use camera's far plane to determine the cascade plane distances 
+		// which in turn makes it so that for low cascade values the light is outside the prism which causes the near plane to be positive
+		// that is something we don't want so that the objects that are behind the light can also cast shadows
+		// I noticed this bug when I got close to an object (which makes it so that we use the first cascade) and a very closeby object that was
+		// supposed to cast shadows wasn't casting shadows because it was not within the near and far plane so nowhere to be found in the shadow map
+		constexpr float zMult = 10.0f;
+		LY_CORE_ASSERT(minZ < 0, "minZ is always supposed to be negative");
+		LY_CORE_ASSERT(maxZ > 0, "maxZ is always supposed to be positive");
+		minZ *= zMult;
+		maxZ *= zMult;
+
+		glm::mat4 projectionMatrix = glm::ortho(minX, maxX, minY, maxY, -maxZ, -minZ);
+		
+		s_RendererData->DirectionalLightSpaceMatrices[cascade] = projectionMatrix * viewMatrix;
 	}
 }

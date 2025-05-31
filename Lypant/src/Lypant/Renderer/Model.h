@@ -29,5 +29,7 @@ namespace lypant
 		};
 	private:
 		std::vector<Mesh> m_Meshes;
+		std::string m_Path;
+		std::string m_Directory;
 	};
 }

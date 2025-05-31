@@ -10,8 +10,10 @@
 
 namespace lypant
 {
-	Model::Model(const std::string& path, bool loadMaterials)
+	Model::Model(const std::string& path, bool loadMaterials) : m_Path(path)
 	{
+		m_Directory = path.substr(0, path.find_last_of('/') + 1);
+
 		Assimp::Importer importer;
 		const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
 		LY_CORE_ASSERT(scene && !(scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) && scene->mRootNode, importer.GetErrorString());
@@ -103,9 +105,9 @@ namespace lypant
 		}
 
 		aiMaterial* aiMaterial = scene->mMaterials[mesh->mMaterialIndex];
-		
-		LY_CORE_ASSERT(aiMaterial->GetTextureCount(aiTextureType_DIFFUSE) == 1 && aiMaterial->GetTextureCount(aiTextureType_UNKNOWN) == 1 && aiMaterial->GetTextureCount(aiTextureType_NORMALS) == 1, "Model textures are not in the expected format.");
 
+		LY_CORE_ASSERT(aiMaterial->GetTextureCount(aiTextureType_DIFFUSE) == 1 && aiMaterial->GetTextureCount(aiTextureType_UNKNOWN) == 1 && aiMaterial->GetTextureCount(aiTextureType_NORMALS) == 1, "Model textures are not in the expected format.");
+		
 		stbi_set_flip_vertically_on_load(0);
 
 		int width;
@@ -115,25 +117,44 @@ namespace lypant
 		aiString localPath;
 
 		aiMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &localPath);
-		const aiTexture* texture = scene->GetEmbeddedTexture(localPath.C_Str());
-		unsigned char* buffer = stbi_load_from_memory(reinterpret_cast<unsigned char*>(texture->pcData), texture->mWidth, &width, &height, &channels, 0);
-		std::shared_ptr<Texture2D> albedoMap = std::make_shared<Texture2D>(width, height, buffer, false);
-		stbi_image_free(buffer);
 
-		aiMaterial->GetTexture(aiTextureType_UNKNOWN, 0, &localPath);
-		texture = scene->GetEmbeddedTexture(localPath.C_Str());
-		buffer = stbi_load_from_memory(reinterpret_cast<unsigned char*>(texture->pcData), texture->mWidth, &width, &height, &channels, 0);
-		std::shared_ptr<Texture2D> aoRoughnessMetallicMap = std::make_shared<Texture2D>(width, height, buffer);
-		stbi_image_free(buffer);
+		if (localPath.C_Str()[0] != '*')
+		{
+			std::string diffuseMapPath = m_Directory + localPath.C_Str();
+		
+			aiMaterial->GetTexture(aiTextureType_UNKNOWN, 0, &localPath);
+			std::string aoRoughnessMetallicMapPath = m_Directory + localPath.C_Str();
 
-		aiMaterial->GetTexture(aiTextureType_NORMALS, 0, &localPath);
-		texture = scene->GetEmbeddedTexture(localPath.C_Str());
-		buffer = stbi_load_from_memory(reinterpret_cast<unsigned char*>(texture->pcData), texture->mWidth, &width, &height, &channels, 0);
-		std::shared_ptr<Texture2D> normalMap = std::make_shared<Texture2D>(width, height, buffer);
-		stbi_image_free(buffer);
+			aiMaterial->GetTexture(aiTextureType_NORMALS, 0, &localPath);
+			std::string normalMapPath = m_Directory + localPath.C_Str();
 
-		std::shared_ptr<Material> material = std::make_shared<Material>("shaders/Model_PBR.glsl", albedoMap, aoRoughnessMetallicMap, normalMap);
+			std::shared_ptr<Material> material = std::make_shared<Material>("shaders/Model_PBR.glsl", diffuseMapPath, aoRoughnessMetallicMapPath, normalMapPath);
+			m_Meshes.emplace_back(vertexArray, material);
+		}
 
-		m_Meshes.emplace_back(vertexArray, material);
+		else
+		{
+			const aiTexture* texture = scene->GetEmbeddedTexture(localPath.C_Str());
+			unsigned char* buffer = stbi_load_from_memory(reinterpret_cast<unsigned char*>(texture->pcData), texture->mWidth, &width, &height, &channels, 0);
+			std::shared_ptr<Texture2D> albedoMap = std::make_shared<Texture2D>(width, height, buffer, false);
+			stbi_image_free(buffer);
+
+			aiMaterial->GetTexture(aiTextureType_UNKNOWN, 0, &localPath);
+			texture = scene->GetEmbeddedTexture(localPath.C_Str());
+			buffer = stbi_load_from_memory(reinterpret_cast<unsigned char*>(texture->pcData), texture->mWidth, &width, &height, &channels, 0);
+			std::shared_ptr<Texture2D> aoRoughnessMetallicMap = std::make_shared<Texture2D>(width, height, buffer);
+			stbi_image_free(buffer);
+
+			aiMaterial->GetTexture(aiTextureType_NORMALS, 0, &localPath);
+			texture = scene->GetEmbeddedTexture(localPath.C_Str());
+			buffer = stbi_load_from_memory(reinterpret_cast<unsigned char*>(texture->pcData), texture->mWidth, &width, &height, &channels, 0);
+			std::shared_ptr<Texture2D> normalMap = std::make_shared<Texture2D>(width, height, buffer);
+			stbi_image_free(buffer);
+
+			std::shared_ptr<Material> material = std::make_shared<Material>("shaders/Model_PBR.glsl", albedoMap, aoRoughnessMetallicMap, normalMap);
+
+			m_Meshes.emplace_back(vertexArray, material);
+		}
+
 	}
 }

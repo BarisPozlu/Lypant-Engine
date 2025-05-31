@@ -7,6 +7,7 @@ out vec3 v_DirectionVector;
 layout (std140, binding = 4) uniform Camera
 {
 	mat4 u_VP;
+	mat4 u_ViewMatrix;
 	vec3 u_ViewPosition;
 };
 

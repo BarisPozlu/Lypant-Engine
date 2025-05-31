@@ -13,11 +13,14 @@ namespace lypant
 		m_UseCombinedORM = true;
 	}
 
-	Material::Material(const std::string& shaderPath, const std::string& albedoMapPath, const std::string& aoMapPath, const std::string& roughnessMapPath, const std::string& metallicMapPath, const std::string& normalMapPath)
+	Material::Material(const std::string& shaderPath, const std::string& albedoMapPath, const std::string& roughnessMapPath, const std::string& metallicMapPath, const std::string& normalMapPath, const std::string& aoMapPath)
 	{
 		m_Shader = Shader::Load(shaderPath);
 		m_AlbedoMap = Texture2D::Load(albedoMapPath, false);
-		m_AmbientOcclusionMap = Texture2D::Load(aoMapPath);
+		if (aoMapPath.size())
+		{
+			m_AmbientOcclusionMap = Texture2D::Load(aoMapPath);
+		}
 		m_RoughnessMap = Texture2D::Load(roughnessMapPath);
 		m_MetallicMap = Texture2D::Load(metallicMapPath);
 		m_NormalMap = Texture2D::Load(normalMapPath);

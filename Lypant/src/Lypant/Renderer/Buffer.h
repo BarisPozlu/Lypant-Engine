@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Shader.h"
-#include "FrameBufferAttachmentBase.h"
+#include "FrameBufferAttachment.h"
 
 // this is not supposed to be included in the application in the future when the engine matures.
 // when that happens make the asserts core again.
@@ -93,14 +93,14 @@ namespace lypant
 		uint32_t m_RendererID;
 	};
 
-	class RenderBuffer : public DepthStencilAttachment
+	class RenderBuffer : public FrameBufferAttachment
 	{
 	public:
 		RenderBuffer(int width, int height);
 		~RenderBuffer();
 	};
 
-	class RenderBufferMultiSample : public DepthStencilAttachment
+	class RenderBufferMultiSample : public FrameBufferAttachment
 	{
 	public:
 		RenderBufferMultiSample(int width, int height, int samples);
@@ -117,6 +117,8 @@ namespace lypant
 		void Bind() const;
 		void BindDraw() const;
 		void BindRead() const;
+		// value is the color attachment value. -1 for none.
+		void SetColorBufferToRender(int value) const;
 
 		inline uint32_t GetColorBufferWidth() const
 		{
@@ -130,18 +132,18 @@ namespace lypant
 			return m_ColorAttachment->GetHeight();
 		}
 
-		inline const std::shared_ptr<ColorAttachment>& GetColorBuffer() { return m_ColorAttachment; }
-		inline const std::shared_ptr<DepthStencilAttachment>& GetDepthStencilBuffer() { return m_DepthStencilAttachment; }
+		inline const std::shared_ptr<FrameBufferAttachment>& GetColorBuffer() { return m_ColorAttachment; }
+		inline const std::shared_ptr<FrameBufferAttachment>& GetDepthStencilBuffer() { return m_DepthStencilAttachment; }
 
 		// cubemapface is only relevant if you are attaching a cubemap as the ColorAttachment.
-		void AttachColorBuffer(const std::shared_ptr<ColorAttachment>& attachment, int level = 0, int cubemapFace = -1);
-		void AttachDepthStencilBuffer(const std::shared_ptr<DepthStencilAttachment>& attachment);
+		void AttachColorBuffer(const std::shared_ptr<FrameBufferAttachment>& attachment, int level = 0, int cubemapFace = -1);
+		void AttachDepthStencilBuffer(const std::shared_ptr<FrameBufferAttachment>& attachment);
 
 		void BlitToFrameBuffer(FrameBuffer* otherBuffer, int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1) const;
 		void BlitToDefault(int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1) const;
 	private:
 		uint32_t m_RendererID;
-		std::shared_ptr<ColorAttachment> m_ColorAttachment;
-		std::shared_ptr<DepthStencilAttachment> m_DepthStencilAttachment;
+		std::shared_ptr<FrameBufferAttachment> m_ColorAttachment;
+		std::shared_ptr<FrameBufferAttachment> m_DepthStencilAttachment;
 	};
 }

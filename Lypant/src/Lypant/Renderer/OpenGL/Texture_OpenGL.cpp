@@ -95,7 +95,7 @@ namespace lypant
 		stbi_image_free(buffer);
 	}
 
-	Texture2D::Texture2D(int width, int height, unsigned char* data, bool linearSpace, bool floatingBuffer, int channels, TextureWrappingOption wrappingOption)
+	Texture2D::Texture2D(int width, int height, unsigned char* data, bool linearSpace, bool floatingBuffer, int channels, TextureWrappingOption wrappingOption, bool IsDepthTexture, float* borderColor)
 	{
 		m_Width = width;
 		m_Height = height;
@@ -107,9 +107,20 @@ namespace lypant
 		glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+		if (wrappingOption == TextureWrappingOption::Clamp && borderColor)
+		{
+			glTextureParameterfv(m_RendererID, GL_TEXTURE_BORDER_COLOR, borderColor);
+		}
+
 		GLenum internalFormat;
 		GLenum dataFormat;
 		GLenum type;
+
+		if (IsDepthTexture)
+		{
+			glTextureStorage2D(m_RendererID, 1, GL_DEPTH_COMPONENT32F, width, height);
+			return;
+		}
 
 		if (channels == 4)
 		{
@@ -219,6 +230,45 @@ namespace lypant
 		glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, m_RendererID);
 	}
 
+	Texture2DArray::Texture2DArray(int width, int height, int depth, TextureWrappingOption wrappingOption, bool IsDepthTexture, float* borderColor)
+	{
+		m_Width = width;
+		m_Height = height;
+
+		glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &m_RendererID);
+
+		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GetOpenGLTextureWrappingOption(wrappingOption));
+		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GetOpenGLTextureWrappingOption(wrappingOption));
+		glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		if (wrappingOption == TextureWrappingOption::Clamp && borderColor)
+		{
+			glTextureParameterfv(m_RendererID, GL_TEXTURE_BORDER_COLOR, borderColor);
+		}
+
+		if (IsDepthTexture)
+		{
+			glTextureStorage3D(m_RendererID, 1, GL_DEPTH_COMPONENT32F, width, height, depth);
+		}
+
+		else
+		{
+			glTextureStorage3D(m_RendererID, 1, GL_RGB8, width, height, depth);
+		}
+
+	}
+
+	Texture2DArray::~Texture2DArray()
+	{
+		glDeleteTextures(1, &m_RendererID);
+	}
+
+	void Texture2DArray::Bind(uint32_t slot) const
+	{
+		glActiveTexture(GL_TEXTURE0 + slot);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, m_RendererID);
+	}
 
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////////////////////////////////////////
