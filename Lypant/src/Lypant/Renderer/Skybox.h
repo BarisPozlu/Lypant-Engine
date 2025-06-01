@@ -16,8 +16,6 @@ namespace lypant
 		inline const std::shared_ptr<VertexArray>& GetVertexArray() const { return m_VertexArray; }
 		inline const std::shared_ptr<Shader>& GetShader() const { return m_Shader; }
 		inline const std::shared_ptr<Cubemap>& GetCubemap() const { return m_Cubemap; }
-	public:
-		static std::shared_ptr<VertexArray> CreateCubePositionVertexArray();
 	private:
 		std::shared_ptr<VertexArray> m_VertexArray;
 		std::shared_ptr<Shader> m_Shader;

@@ -39,7 +39,6 @@ namespace lypant
 		static void UpdateMSAAFrameBufferAttachments(uint32_t samples);
 		static void CreatePostProcessFrameBuffer();
 		static void UpdatePostProcessFrameBufferAttachments();
-		static void CreatePostProcessQuadVertexArray();
 		static void CreateBloomResources();
 		static void DeleteBloomResources();
 		static void CreateBloomTexture(const std::shared_ptr<Texture2D>& sceneTexture);

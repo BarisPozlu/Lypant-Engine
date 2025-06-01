@@ -1,5 +1,6 @@
 #include "lypch.h"
 #include "Renderer.h"
+#include "Lypant/Util/VertexArrays.h"
 
 namespace lypant
 {
@@ -20,7 +21,8 @@ namespace lypant
 		s_RendererData->EnvironmentUniformBuffer = new UniformBuffer(bufferSize, nullptr);
 
 		CreatePostProcessFrameBuffer();
-		CreatePostProcessQuadVertexArray();
+		s_RendererData->PostProcessQuadVertexArray = util::VertexArrays::GetQuad();
+
 		s_RendererData->PostProcessShader = Shader::Load("shaders/PostProcess.glsl");
 
 		CreateBRDFIntegrationMap();
@@ -333,39 +335,6 @@ namespace lypant
 		std::shared_ptr<RenderBuffer> renderBuffer = std::make_shared<RenderBuffer>(s_RendererData->WindowWidth, s_RendererData->WindowHeight);
 		s_RendererData->PostProcessFrameBuffer->AttachColorBuffer(texture);
 		s_RendererData->PostProcessFrameBuffer->AttachDepthStencilBuffer(renderBuffer);
-	}
-
-	void Renderer::CreatePostProcessQuadVertexArray()
-	{
-		s_RendererData->PostProcessQuadVertexArray = std::make_shared<VertexArray>();
-
-		float vertexData[]
-		{
-			-1.0f, -1.0f, 0.0f,  0.0f, 0.0f,
-			 1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
-			 1.0f,  1.0f, 0.0f,  1.0f, 1.0f,
-			-1.0f,  1.0f, 0.0f,  0.0f, 1.0f
-		};
-
-		std::shared_ptr<VertexBuffer> vertexBuffer = std::make_shared<VertexBuffer>(vertexData, sizeof(vertexData));
-
-		BufferLayout layout
-		{
-			{ShaderDataType::Float3, "a_Position"}, {ShaderDataType::Float2, "a_TexCoord"}
-		};
-
-		vertexBuffer->SetLayout(layout);
-
-		s_RendererData->PostProcessQuadVertexArray->AddVertexBuffer(vertexBuffer);
-
-		unsigned int indexData[]
-		{
-			0, 1, 2,
-			2, 3, 0
-		};
-
-		std::shared_ptr<IndexBuffer> indexBuffer = std::make_shared<IndexBuffer>(indexData, 6);
-		s_RendererData->PostProcessQuadVertexArray->SetIndexBuffer(indexBuffer);
 	}
 
 	void Renderer::CreateBloomResources()

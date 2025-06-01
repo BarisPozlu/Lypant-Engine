@@ -3,12 +3,13 @@
 #include "Buffer.h"
 #include "Renderer.h"
 #include "Lypant/Core/Application.h"
+#include "Lypant/Util/VertexArrays.h"
 
 namespace lypant
 {
 	std::shared_ptr<Cubemap> Cubemap::GetDiffuseIrradianceMap() const
 	{
-		std::shared_ptr<VertexArray> vertexArray = Skybox::CreateCubePositionVertexArray();
+		std::shared_ptr<VertexArray> vertexArray = util::VertexArrays::GetCubemapCube();
 		std::shared_ptr<Shader> shader = Shader::Load("shaders/CalculateDiffuseIrradianceMap.glsl");
 		shader->SetUniformInt("u_EnvironmentMap", 0); // talk
 
@@ -50,7 +51,7 @@ namespace lypant
 
 	std::shared_ptr<Cubemap> Cubemap::GetPreFilteredMap() const
 	{
-		std::shared_ptr<VertexArray> vertexArray = Skybox::CreateCubePositionVertexArray();
+		std::shared_ptr<VertexArray> vertexArray = util::VertexArrays::GetCubemapCube();
 		std::shared_ptr<Shader> shader = Shader::Load("shaders/CalculatePrefilteredMap.glsl");
 		shader->SetUniformInt("u_EnvironmentMap", 0); // talk
 
@@ -102,7 +103,7 @@ namespace lypant
 
 	std::shared_ptr<Cubemap> Cubemap::CreateFromEquirectangularTexture(const std::string& path)
 	{
-		std::shared_ptr<VertexArray> vertexArray = Skybox::CreateCubePositionVertexArray();
+		std::shared_ptr<VertexArray> vertexArray = util::VertexArrays::GetCubemapCube();
 		std::shared_ptr<Shader> shader = Shader::Load("shaders/EquirectangularToCubemap.glsl");
 
 		std::shared_ptr<Texture2D> equirectangularTexture = Texture2D::Load(path, false, false, true);

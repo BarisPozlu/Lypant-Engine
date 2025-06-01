@@ -6,6 +6,7 @@
 #include "Lypant/Renderer/Renderer.h"
 #include <GLFW/glfw3.h> // temp
 #include "Lypant/Input/Input.h" // temp
+#include "Lypant/Util/VertexArrays.h"
 
 namespace lypant
 {
@@ -21,6 +22,8 @@ namespace lypant
 		m_Window = std::make_unique<Window>();
 		m_Window->SetEventCallback(std::bind(&Application::OnEvent, this, std::placeholders::_1));
 
+		util::VertexArrays::Create();
+
 		Renderer::Init(m_Window->GetWidth(), m_Window->GetHeight());
 
 		m_ImGuiLayer = new ImGuiLayer();
@@ -33,6 +36,7 @@ namespace lypant
 	{
 		Input::Shutdown();
 		Renderer::Shutdown();
+		util::VertexArrays::Destroy();
 	}
 
 	void Application::Run()
