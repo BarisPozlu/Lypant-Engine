@@ -12,13 +12,13 @@ namespace lypant
 		{
 		public:
 			// location 0: position, location 1: texCoords, location 2: normal, location 3: tangent
-			inline static std::shared_ptr<VertexArray> GetSphere() { return s_Sphere; }
+			inline static const std::shared_ptr<VertexArray>& GetSphere() { return s_Sphere; }
 			// location 0: position, location 1: texCoords, location 2: normal, location 3: tangent
-			inline static std::shared_ptr<VertexArray> GetCube() { return s_Cube; }
+			inline static const std::shared_ptr<VertexArray>& GetCube() { return s_Cube; }
 			// location 0: position, location 1: texCoords
-			inline static std::shared_ptr<VertexArray> GetQuad() { return s_Quad; }
+			inline static const std::shared_ptr<VertexArray>& GetQuad() { return s_Quad; }
 			//location 0: position, note: winding order is opposite here because it is supoosed to be rendered from the inside
-			inline static std::shared_ptr<VertexArray> GetCubemapCube() { return s_CubemapCube; }
+			inline static const std::shared_ptr<VertexArray>& GetCubemapCube() { return s_CubemapCube; }
 		private:
 			// creates all the vertex arrays
 			static void Create();

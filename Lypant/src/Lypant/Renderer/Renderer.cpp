@@ -1,6 +1,7 @@
 #include "lypch.h"
 #include "Renderer.h"
 #include "Lypant/Util/VertexArrays.h"
+#include "Lypant/Util/Util.h"
 
 namespace lypant
 {
@@ -25,7 +26,7 @@ namespace lypant
 
 		s_RendererData->PostProcessShader = Shader::Load("shaders/PostProcess.glsl");
 
-		CreateBRDFIntegrationMap();
+		s_RendererData->BRDFIntegrationMap = util::CreateBRDFIntegrationMap();
 
 		s_RendererData->ShadowMapFrameBuffer = new FrameBuffer();
 		s_RendererData->ShadowMapFrameBuffer->SetColorBufferToRender(-1);
@@ -89,8 +90,8 @@ namespace lypant
 	{
 		if (s_RendererData->EnvironmentMap != sceneData.Skybox)
 		{
-			s_RendererData->DiffuseIrradianceMap = sceneData.Skybox->GetCubemap()->GetDiffuseIrradianceMap();
-			s_RendererData->PrefilteredMap = sceneData.Skybox->GetCubemap()->GetPreFilteredMap();
+			s_RendererData->DiffuseIrradianceMap = util::GetDiffuseIrradianceMap(sceneData.Skybox->GetCubemap());
+			s_RendererData->PrefilteredMap = util::GetPreFilteredMap(sceneData.Skybox->GetCubemap());
 		}
 
 		s_RendererData->EnvironmentMap = sceneData.Skybox;
@@ -420,25 +421,6 @@ namespace lypant
 		RenderCommand::SetBlendFunction(BlendFunc::SourceAlpha_OneMinusSourceAlpha);
 		RenderCommand::SetViewport(0, 0, s_RendererData->WindowWidth, s_RendererData->WindowHeight);
 		FrameBuffer::BindDefaultFrameBuffer();
-	}
-
-	void Renderer::CreateBRDFIntegrationMap()
-	{
-		s_RendererData->BRDFIntegrationMap = std::make_shared<Texture2D>(512, 512, nullptr, true, true, 2, TextureWrappingOption::Clamp);
-		std::shared_ptr<Shader> shader = Shader::Load("shaders/CalculateBRDFIntegrationMap.glsl");
-
-		RenderCommand::SetViewport(0, 0, 512, 512);
-
-		FrameBuffer framebuffer;
-
-		framebuffer.AttachColorBuffer(s_RendererData->BRDFIntegrationMap);
-
-		s_RendererData->PostProcessQuadVertexArray->Bind();
-		shader->Bind();
-		RenderCommand::DrawIndexed(s_RendererData->PostProcessQuadVertexArray);
-
-		FrameBuffer::BindDefaultFrameBuffer();
-		RenderCommand::SetViewport(0, 0, s_RendererData->WindowWidth, s_RendererData->WindowHeight);
 	}
 
 	void Renderer::BeginShadowPass(const Light& light, const PerspectiveCamera& camera)

@@ -42,7 +42,6 @@ namespace lypant
 		static void CreateBloomResources();
 		static void DeleteBloomResources();
 		static void CreateBloomTexture(const std::shared_ptr<Texture2D>& sceneTexture);
-		static void CreateBRDFIntegrationMap();
 
 		static void BeginShadowPass(const Light& light, const PerspectiveCamera& camera);
 		static void EndShadowPass();

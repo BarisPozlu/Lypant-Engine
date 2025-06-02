@@ -59,11 +59,6 @@ namespace lypant
 		Cubemap(const std::string& path);
 		Cubemap(int width, int height, bool generateMipMap = false, bool floatingBuffer = false);
 		virtual ~Cubemap();
-		void Bind(uint32_t slot) const;
-		std::shared_ptr<Cubemap> GetDiffuseIrradianceMap() const;
-		std::shared_ptr<Cubemap> GetPreFilteredMap() const;
-	public:
-		// Has to render to a different render target. Make sure to only call this before any other rendering is done. Binds the default framebuffer when it is done.
-		static std::shared_ptr<Cubemap> CreateFromEquirectangularTexture(const std::string& path);
+		void Bind(uint32_t slot) const;	
 	};
 }

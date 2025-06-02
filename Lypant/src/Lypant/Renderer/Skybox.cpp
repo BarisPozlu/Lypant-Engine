@@ -4,6 +4,7 @@
 #include "Shader.h"
 #include "Texture.h"
 #include "Lypant/Util/VertexArrays.h"
+#include "Lypant/Util/Util.h"
 
 namespace lypant
 {
@@ -14,7 +15,7 @@ namespace lypant
 
         if (equirectangular)
         {
-            m_Cubemap = Cubemap::CreateFromEquirectangularTexture(path);
+            m_Cubemap = util::CreateCubemapFromEquirectangularTexture(path);
         }
 
         else
