@@ -7,37 +7,21 @@ namespace lypant
 {
 	namespace util
 	{
-		void VertexArrays::Create()
-		{
-			CreateSphere();
-			CreateCube();
-			CreateQuad();
-			CreateCubemapCube();
-		}
-
-		void VertexArrays::Destroy()
-		{
-			s_Sphere.reset();
-			s_Cube.reset();
-			s_Quad.reset();
-			s_CubemapCube.reset();
-		}
-
-		void VertexArrays::CreateSphere()
+		static std::shared_ptr<VertexArray> CreateSphere()
 		{
 			Model model("models/sphere/sphere.glb", false);
-			s_Sphere = model.GetMeshes()[0].GetVertexArray();
+			return model.GetMeshes()[0].GetVertexArray();
 		}
 
-		void VertexArrays::CreateCube()
+		static std::shared_ptr<VertexArray> CreateCube()
 		{
 			Model model("models/cube/cube.glb", false);
-			s_Cube = model.GetMeshes()[0].GetVertexArray();
+			return model.GetMeshes()[0].GetVertexArray();
 		}
 
-		void VertexArrays::CreateQuad()
+		static std::shared_ptr<VertexArray> CreateQuad()
 		{
-			s_Quad = std::make_shared<VertexArray>();
+			std::shared_ptr<VertexArray> vertexArray = std::make_shared<VertexArray>();
 
 			float vertexData[]
 			{
@@ -56,7 +40,7 @@ namespace lypant
 
 			vertexBuffer->SetLayout(layout);
 
-			s_Quad->AddVertexBuffer(vertexBuffer);
+			vertexArray->AddVertexBuffer(vertexBuffer);
 
 			unsigned int indexData[]
 			{
@@ -65,12 +49,14 @@ namespace lypant
 			};
 
 			std::shared_ptr<IndexBuffer> indexBuffer = std::make_shared<IndexBuffer>(indexData, 6);
-			s_Quad->SetIndexBuffer(indexBuffer);
+			vertexArray->SetIndexBuffer(indexBuffer);
+
+			return vertexArray;
 		}
 
-		void VertexArrays::CreateCubemapCube()
+		static std::shared_ptr<VertexArray> CreateCubemapCube()
 		{
-			s_CubemapCube = std::make_shared<VertexArray>();
+			std::shared_ptr<VertexArray> vertexArray = std::make_shared<VertexArray>();
 
 			// TODO: Update the vertex data not to contain duplicate vertices
 			float vertexData[]
@@ -127,7 +113,7 @@ namespace lypant
 
 			vertexBuffer->SetLayout(layout);
 
-			s_CubemapCube->AddVertexBuffer(vertexBuffer);
+			vertexArray->AddVertexBuffer(vertexBuffer);
 
 			unsigned int indexData[36];
 			for (int i = 0; i < 36; i++)
@@ -136,8 +122,25 @@ namespace lypant
 			}
 
 			std::shared_ptr<IndexBuffer> indexBuffer = std::make_shared<IndexBuffer>(indexData, 36);
-			s_CubemapCube->SetIndexBuffer(indexBuffer);
+			vertexArray->SetIndexBuffer(indexBuffer);
+
+			return vertexArray;
 		}
 
+		void VertexArrays::Create()
+		{
+			s_Sphere = CreateSphere();
+			s_Cube = CreateCube();
+			s_Quad = CreateQuad();
+			s_CubemapCube = CreateCubemapCube();
+		}
+
+		void VertexArrays::Destroy()
+		{
+			s_Sphere.reset();
+			s_Cube.reset();
+			s_Quad.reset();
+			s_CubemapCube.reset();
+		}
 	}
 }

@@ -9,6 +9,8 @@ out vec3 v_WorldPosition;
 out mat3 v_TBNMatrix;
 out vec2 v_TexCoord;
 
+out vec3 v_Normal;
+
 layout (std140, binding = 4) uniform Camera
 {
 	mat4 u_VP;
@@ -19,18 +21,28 @@ layout (std140, binding = 4) uniform Camera
 uniform mat4 u_ModelMatrix;
 uniform mat3 u_NormalMatrix;
 
+uniform bool u_UseNormalMap;
+
 void main()
 {
 	v_WorldPosition = vec3(u_ModelMatrix * a_Position);
 
 	vec3 normal = normalize(u_NormalMatrix * a_Normal);
 
-	vec3 tangent = normalize(u_NormalMatrix * a_Tangent);
-	tangent = normalize(tangent - dot(tangent, normal) * normal);
+	if (u_UseNormalMap)
+	{
+		vec3 tangent = normalize(u_NormalMatrix * a_Tangent);
+		tangent = normalize(tangent - dot(tangent, normal) * normal);
 
-	vec3 bitangent = cross(normal, tangent);
+		vec3 bitangent = cross(normal, tangent);
 
-	v_TBNMatrix = mat3(tangent, bitangent, normal);
+		v_TBNMatrix = mat3(tangent, bitangent, normal);
+	}
+	
+	else
+	{
+		v_Normal = normal;
+	}
 
 	v_TexCoord = a_TexCoord;
 	gl_Position = u_VP * u_ModelMatrix * a_Position;
@@ -45,6 +57,7 @@ layout (location = 0) out vec4 o_Color;
 in vec3 v_WorldPosition;
 in mat3 v_TBNMatrix;
 in vec2 v_TexCoord;
+in vec3 v_Normal;
 
 layout (std140, binding = 4) uniform Camera
 {
@@ -107,6 +120,11 @@ uniform sampler2D u_RoughnessMap;
 uniform sampler2D u_MetallicMap;
 uniform sampler2D u_NormalMap;
 
+uniform bool u_UseNormalMap;
+uniform vec3 u_Albedo;
+uniform float u_Roughness;
+uniform float u_Metallic;
+
 uniform samplerCube u_DiffuseIrradianceMap;
 uniform samplerCube u_PreFilteredMap;
 uniform sampler2D u_BRDFIntegrationMap;
@@ -131,11 +149,22 @@ const float PI = 3.14159265359;
 
 void main()
 {
-	vec3 normal = texture(u_NormalMap, v_TexCoord).rgb * 2.0 - 1.0;
-	normal = normalize(v_TBNMatrix * normal);
+	vec3 normal;
+
+	if (u_UseNormalMap)
+	{
+		normal = texture(u_NormalMap, v_TexCoord).rgb * 2.0 - 1.0;
+		normal = normalize(v_TBNMatrix * normal);
+	}
+
+	else
+	{
+		normal = normalize(v_Normal);
+	}
+
 	vec3 viewDirection = normalize(u_ViewPosition - v_WorldPosition);
 
-	vec3 albedo = texture(u_AlbedoMap, v_TexCoord).rgb;
+	vec3 albedo = texture(u_AlbedoMap, v_TexCoord).rgb * u_Albedo;
 
 	float ao;
 	float roughness;
@@ -145,15 +174,15 @@ void main()
 	{
 		vec3 orm = texture(u_ORMMap, v_TexCoord).rgb;
 		ao = orm.r;
-		roughness = orm.g;
-		metallic = orm.b;
+		roughness = orm.g * u_Roughness;
+		metallic = orm.b * u_Metallic;
 	}
 
 	else
 	{
 		ao = texture(u_AmbientOcclusionMap, v_TexCoord).r;
-		roughness = texture(u_RoughnessMap, v_TexCoord).r;
-		metallic = texture(u_MetallicMap, v_TexCoord).r;		
+		roughness = texture(u_RoughnessMap, v_TexCoord).r * u_Roughness;
+		metallic = texture(u_MetallicMap, v_TexCoord).r * u_Metallic;		
 	}
 
 	vec3 F0 = vec3(0.04);

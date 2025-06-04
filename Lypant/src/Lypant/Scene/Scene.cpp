@@ -27,9 +27,9 @@ namespace lypant
 		return entity;
 	}
 
-	std::vector<Entity> Scene::LoadModel(const std::string& path, bool loadMaterials)
+	std::vector<Entity> Scene::LoadModel(const std::string& path, bool loadMaterials, bool flipUVs)
 	{
-		Model model(path, loadMaterials);
+		Model model(path, loadMaterials, flipUVs);
 		std::vector<Entity> entities;
 		entities.reserve(model.GetMeshes().size());
 

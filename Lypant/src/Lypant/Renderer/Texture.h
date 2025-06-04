@@ -13,7 +13,7 @@ namespace lypant
 	class Texture2D : public FrameBufferAttachment
 	{
 	public:
-		inline static std::shared_ptr<Texture2D> Load(const std::string& path, bool linearSpace = true, bool generateMipmap = true, bool floatingBuffer = false)
+		inline static std::shared_ptr<Texture2D> Load(const std::string& path, bool linearSpace = true, bool generateMipmap = true, bool floatingBuffer = false, TextureWrappingOption wrappingOption = TextureWrappingOption::Repeat)
 		{
 			const auto it = s_Cache.find(path);
 			if (it != s_Cache.end())
@@ -21,12 +21,12 @@ namespace lypant
 				return std::shared_ptr<Texture2D>(it->second);
 			}
 
-			std::shared_ptr<Texture2D> texture = std::make_shared<Texture2D>(path, linearSpace, generateMipmap, floatingBuffer);
+			std::shared_ptr<Texture2D> texture = std::make_shared<Texture2D>(path, linearSpace, generateMipmap, floatingBuffer, wrappingOption);
 			s_Cache[path] = std::weak_ptr<Texture2D>(texture);
 			return texture;
 		}
 	public:
-		Texture2D(const std::string& path, bool linearSpace, bool generateMipmap, bool floatingBuffer);
+		Texture2D(const std::string& path, bool linearSpace, bool generateMipmap, bool floatingBuffer, TextureWrappingOption wrappingOption);
 		Texture2D(int width, int height, unsigned char* data = nullptr, bool linearSpace = true, bool floatingBuffer = false, int channels = 3, TextureWrappingOption wrappingOption = TextureWrappingOption::Repeat, bool IsDepthTexture = false, float* borderColor = nullptr);
 		virtual ~Texture2D();
 		void Bind(uint32_t slot) const;

@@ -21,11 +21,11 @@ void main()
 
 layout(location = 0) out vec4 o_Color;
 
-uniform vec3 u_LightColor;
+uniform vec3 u_Albedo;
 
 void main()
 {
-	o_Color = vec4(u_LightColor, 1.0);
+	o_Color = vec4(u_Albedo, 1.0);
 }
 
 #endif

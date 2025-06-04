@@ -38,9 +38,9 @@ class ExampleLayer : public Layer
 public:
 	ExampleLayer()
 	{
-		m_Camera = std::make_shared<EditorPerspectiveCamera>(glm::vec3(0.0f, 0.0f, 2.5f), glm::radians(45.0f), 1280.0f / 720.0f, 0.1f, 500.0f);
+		m_Camera = std::make_shared<EditorPerspectiveCamera>(glm::vec3(0.0f, 1.0f, 2.5f), glm::radians(45.0f), 1280.0f / 720.0f, 0.1f, 500.0f);
 
-		std::shared_ptr<Material> lightMaterial = std::make_shared<Material>("shaders/FlatColor.glsl", glm::vec3(10.0, 0.0, 0.0));
+		std::shared_ptr<Material> lightMaterial = std::make_shared<Material>("shaders/FlatColor.glsl", glm::vec3(20.0, 0.0, 0.0));
 
 		m_Skybox1 = std::make_shared<Skybox>("textures/skybox/flamingo_pan_4k.hdr", true);
 		m_Skybox2 = std::make_shared<Skybox>("textures/skybox/example2.jpeg", true);
@@ -52,35 +52,43 @@ public:
 		m_Scene = std::make_shared<Scene>();
 
 		m_GoldSphereEntity = m_Scene->CreateEntity();
-		m_GoldSphereEntity.GetComponent<TransformComponent>().Position = glm::vec3(1.0, 0.0, -4.0);
+		m_GoldSphereEntity.GetComponent<TransformComponent>().Position = glm::vec3(1.0, 1.0, -4.0);
 		m_GoldSphereEntity.GetComponent<TransformComponent>().Scale = glm::vec3(0.3f);
 		m_GoldSphereEntity.AddComponent<MeshComponent>(DefaultGeometry::Sphere, sphereMaterial);
 		
 		m_LightEntity = m_Scene->CreateEntity();
-		m_LightEntity.GetComponent<TransformComponent>().Position = glm::vec3(1.0, 0.0, -1.5);
-		m_LightEntity.GetComponent<TransformComponent>().Scale = glm::vec3(0.3f);
+		m_LightEntity.GetComponent<TransformComponent>().Position = glm::vec3(1.0, 1.0, -1.5);
+		m_LightEntity.GetComponent<TransformComponent>().Scale = glm::vec3(0.5f);
 		m_LightEntity.AddComponent<MeshComponent>(DefaultGeometry::Cube, lightMaterial);
 		//m_LightEntity.AddComponent<PointLightComponent>(glm::vec3(10.0, 0.0, 0.0));
 		
-		m_LightEntity2 = m_Scene->CreateEntity();
-		m_LightEntity2.GetComponent<TransformComponent>().Scale = glm::vec3(0.3f);
-		m_LightEntity2.AddComponent<MeshComponent>(DefaultGeometry::Cube, std::make_shared<Material>("shaders/FlatColor.glsl", glm::vec3(5.0, 5.0, 10.0)));
-		m_LightEntity2.AddComponent<PointLightComponent>(glm::vec3(5.0, 5.0, 10.0));
+		//m_LightEntity2 = m_Scene->CreateEntity();
+		//m_LightEntity2.GetComponent<TransformComponent>().Scale = glm::vec3(0.3f);
+		//m_LightEntity2.AddComponent<MeshComponent>(DefaultGeometry::Cube, std::make_shared<Material>("shaders/FlatColor.glsl", glm::vec3(5.0, 5.0, 10.0)));
+		//m_LightEntity2.AddComponent<PointLightComponent>(glm::vec3(5.0, 5.0, 10.0));
 
 		// these specific models are just one 1 mesh
 		m_Weapon = m_Scene->LoadModel("models/weapon/weapon1.glb")[0];
-		m_Weapon.GetComponent<TransformComponent>().Position = glm::vec3(-1.0f, 0.0f, -1.5f);
+		m_Weapon.GetComponent<TransformComponent>().Position = glm::vec3(0.0f, 3.0f, -1.5f);
 		m_Weapon.GetComponent<TransformComponent>().Scale = glm::vec3(0.02f);
 		m_Weapon.GetComponent<TransformComponent>().Rotation = glm::normalize(glm::angleAxis(glm::radians(-90.0f), glm::vec3(0, 1, 0)) * glm::angleAxis(glm::radians(-90.0f), glm::vec3(1, 0, 0)));
 		
-		m_Helmet = m_Scene->LoadModel("models/helmet/DamagedHelmet.gltf")[0];
-		m_Helmet.GetComponent<TransformComponent>().Position = glm::vec3(2.0f, 0.0f, -2.0f);
-		m_Helmet.GetComponent<TransformComponent>().Rotation = glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0)));
+		//m_Helmet = m_Scene->LoadModel("models/helmet/DamagedHelmet.gltf")[0];
+		//m_Helmet.GetComponent<TransformComponent>().Position = glm::vec3(2.0f, 0.0f, -2.0f);
+		//m_Helmet.GetComponent<TransformComponent>().Rotation = glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0)));
 
 		m_Weapon.AddComponent<BehaviorComponent>().Bind<TestScript>();
 
 		m_DirectionalLightEntity = m_Scene->CreateEntity();
-		m_DirectionalLightEntity.AddComponent<DirectionalLightComponent>(glm::vec3(5.0f), glm::vec3(0.0f, 0.0f, -1.0f));
+		m_DirectionalLightEntity.AddComponent<DirectionalLightComponent>(glm::vec3(5.0f), glm::vec3(0.0f, -1.0f, -1.0f));
+
+		m_Sponza = m_Scene->LoadModel("models/sponza/Sponza.gltf", true, false);
+		for (auto& entity : m_Sponza)
+		{
+			entity.GetComponent<TransformComponent>().Scale = glm::vec3(0.01f);
+			entity.GetComponent<TransformComponent>().Rotation = glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
+		}
+
 	}
 
 	virtual void Tick(float deltaTime) override
@@ -140,6 +148,11 @@ public:
 
 		ImGui::DragFloat("Exposure", &m_Exposure, 0.01f, 0.1f, 5.0f);
 
+		auto& directionalLightComponent = m_DirectionalLightEntity.GetComponent<DirectionalLightComponent>();
+
+		ImGui::SliderFloat3("Directional Light", (float*)&directionalLightComponent.Direction, -1, 1);
+		directionalLightComponent.SetDirection(directionalLightComponent.Direction);
+
 		ImGui::Checkbox("Bloom", &m_IsBloomEnabled);
 
 		ImGui::End();
@@ -152,6 +165,8 @@ private:
 	Entity m_GoldSphereEntity;
 	Entity m_LightEntity;
 	Entity m_LightEntity2;
+
+	std::vector<Entity> m_Sponza;
 
 	Entity m_DirectionalLightEntity;
 

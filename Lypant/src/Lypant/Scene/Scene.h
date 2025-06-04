@@ -21,7 +21,7 @@ namespace lypant
 		// entities start with a transform component attached to them but is allowed to be removed
 		Entity CreateEntity();
 		// entities do not have parent-child relationship yet, all entities created here have transform and mesh components attached to them
-		std::vector<Entity> LoadModel(const std::string& path, bool loadMaterials = true);
+		std::vector<Entity> LoadModel(const std::string& path, bool loadMaterials = true, bool flipUVs = true);
 		void Tick(float deltaTime, const std::shared_ptr<PerspectiveCamera>& camera, const std::shared_ptr<Skybox>& skybox);
 	private:
 		void UpdateSceneData(const std::shared_ptr<PerspectiveCamera>& camera, const std::shared_ptr<Skybox>& skybox);

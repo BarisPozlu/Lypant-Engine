@@ -10,9 +10,8 @@ namespace lypant
 
 	namespace util
 	{
-		std::shared_ptr<Cubemap> GetDiffuseIrradianceMap(const std::shared_ptr<Cubemap>& source);
-		std::shared_ptr<Cubemap> GetPreFilteredMap(const std::shared_ptr<Cubemap>& source);
+		std::shared_ptr<Cubemap> CreateDiffuseIrradianceMap(const std::shared_ptr<Cubemap>& source);
+		std::shared_ptr<Cubemap> CreatePreFilteredMap(const std::shared_ptr<Cubemap>& source);
 		std::shared_ptr<Cubemap> CreateCubemapFromEquirectangularTexture(const std::string& path);
-		std::shared_ptr<Texture2D> CreateBRDFIntegrationMap();
 	}
 }

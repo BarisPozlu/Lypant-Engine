@@ -7,6 +7,7 @@
 #include <GLFW/glfw3.h> // temp
 #include "Lypant/Input/Input.h" // temp
 #include "Lypant/Util/VertexArrays.h"
+#include "Lypant/Util/Textures.h"
 
 namespace lypant
 {
@@ -23,6 +24,7 @@ namespace lypant
 		m_Window->SetEventCallback(std::bind(&Application::OnEvent, this, std::placeholders::_1));
 
 		util::VertexArrays::Create();
+		util::Textures::Create();
 
 		Renderer::Init(m_Window->GetWidth(), m_Window->GetHeight());
 
@@ -36,6 +38,7 @@ namespace lypant
 	{
 		Input::Shutdown();
 		Renderer::Shutdown();
+		util::Textures::Destroy();
 		util::VertexArrays::Destroy();
 	}
 

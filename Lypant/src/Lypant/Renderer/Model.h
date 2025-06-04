@@ -13,7 +13,7 @@ namespace lypant
 	class Model
 	{
 	public:
-		Model(const std::string& path, bool loadMaterials = true);
+		Model(const std::string& path, bool loadMaterials = true, bool flipUVs = true);
 
 		inline const std::vector<Mesh>& GetMeshes() const { return m_Meshes; }
 	private:

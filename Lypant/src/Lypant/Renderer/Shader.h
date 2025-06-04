@@ -78,12 +78,12 @@ namespace lypant
 
 		int GetUniformValueInt(const std::string& name) const;
 
-		void SetUniformMatrix4Float(const std::string& name, float* value) const;
-		void SetUniformMatrix3Float(const std::string& name, float* value) const;
+		void SetUniformMatrix4Float(const std::string& name, const float* value) const;
+		void SetUniformMatrix3Float(const std::string& name, const float* value) const;
 
-		void SetUniformVec4Float(const std::string& name, float* value) const;
-		void SetUniformVec3Float(const std::string& name, float* value) const;
-		void SetUniformVec2Float(const std::string& name, float* value) const;
+		void SetUniformVec4Float(const std::string& name, const float* value) const;
+		void SetUniformVec3Float(const std::string& name, const float* value) const;
+		void SetUniformVec2Float(const std::string& name, const float* value) const;
 
 		void SetUniformFloat(const std::string& name, float value) const;
 		void SetUniformInt(const std::string& name, int value) const;

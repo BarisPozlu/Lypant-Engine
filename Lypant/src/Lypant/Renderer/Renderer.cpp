@@ -2,6 +2,7 @@
 #include "Renderer.h"
 #include "Lypant/Util/VertexArrays.h"
 #include "Lypant/Util/Util.h"
+#include "Lypant/Util/Textures.h"
 
 namespace lypant
 {
@@ -26,7 +27,7 @@ namespace lypant
 
 		s_RendererData->PostProcessShader = Shader::Load("shaders/PostProcess.glsl");
 
-		s_RendererData->BRDFIntegrationMap = util::CreateBRDFIntegrationMap();
+		s_RendererData->BRDFIntegrationMap = util::Textures::GetBRDFIntegrationMap();
 
 		s_RendererData->ShadowMapFrameBuffer = new FrameBuffer();
 		s_RendererData->ShadowMapFrameBuffer->SetColorBufferToRender(-1);
@@ -90,8 +91,8 @@ namespace lypant
 	{
 		if (s_RendererData->EnvironmentMap != sceneData.Skybox)
 		{
-			s_RendererData->DiffuseIrradianceMap = util::GetDiffuseIrradianceMap(sceneData.Skybox->GetCubemap());
-			s_RendererData->PrefilteredMap = util::GetPreFilteredMap(sceneData.Skybox->GetCubemap());
+			s_RendererData->DiffuseIrradianceMap = util::CreateDiffuseIrradianceMap(sceneData.Skybox->GetCubemap());
+			s_RendererData->PrefilteredMap = util::CreatePreFilteredMap(sceneData.Skybox->GetCubemap());
 		}
 
 		s_RendererData->EnvironmentMap = sceneData.Skybox;
@@ -143,7 +144,7 @@ namespace lypant
 
 	void Renderer::Submit(const Mesh& mesh, const glm::mat4& modelMatrix)
 	{
-		auto& shader = mesh.GetMaterial()->GetShader();
+		auto& shader = mesh.GetMaterial()->Shader;
 		// TODO: have a get uniform value with a location parameter
 		if (shader->GetUniformLocation("u_DiffuseIrradianceMap") != -1) s_RendererData->DiffuseIrradianceMap->Bind(shader->GetUniformValueInt("u_DiffuseIrradianceMap"));
 		if (shader->GetUniformLocation("u_PreFilteredMap") != -1) s_RendererData->PrefilteredMap->Bind(shader->GetUniformValueInt("u_PreFilteredMap"));

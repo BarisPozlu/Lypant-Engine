@@ -8,6 +8,8 @@ namespace lypant
 
 	namespace util
 	{
+		// the purpose of the class is to provide and easy way to get some common vertex arrays
+		// all vertex arrays are created and deleted by the application for now
 		class VertexArrays
 		{
 		public:
@@ -24,10 +26,6 @@ namespace lypant
 			static void Create();
 			// destroys all the vertex arrays
 			static void Destroy();
-			static void CreateSphere();
-			static void CreateCube();
-			static void CreateQuad();
-			static void CreateCubemapCube();
 		private:
 			inline static std::shared_ptr<VertexArray> s_Sphere;
 			inline static std::shared_ptr<VertexArray> s_Cube;

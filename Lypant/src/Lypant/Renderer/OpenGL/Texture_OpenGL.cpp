@@ -22,7 +22,7 @@ namespace lypant
 		return -1;
 	}
 
-	Texture2D::Texture2D(const std::string& path, bool linearSpace, bool generateMipmap, bool floatingBuffer) : m_Path(path)
+	Texture2D::Texture2D(const std::string& path, bool linearSpace, bool generateMipmap, bool floatingBuffer, TextureWrappingOption wrappingOption) : m_Path(path)
 	{
 		glCreateTextures(GL_TEXTURE_2D, 1, &m_RendererID);
 
@@ -45,10 +45,13 @@ namespace lypant
 			type = GL_UNSIGNED_BYTE;
 		}
 
-		LY_CORE_ASSERT(buffer, "Failed to load the image!");
+		stbi_set_flip_vertically_on_load(0);
 
-		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		LY_CORE_ASSERT(buffer, "Failed to load the image!");
+		LY_CORE_ASSERT(channels == 1 || channels == 3 || channels == 4, "Number of channels in the texture is not supported.");
+
+		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GetOpenGLTextureWrappingOption(wrappingOption));
+		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GetOpenGLTextureWrappingOption(wrappingOption));
 		glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 		GLenum internalFormat;
@@ -66,13 +69,11 @@ namespace lypant
 			dataFormat = GL_RGB;
 		}
 
-		else if (channels == 4)
+		else
 		{
 			floatingBuffer ? internalFormat = GL_RGBA16F : linearSpace ? internalFormat = GL_RGBA8 : internalFormat = GL_SRGB8_ALPHA8;
 			dataFormat = GL_RGBA;
 		}
-
-		LY_CORE_ASSERT(channels == 1 || channels == 3 || channels == 4, "Number of channels in the texture is not supported.");
 
 		if (generateMipmap)
 		{
@@ -97,6 +98,7 @@ namespace lypant
 
 	Texture2D::Texture2D(int width, int height, unsigned char* data, bool linearSpace, bool floatingBuffer, int channels, TextureWrappingOption wrappingOption, bool IsDepthTexture, float* borderColor)
 	{
+		LY_CORE_ASSERT(channels == 1 || channels == 2 || channels == 3 || channels == 4, "Number of channels in the texture is not supported.");
 		m_Width = width;
 		m_Height = height;
 
@@ -170,6 +172,23 @@ namespace lypant
 			{
 				type = GL_UNSIGNED_BYTE;
 				internalFormat = GL_RG8;
+			}
+		}
+
+		else
+		{
+			dataFormat = GL_RED;
+
+			if (floatingBuffer)
+			{
+				type = GL_FLOAT;
+				internalFormat = GL_R16F;
+			}
+
+			else
+			{
+				type = GL_UNSIGNED_BYTE;
+				internalFormat = GL_R8;
 			}
 		}
 
@@ -295,8 +314,6 @@ namespace lypant
 
 		std::string directory = path.substr(0, path.find_last_of('/') + 1);
 		std::string extension = path.substr(path.find_last_of('.'));
-
-		stbi_set_flip_vertically_on_load(0);
 
 		for (int i = 0; i < numberOfFaces; i++)
 		{

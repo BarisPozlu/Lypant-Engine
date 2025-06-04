@@ -10,7 +10,7 @@ namespace lypant
 {
 	namespace util
 	{
-		std::shared_ptr<Cubemap> GetDiffuseIrradianceMap(const std::shared_ptr<Cubemap>& source)
+		std::shared_ptr<Cubemap> CreateDiffuseIrradianceMap(const std::shared_ptr<Cubemap>& source)
 		{
 			const auto& vertexArray = VertexArrays::GetCubemapCube();
 			std::shared_ptr<Shader> shader = Shader::Load("shaders/CalculateDiffuseIrradianceMap.glsl");
@@ -52,7 +52,7 @@ namespace lypant
 			return diffuseIrradianceMap;
 		}
 
-		std::shared_ptr<Cubemap> GetPreFilteredMap(const std::shared_ptr<Cubemap>& source)
+		std::shared_ptr<Cubemap> CreatePreFilteredMap(const std::shared_ptr<Cubemap>& source)
 		{
 			const auto& vertexArray = VertexArrays::GetCubemapCube();
 			std::shared_ptr<Shader> shader = Shader::Load("shaders/CalculatePrefilteredMap.glsl");
@@ -145,27 +145,6 @@ namespace lypant
 			RenderCommand::SetViewport(0, 0, Application::Get().GetWindow().GetWidth(), Application::Get().GetWindow().GetHeight());
 
 			return cubemap;
-		}
-
-		std::shared_ptr<Texture2D> CreateBRDFIntegrationMap()
-		{
-			std::shared_ptr<Texture2D> BRDFIntegrationMap = std::make_shared<Texture2D>(512, 512, nullptr, true, true, 2, TextureWrappingOption::Clamp);
-			std::shared_ptr<Shader> shader = Shader::Load("shaders/CalculateBRDFIntegrationMap.glsl");
-
-			RenderCommand::SetViewport(0, 0, 512, 512);
-
-			FrameBuffer framebuffer;
-
-			framebuffer.AttachColorBuffer(BRDFIntegrationMap);
-
-			VertexArrays::GetQuad()->Bind();
-			shader->Bind();
-			RenderCommand::DrawIndexed(VertexArrays::GetQuad());
-
-			FrameBuffer::BindDefaultFrameBuffer();
-			RenderCommand::SetViewport(0, 0, Application::Get().GetWindow().GetWidth(), Application::Get().GetWindow().GetHeight());
-
-			return BRDFIntegrationMap;
 		}
 	}
 }
