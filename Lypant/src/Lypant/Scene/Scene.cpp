@@ -48,7 +48,6 @@ namespace lypant
 		UpdateSceneData(camera, skybox);
 
 		// Update Components
-
 		m_Registry.view<BehaviorComponent>().each([this, deltaTime](entt::entity entityHandle, BehaviorComponent& component)
 			{
 				if (!component.Instance)
@@ -59,28 +58,39 @@ namespace lypant
 				}
 				component.Instance->Tick(deltaTime);
 			});
-		
 
 		auto group = m_Registry.group<TransformComponent>(entt::get<MeshComponent>);
 
 		// Shadow Pass
-		// Only one directional light will cast shadows, I will have to update this in the future after I test shadows in a broader scene
-		for (int i = 0; i < m_SceneData.NumberOfDirectionalLights; i++)
+		// For now I have a shadow pass for each light type
+	
+		// Only one directional light can cast shadows
+		if (m_SceneData.NumberOfDirectionalLights > 0)
 		{
-			const DirectionalLight light(m_SceneData.DirectionalLightComponents[i]);
-
-			Renderer::BeginShadowPass(light, *m_SceneData.Camera);
+			Renderer::BeginShadowPass(m_SceneData, LightTypeDirectional);
 
 			for (entt::entity entity : group)
 			{
 				auto [transform, mesh] = group.get<TransformComponent, MeshComponent>(entity);
-				Renderer::SubmitForShadowPass(mesh.MeshData, transform);
+				Renderer::SubmitForShadowPass(mesh.MeshData, transform, LightTypeDirectional);
+			}
+		}
+
+		// At most 8 spot lights can cast shadows
+		if (m_SceneData.NumberOfSpotLights > 0)
+		{
+			Renderer::BeginShadowPass(m_SceneData, LightTypeSpot);
+
+			for (entt::entity entity : group)
+			{
+				auto [transform, mesh] = group.get<TransformComponent, MeshComponent>(entity);
+				Renderer::SubmitForShadowPass(mesh.MeshData, transform, LightTypeSpot);
 			}
 		}
 
 		Renderer::EndShadowPass();
 		
-		// 3D Render Pass
+		// Lighting Pass
 
 		Renderer::BeginScene(m_SceneData);
 
@@ -95,6 +105,8 @@ namespace lypant
 
 	void Scene::UpdateSceneData(const std::shared_ptr<PerspectiveCamera>& camera, const std::shared_ptr<Skybox>& skybox)
 	{
+		int shadowMapIndex = 0;
+
 		m_SceneData.NumberOfPointLights = m_Registry.storage<PointLightComponent>().size();
 		if (m_SceneData.NumberOfPointLights)
 		{
@@ -104,12 +116,20 @@ namespace lypant
 				auto [pointLight, transform] = group.get<PointLightComponent, TransformComponent>(entity);
 				pointLight.Position = transform.Position;
 			}
+
 			m_SceneData.PointLightComponents = *(m_Registry.storage<PointLightComponent>().raw());
+			for (int i = 0; i < m_SceneData.NumberOfPointLights; i++)
+			{
+				PointLightComponent& pointLight = m_SceneData.PointLightComponents[i];
+				pointLight.CastShadows ? pointLight.ShadowMapIndex = shadowMapIndex++ : pointLight.ShadowMapIndex = -1;
+			}
 		}
 		else
 		{
 			m_SceneData.PointLightComponents = nullptr;
 		}
+
+		shadowMapIndex = 0;
 
 		m_SceneData.NumberOfSpotLights = m_Registry.storage<SpotLightComponent>().size();
 		if (m_SceneData.NumberOfSpotLights)
@@ -120,17 +140,30 @@ namespace lypant
 				auto [spotLight, transform] = group.get<SpotLightComponent, TransformComponent>(entity);
 				spotLight.Position = glm::vec4(transform.Position, 0.0f);
 			}
+
 			m_SceneData.SpotLightComponents = *(m_Registry.storage<SpotLightComponent>().raw());
+			for (int i = 0; i < m_SceneData.NumberOfSpotLights; i++)
+			{
+				SpotLightComponent& spotLight = m_SceneData.SpotLightComponents[i];
+				spotLight.CastShadows ? spotLight.ShadowMapIndex = shadowMapIndex++ : spotLight.ShadowMapIndex = -1;
+			}
 		}
 		else
 		{
 			m_SceneData.SpotLightComponents = nullptr;
 		}
 
+		shadowMapIndex = 0;
+
 		m_SceneData.NumberOfDirectionalLights = m_Registry.storage<DirectionalLightComponent>().size();
 		if (m_SceneData.NumberOfDirectionalLights)
 		{
 			m_SceneData.DirectionalLightComponents = *(m_Registry.storage<DirectionalLightComponent>().raw());
+			for (int i = 0; i < m_SceneData.NumberOfDirectionalLights; i++)
+			{
+				DirectionalLightComponent& directionalLight = m_SceneData.DirectionalLightComponents[i];
+				directionalLight.CastShadows ? directionalLight.ShadowMapIndex = shadowMapIndex++ : directionalLight.ShadowMapIndex = -1;
+			}
 		}
 		else
 		{

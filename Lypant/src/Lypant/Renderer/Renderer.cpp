@@ -36,6 +36,9 @@ namespace lypant
 		glm::vec4 borderColor(1.0f, 1.0f, 1.0f, 1.0f);
 
 		s_RendererData->DirectionalLightShadowMaps = std::make_shared<Texture2DArray>(4096, 4096, 5, TextureWrappingOption::Clamp, true, reinterpret_cast<float*>(&borderColor));
+
+		s_RendererData->DirectionalShadowMapShader = Shader::Load("shaders/DirectionalShadowMap.glsl");
+		s_RendererData->SpotLightShadowMaps = std::make_shared<Texture2DArray>(1024, 1024, 8, TextureWrappingOption::Clamp, true, reinterpret_cast<float*>(&borderColor));
 	}
 
 	void Renderer::Shutdown()
@@ -166,13 +169,31 @@ namespace lypant
 			}
 		}
 
+		if (shader->GetUniformLocation("u_SpotLightShadowMaps") != -1)
+		{
+			s_RendererData->SpotLightShadowMaps->Bind(shader->GetUniformValueInt("u_SpotLightShadowMaps"));
+			for (int i = 0; i < s_RendererData->SpotLightSpaceMatrices.size(); i++)
+			{
+				shader->SetUniformMatrix4Float("u_SpotLightSpaceMatrices[" + std::to_string(i) + "]", &s_RendererData->SpotLightSpaceMatrices[i][0][0]);
+			}
+		}
+
 		RenderCommand::DrawIndexed(mesh.GetVertexArray());
 	}
 
-	void Renderer::SubmitForShadowPass(const Mesh& mesh, const glm::mat4& modelMatrix)
+	void Renderer::SubmitForShadowPass(const Mesh& mesh, const glm::mat4& modelMatrix, LightType lightType)
 	{
 		mesh.GetVertexArray()->Bind();
-		s_RendererData->CascadedShadowMapShader->SetUniformMatrix4Float("u_ModelMatrix", (float*)&modelMatrix[0][0]);
+
+		if (lightType == LightTypeDirectional)
+		{
+			s_RendererData->CascadedShadowMapShader->SetUniformMatrix4Float("u_ModelMatrix", (float*)&modelMatrix[0][0]);
+		}
+
+		else if (lightType == LightTypeSpot)
+		{
+			s_RendererData->DirectionalShadowMapShader->SetUniformMatrix4Float("u_ModelMatrix", (float*)&modelMatrix[0][0]);
+		}
 
 		RenderCommand::DrawIndexed(mesh.GetVertexArray());
 	}
@@ -424,25 +445,51 @@ namespace lypant
 		FrameBuffer::BindDefaultFrameBuffer();
 	}
 
-	void Renderer::BeginShadowPass(const Light& light, const PerspectiveCamera& camera)
+	void Renderer::BeginShadowPass(const Scene::SceneData& sceneData, LightType lightType)
 	{
-		if (light.Type == LightTypeDirectional)
-		{		
-			CalculateDirectionalLightSpaceMatrices(reinterpret_cast<const DirectionalLight&>(light), camera);
-			
-			s_RendererData->ShadowMapFrameBuffer->Bind();
+		s_RendererData->ShadowMapFrameBuffer->Bind();
+
+		if (lightType == LightTypeDirectional)
+		{
 			s_RendererData->ShadowMapFrameBuffer->AttachDepthStencilBuffer(s_RendererData->DirectionalLightShadowMaps);
 
 			RenderCommand::Clear();
 			RenderCommand::SetViewport(0, 0, s_RendererData->DirectionalLightShadowMaps->GetWidth(), s_RendererData->DirectionalLightShadowMaps->GetHeight());
 
 			s_RendererData->CascadedShadowMapShader->Bind();
-			for (int i = 0; i < s_RendererData->DirectionalLightSpaceMatrices.size(); i++)
+			for (int i = 0; i < sceneData.NumberOfDirectionalLights; i++)
 			{
-				s_RendererData->CascadedShadowMapShader->SetUniformMatrix4Float("u_DirectionalLightSpaceMatrices[" + std::to_string(i) + "]", &s_RendererData->DirectionalLightSpaceMatrices[i][0][0]);
+				if (!sceneData.DirectionalLightComponents[i].CastShadows) continue;
+				CalculateDirectionalLightSpaceMatrices(sceneData.DirectionalLightComponents[i], *sceneData.Camera);
+				for (int j = 0; j < s_RendererData->DirectionalLightSpaceMatrices.size(); j++)
+				{
+					s_RendererData->CascadedShadowMapShader->SetUniformMatrix4Float("u_DirectionalLightSpaceMatrices[" + std::to_string(j) + "]", &s_RendererData->DirectionalLightSpaceMatrices[j][0][0]);
+				}
+				break;
 			}
+		}
 
-			s_RendererData->DirectionalLightShadowMaps->Bind(0);
+		else if (lightType == LightTypeSpot)
+		{
+			s_RendererData->ShadowMapFrameBuffer->AttachDepthStencilBuffer(s_RendererData->SpotLightShadowMaps);
+
+			RenderCommand::Clear();
+			RenderCommand::SetViewport(0, 0, s_RendererData->SpotLightShadowMaps->GetWidth(), s_RendererData->SpotLightShadowMaps->GetHeight());
+
+			glm::mat4 projectionMatrix = glm::perspective(glm::radians(90.0f), 1.0f, 1.0f, 25.0f);
+
+			int spotLightShadowIndex = 0;
+			s_RendererData->DirectionalShadowMapShader->Bind();
+			for (int i = 0; i < sceneData.NumberOfSpotLights && spotLightShadowIndex < s_RendererData->SpotLightSpaceMatrices.size(); i++)
+			{
+				const SpotLightComponent& light = sceneData.SpotLightComponents[i];
+				if (!light.CastShadows) continue;
+
+				glm::mat4 viewMatrix = glm::lookAt(glm::vec3(light.Position), glm::vec3(light.Position) + light.Direction, glm::vec3(0, 1, 0));
+				s_RendererData->SpotLightSpaceMatrices[spotLightShadowIndex] = projectionMatrix * viewMatrix;
+				s_RendererData->DirectionalShadowMapShader->SetUniformMatrix4Float("u_SpotLightSpaceMatrices[" + std::to_string(spotLightShadowIndex) + "]", &s_RendererData->SpotLightSpaceMatrices[spotLightShadowIndex][0][0]);
+				spotLightShadowIndex++;
+			}
 		}
 	}
 
@@ -473,7 +520,7 @@ namespace lypant
 		return positions;
 	}
 
-	void Renderer::CalculateDirectionalLightSpaceMatrices(const DirectionalLight& light, const PerspectiveCamera& camera)
+	void Renderer::CalculateDirectionalLightSpaceMatrices(const DirectionalLightComponent& light, const PerspectiveCamera& camera)
 	{
 		s_RendererData->CascadePlaneDistances = { camera.GetFarPlane() / 50.0f, camera.GetFarPlane() / 25.0f, camera.GetFarPlane() / 10.0f, camera.GetFarPlane() / 2.0f, camera.GetFarPlane()};
 
@@ -485,7 +532,7 @@ namespace lypant
 		}
 	}
 
-	void Renderer::CalculateDirectionalLightSpaceMatrix(const DirectionalLight& light, const PerspectiveCamera& camera, float nearPlane, float farPlane, int cascade)
+	void Renderer::CalculateDirectionalLightSpaceMatrix(const DirectionalLightComponent& light, const PerspectiveCamera& camera, float nearPlane, float farPlane, int cascade)
 	{
 		glm::mat4 cameraCascadedProjection = glm::perspective(camera.GetFovY(), camera.GetAspectRatio(), nearPlane, farPlane);
 		std::vector<glm::vec4> frustumCorners = GetWorldPositionOfFrustumCorners(cameraCascadedProjection * camera.GetViewMatrix());

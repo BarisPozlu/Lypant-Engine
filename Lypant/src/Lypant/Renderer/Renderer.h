@@ -24,7 +24,7 @@ namespace lypant
 		static void BeginScene(const Scene::SceneData& sceneData);
 		static void EndScene();
 		static void Submit(const Mesh& mesh, const glm::mat4& modelMatrix);
-		static void SubmitForShadowPass(const Mesh& mesh, const glm::mat4& modelMatrix);
+		static void SubmitForShadowPass(const Mesh& mesh, const glm::mat4& modelMatrix, LightType lightType);
 		static void Submit(const std::shared_ptr<Skybox>& skybox);
 		// You should set anti aliasing before you call BeginScene().
 		static void SetAntiAliasing(AntiAliasingSetting setting);
@@ -43,11 +43,11 @@ namespace lypant
 		static void DeleteBloomResources();
 		static void CreateBloomTexture(const std::shared_ptr<Texture2D>& sceneTexture);
 
-		static void BeginShadowPass(const Light& light, const PerspectiveCamera& camera);
+		static void BeginShadowPass(const Scene::SceneData& sceneData, LightType lightType);
 		static void EndShadowPass();
 		static std::vector<glm::vec4> GetWorldPositionOfFrustumCorners(const glm::mat4& viewProjectionMatrix);
-		static void CalculateDirectionalLightSpaceMatrices(const DirectionalLight& light, const PerspectiveCamera& camera);
-		static void CalculateDirectionalLightSpaceMatrix(const DirectionalLight& light, const PerspectiveCamera& camera, float nearPlane, float farPlane, int cascade);
+		static void CalculateDirectionalLightSpaceMatrices(const DirectionalLightComponent& light, const PerspectiveCamera& camera);
+		static void CalculateDirectionalLightSpaceMatrix(const DirectionalLightComponent& light, const PerspectiveCamera& camera, float nearPlane, float farPlane, int cascade);
 	private:
 		struct RendererData
 		{
@@ -99,10 +99,15 @@ namespace lypant
 
 			// Shadow map data
 			FrameBuffer* ShadowMapFrameBuffer = nullptr;
+			// Only one directional light can cast shadows
 			std::shared_ptr<Shader> CascadedShadowMapShader;
 			std::shared_ptr<Texture2DArray> DirectionalLightShadowMaps;
 			std::array<glm::mat4, 5> DirectionalLightSpaceMatrices;
 			std::array<float, 5> CascadePlaneDistances;
+			// At most 8 spot lights can cast shadows
+			std::shared_ptr<Shader> DirectionalShadowMapShader;
+			std::shared_ptr<Texture2DArray> SpotLightShadowMaps;
+			std::array<glm::mat4, 8> SpotLightSpaceMatrices;
 		};
 
 		static RendererData* s_RendererData;

@@ -80,7 +80,7 @@ namespace lypant
 	{
 	public:
 		DirectionalLight(const DirectionalLightComponent& component)
-			: Light(component.Color), Direction(component.Direction)
+			: Light(component.Color), Direction(component.Direction, 1.0)
 		{
 			Type = LightTypeDirectional;
 		}

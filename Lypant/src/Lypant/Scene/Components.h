@@ -62,12 +62,18 @@ namespace lypant
 	public:
 		float Linear;
 		float Quadratic;
-	private: // 12 bytes padding needed for gpu.
-		float Padding;
-		float Padding2;
-		float Padding3;
+	private:
+		int ShadowMapIndex = -1; // this is supposed to be set by the scene before sending to the renderer
+	public:
+		bool CastShadows = true;
+	private: // 7 bytes padding needed for gpu.
+		bool Padding1;
+		bool Padding2;
+		bool Padding3;
+		float Padding4;
 	private:
 		friend class Scene;
+		friend class Renderer;
 		friend class PointLight;
 	};
 
@@ -91,19 +97,25 @@ namespace lypant
 		glm::vec3 Direction;
 		float OuterCutOff;
 		float InnerCutOff;
-	private: // 12 bytes padding needed for gpu.
-		float Padding;
-		float Padding2;
-		float Padding3;
+	private:
+		int ShadowMapIndex = -1; // this is supposed to be set by the scene before sending to the renderer
+	public:
+		bool CastShadows = true;
+	private: // 7 bytes padding needed for gpu.
+		bool Padding1;
+		bool Padding2;
+		bool Padding3;
+		float Padding4;
 	private:
 		friend class Scene;
+		friend class Renderer;
 		friend class SpotLight;
 	};
 
 	struct DirectionalLightComponent
 	{
 	public:
-		DirectionalLightComponent(const glm::vec3& color, const glm::vec3& direction) : Color(color, 0), Direction(glm::normalize(direction), 0) {}
+		DirectionalLightComponent(const glm::vec3& color, const glm::vec3& direction) : Color(color, 0), Direction(glm::normalize(direction)) {}
 
 		// normalizes the direction. Advised to use this intead of setting it up directly.
 		inline void SetDirection(const glm::vec3& direction)
@@ -112,8 +124,20 @@ namespace lypant
 		}
 	public:
 		glm::vec4 Color;
-		glm::vec4 Direction;
+		glm::vec3 Direction;
 	private:
+		int ShadowMapIndex = -1; // this is supposed to be set by the scene before sending to the renderer
+	public:
+		bool CastShadows = true;
+	private: // 15 bytes padding needed for gpu.
+		bool Padding1;
+		bool Padding2;
+		bool Padding3;
+		float Padding4;
+		float Padding5;
+		float Padding6;
+	private:
+		friend class Scene;
 		friend class DirectionalLight;
 	};
 

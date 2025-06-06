@@ -30,6 +30,16 @@ class TestScript : public BehaviorComponentBase
 		{
 			GetComponent<TransformComponent>().Position.z += 5.0f * deltaTime;
 		}
+
+		if (Input::IsKeyPressed(LY_KEY_N))
+		{
+			GetComponent<TransformComponent>().Position.y -= 5.0f * deltaTime;
+		}
+
+		if (Input::IsKeyPressed(LY_KEY_M))
+		{
+			GetComponent<TransformComponent>().Position.y += 5.0f * deltaTime;
+		}
 	}
 };
 
@@ -62,10 +72,17 @@ public:
 		m_LightEntity.AddComponent<MeshComponent>(DefaultGeometry::Cube, lightMaterial);
 		//m_LightEntity.AddComponent<PointLightComponent>(glm::vec3(10.0, 0.0, 0.0));
 		
-		//m_LightEntity2 = m_Scene->CreateEntity();
-		//m_LightEntity2.GetComponent<TransformComponent>().Scale = glm::vec3(0.3f);
-		//m_LightEntity2.AddComponent<MeshComponent>(DefaultGeometry::Cube, std::make_shared<Material>("shaders/FlatColor.glsl", glm::vec3(5.0, 5.0, 10.0)));
-		//m_LightEntity2.AddComponent<PointLightComponent>(glm::vec3(5.0, 5.0, 10.0));
+		m_LightEntity2 = m_Scene->CreateEntity();
+		m_LightEntity2.GetComponent<TransformComponent>().Scale = glm::vec3(0.3f);
+		m_LightEntity2.GetComponent<TransformComponent>().Position = glm::vec3(0.0, 2.5, 0.0);
+		m_LightEntity2.AddComponent<MeshComponent>(DefaultGeometry::Cube, std::make_shared<Material>("shaders/FlatColor.glsl", glm::vec3(5.0, 5.0, 10.0)));
+		m_LightEntity2.AddComponent<SpotLightComponent>(glm::vec3(5.0, 5.0, 10.0), glm::vec3(0, -1, 1));
+
+		m_LightEntity3 = m_Scene->CreateEntity();
+		m_LightEntity3.GetComponent<TransformComponent>().Scale = glm::vec3(0.3f);
+		m_LightEntity3.GetComponent<TransformComponent>().Position = glm::vec3(-2.0, 2.0, 0.0);
+		m_LightEntity3.AddComponent<MeshComponent>(DefaultGeometry::Cube, std::make_shared<Material>("shaders/FlatColor.glsl", glm::vec3(5.0, 5.0, 10.0)));
+		m_LightEntity3.AddComponent<SpotLightComponent>(glm::vec3(5.0, 5.0, 10.0), glm::vec3(1, 0, 0));
 
 		// these specific models are just one 1 mesh
 		m_Weapon = m_Scene->LoadModel("models/weapon/weapon1.glb")[0];
@@ -155,6 +172,10 @@ public:
 
 		ImGui::Checkbox("Bloom", &m_IsBloomEnabled);
 
+		ImGui::Checkbox("Direcitonal light cast shadows", &m_DirectionalLightEntity.GetComponent<DirectionalLightComponent>().CastShadows);
+		ImGui::Checkbox("Spotlight1 cast shadows", &m_LightEntity2.GetComponent<SpotLightComponent>().CastShadows);
+		ImGui::Checkbox("Spotlight2 cast shadows", &m_LightEntity3.GetComponent<SpotLightComponent>().CastShadows);
+
 		ImGui::End();
 	}
 
@@ -165,6 +186,7 @@ private:
 	Entity m_GoldSphereEntity;
 	Entity m_LightEntity;
 	Entity m_LightEntity2;
+	Entity m_LightEntity3;
 
 	std::vector<Entity> m_Sponza;
 
