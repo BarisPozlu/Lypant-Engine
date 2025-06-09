@@ -10,3 +10,6 @@
 [submodule "Lypant/vendor/ImGui"]
 	path = Lypant/vendor/ImGui
 	url = https://github.com/BarisPozlu/imgui
+[submodule "Lypant/vendor/assimp"]
+	path = Lypant/vendor/assimp
+	url = https://github.com/assimp/assimp
