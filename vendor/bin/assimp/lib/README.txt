@@ -1,1 +1,0 @@
-There should be 2 folders here named Debug and Release. They should contain the pre-compiled assimp .lib files. They are too big to commit and they should be compiled in individual machines.

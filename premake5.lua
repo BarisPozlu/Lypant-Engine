@@ -80,12 +80,10 @@ project "Lypant"
 		symbols "on"
 		links
 		{
-			"vendor/bin/assimp/lib/Debug/assimp-vc143-mtd.lib",
-			"vendor/bin/assimp/lib/Debug/zlibstaticd.lib"
+			"Lypant/vendor/assimp/lib/Debug/assimp-vc143-mtd.lib",
+			"Lypant/vendor/assimp/contrib/zlib/Debug/zlibstaticd.lib"
 		}
 			
-		
-
 	filter "configurations:Release"
 
 		defines "LYPANT_RELEASE"
@@ -93,8 +91,8 @@ project "Lypant"
 		optimize "on"
 		links 
 		{
-			"vendor/bin/assimp/lib/Release/assimp-vc143-mt.lib",
-			"vendor/bin/assimp/lib/Release/zlibstatic.lib"
+			"Lypant/vendor/assimp/lib/Release/assimp-vc143-mt.lib",
+			"Lypant/vendor/assimp/contrib/zlib/Release/zlibstatic.lib"
 		}
 
 project "Sandbox"
