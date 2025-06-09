@@ -61,49 +61,47 @@ public:
 
 		m_Scene = std::make_shared<Scene>();
 
-		m_GoldSphereEntity = m_Scene->CreateEntity();
-		m_GoldSphereEntity.GetComponent<TransformComponent>().Position = glm::vec3(1.0, 1.0, -4.0);
-		m_GoldSphereEntity.GetComponent<TransformComponent>().Scale = glm::vec3(0.3f);
-		m_GoldSphereEntity.AddComponent<MeshComponent>(DefaultGeometry::Sphere, sphereMaterial);
+		//m_GoldSphereEntity = m_Scene->CreateEntity();
+		//m_GoldSphereEntity.GetComponent<TransformComponent>().Position = glm::vec3(1.0, 1.0, -4.0);
+		//m_GoldSphereEntity.GetComponent<TransformComponent>().Scale = glm::vec3(0.3f);
+		//m_GoldSphereEntity.AddComponent<MeshComponent>(DefaultGeometry::Sphere, sphereMaterial);
 		
-		m_PointLight1 = m_Scene->CreateEntity();
-		m_PointLight1.GetComponent<TransformComponent>().Position = glm::vec3(1.0, 1.0, -1.5);
-		m_PointLight1.GetComponent<TransformComponent>().Scale = glm::vec3(0.5f);
-		m_PointLight1.AddComponent<MeshComponent>(DefaultGeometry::Cube, lightMaterial);
-		m_PointLight1.AddComponent<PointLightComponent>(glm::vec3(10.0, 0.0, 0.0));
+		m_PointLights.reserve(6);
 
-		m_PointLight2 = m_Scene->CreateEntity();
-		m_PointLight2.GetComponent<TransformComponent>().Position = glm::vec3(0.0, 1.0, 1.5);
-		m_PointLight2.GetComponent<TransformComponent>().Scale = glm::vec3(0.5f);
-		m_PointLight2.AddComponent<MeshComponent>(DefaultGeometry::Cube, std::make_shared<Material>("shaders/FlatColor.glsl", glm::vec3(5.0, 5.0, 15.0)));
-		m_PointLight2.AddComponent<PointLightComponent>(glm::vec3(5.0, 5.0, 15.0));
+		glm::vec3 colors[]{ glm::vec3(10.0, 0.0, 0.0), glm::vec3(10.0, 10.0, 0.0), glm::vec3(10.0, 0.0, 10.0), glm::vec3(10.0, 10.0, 10.0), glm::vec3(15.0, 25.0, 5.0), glm::vec3(15.0f, 30.0f, 25.0f)};
+
+		for (int i = 0; i < 6; i++)
+		{
+			m_PointLights.push_back(m_Scene->CreateEntity());
+			m_PointLights[i].GetComponent<TransformComponent>().Position = glm::vec3(-1.0f, 1.0f, -6.5 + i * 3.2f);
+			m_PointLights[i].GetComponent<TransformComponent>().Scale = glm::vec3(0.5f);
+			m_PointLights[i].AddComponent<MeshComponent>(DefaultGeometry::Cube, std::make_shared<Material>("shaders/FlatColor.glsl", colors[i]));
+			m_PointLights[i].AddComponent<PointLightComponent>(colors[i]);
+		}
+
 		
-		m_LightEntity2 = m_Scene->CreateEntity();
-		m_LightEntity2.GetComponent<TransformComponent>().Scale = glm::vec3(0.3f);
-		m_LightEntity2.GetComponent<TransformComponent>().Position = glm::vec3(0.0, 2.5, 0.0);
-		m_LightEntity2.AddComponent<MeshComponent>(DefaultGeometry::Cube, std::make_shared<Material>("shaders/FlatColor.glsl", glm::vec3(5.0, 5.0, 10.0)));
-		m_LightEntity2.AddComponent<SpotLightComponent>(glm::vec3(5.0, 5.0, 10.0), glm::vec3(0, -1, 1));
 
-		m_LightEntity3 = m_Scene->CreateEntity();
-		m_LightEntity3.GetComponent<TransformComponent>().Scale = glm::vec3(0.3f);
-		m_LightEntity3.GetComponent<TransformComponent>().Position = glm::vec3(-2.0, 2.0, 0.0);
-		m_LightEntity3.AddComponent<MeshComponent>(DefaultGeometry::Cube, std::make_shared<Material>("shaders/FlatColor.glsl", glm::vec3(5.0, 5.0, 10.0)));
-		m_LightEntity3.AddComponent<SpotLightComponent>(glm::vec3(5.0, 5.0, 10.0), glm::vec3(1, 0, 0));
+		//m_LightEntity3 = m_Scene->CreateEntity();
+		//m_LightEntity3.GetComponent<TransformComponent>().Scale = glm::vec3(0.3f);
+		//m_LightEntity3.GetComponent<TransformComponent>().Position = glm::vec3(-2.0, 2.0, 0.0);
+		//m_LightEntity3.AddComponent<MeshComponent>(DefaultGeometry::Cube, std::make_shared<Material>("shaders/FlatColor.glsl", glm::vec3(5.0, 5.0, 10.0)));
+		//m_LightEntity3.AddComponent<SpotLightComponent>(glm::vec3(5.0, 5.0, 10.0), glm::vec3(1, 0, 0));
 
 		// these specific models are just one 1 mesh
-		m_Weapon = m_Scene->LoadModel("models/weapon/weapon1.glb")[0];
-		m_Weapon.GetComponent<TransformComponent>().Position = glm::vec3(0.0f, 3.0f, -1.5f);
-		m_Weapon.GetComponent<TransformComponent>().Scale = glm::vec3(0.02f);
+		/*m_Weapon = m_Scene->LoadModel("models/weapon/weapon1.glb")[0];
+		//m_Weapon.GetComponent<TransformComponent>().Position = glm::vec3(0.0f, 3.0f, -1.5f);
+		m_Weapon.GetComponent<TransformComponent>().Scale = glm::vec3(0.015f);
 		m_Weapon.GetComponent<TransformComponent>().Rotation = glm::normalize(glm::angleAxis(glm::radians(-90.0f), glm::vec3(0, 1, 0)) * glm::angleAxis(glm::radians(-90.0f), glm::vec3(1, 0, 0)));
-		
+		*/
 		//m_Helmet = m_Scene->LoadModel("models/helmet/DamagedHelmet.gltf")[0];
 		//m_Helmet.GetComponent<TransformComponent>().Position = glm::vec3(2.0f, 0.0f, -2.0f);
+		//m_Helmet.GetComponent<TransformComponent>().Scale = glm::vec3(0.75f);
 		//m_Helmet.GetComponent<TransformComponent>().Rotation = glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0)));
 
-		m_Weapon.AddComponent<BehaviorComponent>().Bind<TestScript>();
+		//m_Helmet.AddComponent<BehaviorComponent>().Bind<TestScript>();
 
-		m_DirectionalLightEntity = m_Scene->CreateEntity();
-		m_DirectionalLightEntity.AddComponent<DirectionalLightComponent>(glm::vec3(5.0f), glm::vec3(0.0f, -1.0f, -1.0f));
+		//m_DirectionalLightEntity = m_Scene->CreateEntity();
+		//m_DirectionalLightEntity.AddComponent<DirectionalLightComponent>(glm::vec3(5.0f), glm::vec3(0.0f, -1.0f, -1.0f));
 
 		m_Sponza = m_Scene->LoadModel("models/sponza/Sponza.gltf", true, false);
 		for (auto& entity : m_Sponza)
@@ -159,11 +157,12 @@ public:
 
 	virtual void OnImGuiRender() override
 	{
-		ImGui::Begin("Hey");
+		ImGui::Begin("Settings");
 		
-		ImGui::Text(("FPS: " + std::to_string(m_FPS)).c_str());
-		ImGui::DragFloat3("Light entity position", (float*)&m_PointLight1.GetComponent<TransformComponent>().Position, 0.05f, -20.0f, 20.0f);
-		ImGui::DragFloat3("Light entity2 position", (float*)&m_PointLight2.GetComponent<TransformComponent>().Position, 0.05f, -20.0f, 20.0f);
+		//ImGui::Text(("FPS: " + std::to_string(m_FPS)).c_str());
+		//ImGui::DragFloat3("Point Light entity position", (float*)&m_PointLight1.GetComponent<TransformComponent>().Position, 0.05f, -20.0f, 20.0f);
+		//ImGui::DragFloat3("Point Light entity2 position", (float*)&m_PointLight2.GetComponent<TransformComponent>().Position, 0.05f, -20.0f, 20.0f);
+		//ImGui::DragFloat3("Point Light entity3 position", (float*)&m_PointLight2.GetComponent<TransformComponent>().Position, 0.05f, -20.0f, 20.0f);
 		//ImGui::ColorEdit3("Light entity color", (float*)&m_LightEntity.GetComponent<PointLightComponent>().Color);
 		
 		static const char* options[]
@@ -175,18 +174,19 @@ public:
 
 		ImGui::DragFloat("Exposure", &m_Exposure, 0.01f, 0.1f, 5.0f);
 
-		auto& directionalLightComponent = m_DirectionalLightEntity.GetComponent<DirectionalLightComponent>();
+		//auto& directionalLightComponent = m_DirectionalLightEntity.GetComponent<DirectionalLightComponent>();
 
-		ImGui::SliderFloat3("Directional Light", (float*)&directionalLightComponent.Direction, -1, 1);
-		directionalLightComponent.SetDirection(directionalLightComponent.Direction);
+		//ImGui::SliderFloat3("Directional Light", (float*)&directionalLightComponent.Direction, -1, 1);
+		//ImGui::SliderFloat3("Directional Light Color", (float*)&directionalLightComponent.Color, 0, 50);
+		//directionalLightComponent.SetDirection(directionalLightComponent.Direction);
 
 		ImGui::Checkbox("Bloom", &m_IsBloomEnabled);
 
-		ImGui::Checkbox("Direcitonal light cast shadows", &m_DirectionalLightEntity.GetComponent<DirectionalLightComponent>().CastShadows);
-		ImGui::Checkbox("Spotlight1 cast shadows", &m_LightEntity2.GetComponent<SpotLightComponent>().CastShadows);
-		ImGui::Checkbox("Spotlight2 cast shadows", &m_LightEntity3.GetComponent<SpotLightComponent>().CastShadows);
-		ImGui::Checkbox("Point light cast shadows", &m_PointLight1.GetComponent<PointLightComponent>().CastShadows);
-		ImGui::Checkbox("Point light2 cast shadows", &m_PointLight2.GetComponent<PointLightComponent>().CastShadows);
+		//ImGui::Checkbox("Direcitonal light cast shadows", &m_DirectionalLightEntity.GetComponent<DirectionalLightComponent>().CastShadows);
+		//ImGui::Checkbox("Spotlight1 cast shadows", &m_LightEntity2.GetComponent<SpotLightComponent>().CastShadows);
+		//ImGui::Checkbox("Spotlight2 cast shadows", &m_LightEntity3.GetComponent<SpotLightComponent>().CastShadows);
+		//ImGui::Checkbox("Point light cast shadows", &m_PointLight1.GetComponent<PointLightComponent>().CastShadows);
+		//ImGui::Checkbox("Point light2 cast shadows", &m_PointLight2.GetComponent<PointLightComponent>().CastShadows);
 
 		ImGui::End();
 
@@ -197,10 +197,7 @@ private:
 	Entity m_Weapon;
 	Entity m_Helmet;
 	Entity m_GoldSphereEntity;
-	Entity m_PointLight1;
-	Entity m_PointLight2;
-	Entity m_LightEntity2;
-	Entity m_LightEntity3;
+	std::vector<Entity> m_PointLights;
 
 	std::vector<Entity> m_Sponza;
 
