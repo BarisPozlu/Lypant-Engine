@@ -9,7 +9,7 @@ namespace lypant
 {
 	enum class ShaderDataType
 	{
-		None, Float, Float2, Float3, Float4, Mat3, Mat4, Int, Bool, Sampler2D, Samplercube, Sampler2DArray
+		None, Float, Float2, Float3, Float4, Mat3, Mat4, Int, Bool, Sampler2D, SamplerCube, Sampler2DArray, SamplerCubeArray
 	};
 
 	inline uint32_t GetSizeFromShaderDataType(ShaderDataType type)

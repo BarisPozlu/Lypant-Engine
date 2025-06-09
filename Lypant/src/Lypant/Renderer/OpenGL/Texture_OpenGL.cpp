@@ -249,10 +249,15 @@ namespace lypant
 		glBindTexture(GL_TEXTURE_2D_MULTISAMPLE, m_RendererID);
 	}
 
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////
+
 	Texture2DArray::Texture2DArray(int width, int height, int depth, TextureWrappingOption wrappingOption, bool IsDepthTexture, float* borderColor)
 	{
 		m_Width = width;
 		m_Height = height;
+		m_Depth = depth;
 
 		glCreateTextures(GL_TEXTURE_2D_ARRAY, 1, &m_RendererID);
 
@@ -385,6 +390,47 @@ namespace lypant
 	{
 		glActiveTexture(GL_TEXTURE0 + slot);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, m_RendererID);
+	}
+
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////////////////////////////
+
+	CubemapArray::CubemapArray(int width, int height, int depth, bool IsDepthTexture)
+	{
+		m_Width = width;
+		m_Height = height;
+		m_Depth = depth;
+
+		glCreateTextures(GL_TEXTURE_CUBE_MAP_ARRAY, 1, &m_RendererID);
+
+		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glTextureParameteri(m_RendererID, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+		glTextureParameteri(m_RendererID, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTextureParameteri(m_RendererID, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+		if (IsDepthTexture)
+		{
+			glTextureStorage3D(m_RendererID, 1, GL_DEPTH_COMPONENT32F, width, height, depth);
+		}
+
+		else
+		{
+			glTextureStorage3D(m_RendererID, 1, GL_RGB8, width, height, depth);
+		}
+		
+	}
+
+	CubemapArray::~CubemapArray()
+	{
+		glDeleteTextures(1, &m_RendererID);
+	}
+
+	void CubemapArray::Bind(uint32_t slot) const
+	{
+		glActiveTexture(GL_TEXTURE0 + slot);
+		glBindTexture(GL_TEXTURE_CUBE_MAP_ARRAY, m_RendererID);
 	}
 }
 

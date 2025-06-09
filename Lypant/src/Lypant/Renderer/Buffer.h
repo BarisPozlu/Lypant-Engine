@@ -138,12 +138,13 @@ namespace lypant
 		// cubemapface is only relevant if you are attaching a cubemap as the ColorAttachment.
 		void AttachColorBuffer(const std::shared_ptr<FrameBufferAttachment>& attachment, int level = 0, int cubemapFace = -1);
 		void AttachDepthStencilBuffer(const std::shared_ptr<FrameBufferAttachment>& attachment);
+		void AttachDepthBuffer(const std::shared_ptr<FrameBufferAttachment>& attachment);
 
 		void BlitToFrameBuffer(FrameBuffer* otherBuffer, int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1) const;
 		void BlitToDefault(int srcX0, int srcY0, int srcX1, int srcY1, int dstX0, int dstY0, int dstX1, int dstY1) const;
 	private:
 		uint32_t m_RendererID;
 		std::shared_ptr<FrameBufferAttachment> m_ColorAttachment;
-		std::shared_ptr<FrameBufferAttachment> m_DepthStencilAttachment;
+		std::shared_ptr<FrameBufferAttachment> m_DepthStencilAttachment; // can either be a a depth stencil buffer or a depth buffer
 	};
 }

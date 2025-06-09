@@ -66,11 +66,17 @@ public:
 		m_GoldSphereEntity.GetComponent<TransformComponent>().Scale = glm::vec3(0.3f);
 		m_GoldSphereEntity.AddComponent<MeshComponent>(DefaultGeometry::Sphere, sphereMaterial);
 		
-		m_LightEntity = m_Scene->CreateEntity();
-		m_LightEntity.GetComponent<TransformComponent>().Position = glm::vec3(1.0, 1.0, -1.5);
-		m_LightEntity.GetComponent<TransformComponent>().Scale = glm::vec3(0.5f);
-		m_LightEntity.AddComponent<MeshComponent>(DefaultGeometry::Cube, lightMaterial);
-		//m_LightEntity.AddComponent<PointLightComponent>(glm::vec3(10.0, 0.0, 0.0));
+		m_PointLight1 = m_Scene->CreateEntity();
+		m_PointLight1.GetComponent<TransformComponent>().Position = glm::vec3(1.0, 1.0, -1.5);
+		m_PointLight1.GetComponent<TransformComponent>().Scale = glm::vec3(0.5f);
+		m_PointLight1.AddComponent<MeshComponent>(DefaultGeometry::Cube, lightMaterial);
+		m_PointLight1.AddComponent<PointLightComponent>(glm::vec3(10.0, 0.0, 0.0));
+
+		m_PointLight2 = m_Scene->CreateEntity();
+		m_PointLight2.GetComponent<TransformComponent>().Position = glm::vec3(0.0, 1.0, 1.5);
+		m_PointLight2.GetComponent<TransformComponent>().Scale = glm::vec3(0.5f);
+		m_PointLight2.AddComponent<MeshComponent>(DefaultGeometry::Cube, std::make_shared<Material>("shaders/FlatColor.glsl", glm::vec3(5.0, 5.0, 15.0)));
+		m_PointLight2.AddComponent<PointLightComponent>(glm::vec3(5.0, 5.0, 15.0));
 		
 		m_LightEntity2 = m_Scene->CreateEntity();
 		m_LightEntity2.GetComponent<TransformComponent>().Scale = glm::vec3(0.3f);
@@ -110,6 +116,8 @@ public:
 
 	virtual void Tick(float deltaTime) override
 	{
+		m_FPS = 1.0 / deltaTime;
+
 		m_Camera->Tick(deltaTime);
 
 		Renderer::SetAntiAliasing(m_AASetting);
@@ -153,7 +161,9 @@ public:
 	{
 		ImGui::Begin("Hey");
 		
-		ImGui::DragFloat3("Light entity position", (float*)&m_LightEntity.GetComponent<TransformComponent>().Position, 0.05f, -20.0f, 20.0f);
+		ImGui::Text(("FPS: " + std::to_string(m_FPS)).c_str());
+		ImGui::DragFloat3("Light entity position", (float*)&m_PointLight1.GetComponent<TransformComponent>().Position, 0.05f, -20.0f, 20.0f);
+		ImGui::DragFloat3("Light entity2 position", (float*)&m_PointLight2.GetComponent<TransformComponent>().Position, 0.05f, -20.0f, 20.0f);
 		//ImGui::ColorEdit3("Light entity color", (float*)&m_LightEntity.GetComponent<PointLightComponent>().Color);
 		
 		static const char* options[]
@@ -175,8 +185,11 @@ public:
 		ImGui::Checkbox("Direcitonal light cast shadows", &m_DirectionalLightEntity.GetComponent<DirectionalLightComponent>().CastShadows);
 		ImGui::Checkbox("Spotlight1 cast shadows", &m_LightEntity2.GetComponent<SpotLightComponent>().CastShadows);
 		ImGui::Checkbox("Spotlight2 cast shadows", &m_LightEntity3.GetComponent<SpotLightComponent>().CastShadows);
+		ImGui::Checkbox("Point light cast shadows", &m_PointLight1.GetComponent<PointLightComponent>().CastShadows);
+		ImGui::Checkbox("Point light2 cast shadows", &m_PointLight2.GetComponent<PointLightComponent>().CastShadows);
 
 		ImGui::End();
+
 	}
 
 private:
@@ -184,7 +197,8 @@ private:
 	Entity m_Weapon;
 	Entity m_Helmet;
 	Entity m_GoldSphereEntity;
-	Entity m_LightEntity;
+	Entity m_PointLight1;
+	Entity m_PointLight2;
 	Entity m_LightEntity2;
 	Entity m_LightEntity3;
 
@@ -196,6 +210,7 @@ private:
 	std::shared_ptr<Skybox> m_Skybox2;
 	std::shared_ptr<Skybox> m_Skybox3;
 
+	float m_FPS = 0;
 	int m_ExampleCounter = 0;
 
 	std::shared_ptr<EditorPerspectiveCamera> m_Camera;

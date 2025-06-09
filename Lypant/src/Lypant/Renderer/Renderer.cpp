@@ -39,6 +39,9 @@ namespace lypant
 
 		s_RendererData->DirectionalShadowMapShader = Shader::Load("shaders/DirectionalShadowMap.glsl");
 		s_RendererData->SpotLightShadowMaps = std::make_shared<Texture2DArray>(1024, 1024, 8, TextureWrappingOption::Clamp, true, reinterpret_cast<float*>(&borderColor));
+
+		s_RendererData->OmnidirectionalShadowMapShader = Shader::Load("shaders/OmnidirectionalShadowMap.glsl");
+		s_RendererData->PointLightShadowMaps = std::make_shared<CubemapArray>(1024, 1024, 48, true);
 	}
 
 	void Renderer::Shutdown()
@@ -147,6 +150,7 @@ namespace lypant
 
 	void Renderer::Submit(const Mesh& mesh, const glm::mat4& modelMatrix)
 	{
+		// TODO: I should probably move all the optional shader data to a uniform buffer including shadow and IBL data
 		auto& shader = mesh.GetMaterial()->Shader;
 		// TODO: have a get uniform value with a location parameter
 		if (shader->GetUniformLocation("u_DiffuseIrradianceMap") != -1) s_RendererData->DiffuseIrradianceMap->Bind(shader->GetUniformValueInt("u_DiffuseIrradianceMap"));
@@ -178,24 +182,125 @@ namespace lypant
 			}
 		}
 
+		if (shader->GetUniformLocation("u_PointLightShadowMaps") != -1)
+		{
+			s_RendererData->PointLightShadowMaps->Bind(shader->GetUniformValueInt("u_PointLightShadowMaps"));
+		}
+
 		RenderCommand::DrawIndexed(mesh.GetVertexArray());
 	}
 
-	void Renderer::SubmitForShadowPass(const Mesh& mesh, const glm::mat4& modelMatrix, LightType lightType)
+	void Renderer::BeginShadowPass(const Scene::SceneData& sceneData, LightType lightType)
+	{
+		s_RendererData->ShadowMapFrameBuffer->Bind();
+
+		if (lightType == LightTypeDirectional)
+		{
+			s_RendererData->ShadowMapFrameBuffer->AttachDepthBuffer(s_RendererData->DirectionalLightShadowMaps);
+
+			RenderCommand::Clear();
+			RenderCommand::SetViewport(0, 0, s_RendererData->DirectionalLightShadowMaps->GetWidth(), s_RendererData->DirectionalLightShadowMaps->GetHeight());
+
+			s_RendererData->CascadedShadowMapShader->Bind();
+			for (int i = 0; i < sceneData.NumberOfDirectionalLights; i++)
+			{
+				if (!sceneData.DirectionalLightComponents[i].CastShadows) continue;
+				CalculateDirectionalLightSpaceMatrices(sceneData.DirectionalLightComponents[i], *sceneData.Camera);
+				for (int j = 0; j < s_RendererData->DirectionalLightSpaceMatrices.size(); j++)
+				{
+					s_RendererData->CascadedShadowMapShader->SetUniformMatrix4Float("u_DirectionalLightSpaceMatrices[" + std::to_string(j) + "]", &s_RendererData->DirectionalLightSpaceMatrices[j][0][0]);
+				}
+				break;
+			}
+		}
+
+		else if (lightType == LightTypeSpot)
+		{
+			s_RendererData->ShadowMapFrameBuffer->AttachDepthBuffer(s_RendererData->SpotLightShadowMaps);
+
+			RenderCommand::Clear();
+			RenderCommand::SetViewport(0, 0, s_RendererData->SpotLightShadowMaps->GetWidth(), s_RendererData->SpotLightShadowMaps->GetHeight());
+
+			glm::mat4 projectionMatrix = glm::perspective(glm::radians(90.0f), 1.0f, 0.5f, 25.0f);
+
+			int spotLightShadowIndex = 0;
+			s_RendererData->DirectionalShadowMapShader->Bind();
+			for (int i = 0; i < sceneData.NumberOfSpotLights && spotLightShadowIndex < s_RendererData->SpotLightShadowMaps->GetDepth(); i++)
+			{
+				const SpotLightComponent& light = sceneData.SpotLightComponents[i];
+				if (!light.CastShadows) continue;
+
+				glm::mat4 viewMatrix = glm::lookAt(glm::vec3(light.Position), glm::vec3(light.Position) + light.Direction, glm::vec3(0, 1, 0));
+				s_RendererData->SpotLightSpaceMatrices[spotLightShadowIndex] = projectionMatrix * viewMatrix;
+				s_RendererData->DirectionalShadowMapShader->SetUniformMatrix4Float("u_SpotLightSpaceMatrices[" + std::to_string(spotLightShadowIndex) + "]", &s_RendererData->SpotLightSpaceMatrices[spotLightShadowIndex][0][0]);
+				spotLightShadowIndex++;
+			}
+		}
+
+		else if (lightType == LightTypePoint)
+		{
+			s_RendererData->ShadowMapFrameBuffer->AttachDepthBuffer(s_RendererData->PointLightShadowMaps);
+
+			RenderCommand::Clear();
+			RenderCommand::SetViewport(0, 0, s_RendererData->PointLightShadowMaps->GetWidth(), s_RendererData->PointLightShadowMaps->GetHeight());
+
+			glm::mat4 projectionMatrix = glm::perspective(glm::radians(90.0f), 1.0f, 0.5f, 25.0f);
+
+			int pointLightShadowIndex = 0;
+			s_RendererData->OmnidirectionalShadowMapShader->Bind();
+			for (int i = 0; i < sceneData.NumberOfPointLights && pointLightShadowIndex < s_RendererData->PointLightShadowMaps->GetDepth(); i++)
+			{
+				const PointLightComponent& light = sceneData.PointLightComponents[i];
+				if (!light.CastShadows) continue;
+
+				glm::mat4 viewMatrices[]
+				{
+					glm::lookAt(light.Position, light.Position + glm::vec3(1.0f,  0.0f,  0.0f),  glm::vec3(0.0f, -1.0f,  0.0f)),
+					glm::lookAt(light.Position, light.Position + glm::vec3(-1.0f, 0.0f,  0.0f),  glm::vec3(0.0f, -1.0f,  0.0f)),
+					glm::lookAt(light.Position, light.Position + glm::vec3(0.0f,  1.0f,  0.0f),  glm::vec3(0.0f,  0.0f,  1.0f)),
+					glm::lookAt(light.Position, light.Position + glm::vec3(0.0f, -1.0f,  0.0f),  glm::vec3(0.0f,  0.0f, -1.0f)),
+					glm::lookAt(light.Position, light.Position + glm::vec3(0.0f,  0.0f,  1.0f),  glm::vec3(0.0f, -1.0f,  0.0f)),
+					glm::lookAt(light.Position, light.Position + glm::vec3(0.0f,  0.0f, -1.0f),  glm::vec3(0.0f, -1.0f,  0.0f))
+				};
+
+				for (int j = 0; j < 6; j++)
+				{
+					glm::mat4 lightSpaceMatrix = projectionMatrix * viewMatrices[j];
+					s_RendererData->OmnidirectionalShadowMapShader->SetUniformMatrix4Float("u_PointLightSpaceMatrices[" + std::to_string(pointLightShadowIndex * 6 + j) + "]", &lightSpaceMatrix[0][0]);
+					s_RendererData->OmnidirectionalShadowMapShader->SetUniformVec3Float("u_PointLightPositions[" + std::to_string(pointLightShadowIndex) + "]", reinterpret_cast<const float*>(&light.Position));
+				}
+
+				pointLightShadowIndex++;
+			}
+		}
+	}
+
+	void Renderer::EndShadowPass()
+	{
+		RenderCommand::SetViewport(0, 0, s_RendererData->WindowWidth, s_RendererData->WindowHeight);
+	}
+
+	void Renderer::SubmitForShadowPass(const Mesh& mesh, const glm::mat4& modelMatrix, LightType lightType, int count)
 	{
 		mesh.GetVertexArray()->Bind();
 
 		if (lightType == LightTypeDirectional)
 		{
 			s_RendererData->CascadedShadowMapShader->SetUniformMatrix4Float("u_ModelMatrix", (float*)&modelMatrix[0][0]);
+			RenderCommand::DrawIndexed(mesh.GetVertexArray());
 		}
 
 		else if (lightType == LightTypeSpot)
 		{
 			s_RendererData->DirectionalShadowMapShader->SetUniformMatrix4Float("u_ModelMatrix", (float*)&modelMatrix[0][0]);
+			RenderCommand::DrawIndexedInstanced(mesh.GetVertexArray(), count);
 		}
 
-		RenderCommand::DrawIndexed(mesh.GetVertexArray());
+		else if (lightType == LightTypePoint)
+		{
+			s_RendererData->OmnidirectionalShadowMapShader->SetUniformMatrix4Float("u_ModelMatrix", (float*)&modelMatrix[0][0]);
+			RenderCommand::DrawIndexedInstanced(mesh.GetVertexArray(), count);
+		}
 	}
 
 	void Renderer::Submit(const std::shared_ptr<Skybox>& skybox)
@@ -445,59 +550,6 @@ namespace lypant
 		FrameBuffer::BindDefaultFrameBuffer();
 	}
 
-	void Renderer::BeginShadowPass(const Scene::SceneData& sceneData, LightType lightType)
-	{
-		s_RendererData->ShadowMapFrameBuffer->Bind();
-
-		if (lightType == LightTypeDirectional)
-		{
-			s_RendererData->ShadowMapFrameBuffer->AttachDepthStencilBuffer(s_RendererData->DirectionalLightShadowMaps);
-
-			RenderCommand::Clear();
-			RenderCommand::SetViewport(0, 0, s_RendererData->DirectionalLightShadowMaps->GetWidth(), s_RendererData->DirectionalLightShadowMaps->GetHeight());
-
-			s_RendererData->CascadedShadowMapShader->Bind();
-			for (int i = 0; i < sceneData.NumberOfDirectionalLights; i++)
-			{
-				if (!sceneData.DirectionalLightComponents[i].CastShadows) continue;
-				CalculateDirectionalLightSpaceMatrices(sceneData.DirectionalLightComponents[i], *sceneData.Camera);
-				for (int j = 0; j < s_RendererData->DirectionalLightSpaceMatrices.size(); j++)
-				{
-					s_RendererData->CascadedShadowMapShader->SetUniformMatrix4Float("u_DirectionalLightSpaceMatrices[" + std::to_string(j) + "]", &s_RendererData->DirectionalLightSpaceMatrices[j][0][0]);
-				}
-				break;
-			}
-		}
-
-		else if (lightType == LightTypeSpot)
-		{
-			s_RendererData->ShadowMapFrameBuffer->AttachDepthStencilBuffer(s_RendererData->SpotLightShadowMaps);
-
-			RenderCommand::Clear();
-			RenderCommand::SetViewport(0, 0, s_RendererData->SpotLightShadowMaps->GetWidth(), s_RendererData->SpotLightShadowMaps->GetHeight());
-
-			glm::mat4 projectionMatrix = glm::perspective(glm::radians(90.0f), 1.0f, 1.0f, 25.0f);
-
-			int spotLightShadowIndex = 0;
-			s_RendererData->DirectionalShadowMapShader->Bind();
-			for (int i = 0; i < sceneData.NumberOfSpotLights && spotLightShadowIndex < s_RendererData->SpotLightSpaceMatrices.size(); i++)
-			{
-				const SpotLightComponent& light = sceneData.SpotLightComponents[i];
-				if (!light.CastShadows) continue;
-
-				glm::mat4 viewMatrix = glm::lookAt(glm::vec3(light.Position), glm::vec3(light.Position) + light.Direction, glm::vec3(0, 1, 0));
-				s_RendererData->SpotLightSpaceMatrices[spotLightShadowIndex] = projectionMatrix * viewMatrix;
-				s_RendererData->DirectionalShadowMapShader->SetUniformMatrix4Float("u_SpotLightSpaceMatrices[" + std::to_string(spotLightShadowIndex) + "]", &s_RendererData->SpotLightSpaceMatrices[spotLightShadowIndex][0][0]);
-				spotLightShadowIndex++;
-			}
-		}
-	}
-
-	void Renderer::EndShadowPass()
-	{
-		RenderCommand::SetViewport(0, 0, s_RendererData->WindowWidth, s_RendererData->WindowHeight);
-	}
-
 	std::vector<glm::vec4> Renderer::GetWorldPositionOfFrustumCorners(const glm::mat4& viewProjectionMatrix)
 	{
 		std::vector<glm::vec4> positions;
@@ -544,7 +596,14 @@ namespace lypant
 		}
 		center /= frustumCorners.size();
 
-		glm::mat4 viewMatrix = glm::lookAt(center - glm::vec3(light.Direction), center, glm::vec3(0.0f, 1.0f, 0.0f));
+		// TODO: Current solution is not the best solution for edge cases. Update it
+		glm::vec3 upVector(0.0f, 1.0f, 0.0f);
+		if (glm::abs(glm::dot(upVector, light.Direction)) > 0.99f)
+		{
+			upVector = glm::vec3(0.0f, 0.0f, -1.0f);
+		}
+		
+		glm::mat4 viewMatrix = glm::lookAt(center - glm::vec3(light.Direction), center, upVector);
 
 		float minX = std::numeric_limits<float>::max();
 		float maxX = std::numeric_limits<float>::lowest();

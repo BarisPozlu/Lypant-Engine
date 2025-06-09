@@ -62,29 +62,41 @@ namespace lypant
 		auto group = m_Registry.group<TransformComponent>(entt::get<MeshComponent>);
 
 		// Shadow Pass
-		// For now I have a shadow pass for each light type
+		// We have a shadow pass for each light type
 	
 		// Only one directional light can cast shadows
-		if (m_SceneData.NumberOfDirectionalLights > 0)
+		if (m_SceneData.NumberOfShadowCastingDirectionalLights > 0)
 		{
 			Renderer::BeginShadowPass(m_SceneData, LightTypeDirectional);
 
 			for (entt::entity entity : group)
 			{
 				auto [transform, mesh] = group.get<TransformComponent, MeshComponent>(entity);
-				Renderer::SubmitForShadowPass(mesh.MeshData, transform, LightTypeDirectional);
+				Renderer::SubmitForShadowPass(mesh.MeshData, transform, LightTypeDirectional, m_SceneData.NumberOfShadowCastingDirectionalLights);
 			}
 		}
 
 		// At most 8 spot lights can cast shadows
-		if (m_SceneData.NumberOfSpotLights > 0)
+		if (m_SceneData.NumberOfShadowCastingSpotLights > 0)
 		{
 			Renderer::BeginShadowPass(m_SceneData, LightTypeSpot);
 
 			for (entt::entity entity : group)
 			{
 				auto [transform, mesh] = group.get<TransformComponent, MeshComponent>(entity);
-				Renderer::SubmitForShadowPass(mesh.MeshData, transform, LightTypeSpot);
+				Renderer::SubmitForShadowPass(mesh.MeshData, transform, LightTypeSpot, m_SceneData.NumberOfShadowCastingSpotLights);
+			}
+		}
+
+		// At most 8 point lights can cast shadows
+		if (m_SceneData.NumberOfShadowCastingPointLights > 0)
+		{
+			Renderer::BeginShadowPass(m_SceneData, LightTypePoint);
+
+			for (entt::entity entity : group)
+			{
+				auto [transform, mesh] = group.get<TransformComponent, MeshComponent>(entity);
+				Renderer::SubmitForShadowPass(mesh.MeshData, transform, LightTypePoint, m_SceneData.NumberOfShadowCastingPointLights);
 			}
 		}
 
@@ -106,6 +118,9 @@ namespace lypant
 	void Scene::UpdateSceneData(const std::shared_ptr<PerspectiveCamera>& camera, const std::shared_ptr<Skybox>& skybox)
 	{
 		int shadowMapIndex = 0;
+		m_SceneData.NumberOfShadowCastingPointLights = 0;
+		m_SceneData.NumberOfShadowCastingSpotLights = 0;
+		m_SceneData.NumberOfShadowCastingDirectionalLights = 0;
 
 		m_SceneData.NumberOfPointLights = m_Registry.storage<PointLightComponent>().size();
 		if (m_SceneData.NumberOfPointLights)
@@ -121,7 +136,26 @@ namespace lypant
 			for (int i = 0; i < m_SceneData.NumberOfPointLights; i++)
 			{
 				PointLightComponent& pointLight = m_SceneData.PointLightComponents[i];
-				pointLight.CastShadows ? pointLight.ShadowMapIndex = shadowMapIndex++ : pointLight.ShadowMapIndex = -1;
+				if (pointLight.CastShadows)
+				{
+					if (shadowMapIndex > 7)
+					{
+						LY_CORE_WARNING("Only 8 point lights can cast shadows");
+						pointLight.CastShadows = false;
+						pointLight.ShadowMapIndex = -1;
+					}
+
+					else
+					{
+						pointLight.ShadowMapIndex = shadowMapIndex++;
+						m_SceneData.NumberOfShadowCastingPointLights++;
+					}
+				}
+
+				else
+				{
+					pointLight.ShadowMapIndex = -1;
+				}
 			}
 		}
 		else
@@ -145,7 +179,26 @@ namespace lypant
 			for (int i = 0; i < m_SceneData.NumberOfSpotLights; i++)
 			{
 				SpotLightComponent& spotLight = m_SceneData.SpotLightComponents[i];
-				spotLight.CastShadows ? spotLight.ShadowMapIndex = shadowMapIndex++ : spotLight.ShadowMapIndex = -1;
+				if (spotLight.CastShadows)
+				{
+					if (shadowMapIndex > 7)
+					{
+						LY_CORE_WARNING("Only 8 spot lights can cast shadows");
+						spotLight.CastShadows = false;
+						spotLight.ShadowMapIndex = -1;
+					}
+					
+					else
+					{
+						spotLight.ShadowMapIndex = shadowMapIndex++;
+						m_SceneData.NumberOfShadowCastingSpotLights++;
+					}
+				}
+
+				else
+				{
+					spotLight.ShadowMapIndex = -1;
+				}
 			}
 		}
 		else
@@ -162,7 +215,26 @@ namespace lypant
 			for (int i = 0; i < m_SceneData.NumberOfDirectionalLights; i++)
 			{
 				DirectionalLightComponent& directionalLight = m_SceneData.DirectionalLightComponents[i];
-				directionalLight.CastShadows ? directionalLight.ShadowMapIndex = shadowMapIndex++ : directionalLight.ShadowMapIndex = -1;
+				if (directionalLight.CastShadows)
+				{
+					if (shadowMapIndex > 0)
+					{
+						LY_CORE_WARNING("Only one directional light can cast shadows");
+						directionalLight.CastShadows = false;
+						directionalLight.ShadowMapIndex = -1;
+					}
+
+					else
+					{
+						directionalLight.ShadowMapIndex = shadowMapIndex++;
+						m_SceneData.NumberOfShadowCastingDirectionalLights++;
+					}
+				}
+
+				else
+				{
+					directionalLight.ShadowMapIndex = -1;
+				}
 			}
 		}
 		else

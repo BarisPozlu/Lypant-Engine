@@ -50,6 +50,9 @@ namespace lypant
 		Texture2DArray(int width, int height, int depth, TextureWrappingOption wrappingOption, bool IsDepthTexture, float* borderColor);
 		virtual ~Texture2DArray();
 		void Bind(uint32_t slot) const;
+		inline int GetDepth() const { return m_Depth; }
+	private:
+		int m_Depth;
 	};
 
 	class Cubemap : public FrameBufferAttachment
@@ -60,5 +63,16 @@ namespace lypant
 		Cubemap(int width, int height, bool generateMipMap = false, bool floatingBuffer = false);
 		virtual ~Cubemap();
 		void Bind(uint32_t slot) const;	
+	};
+
+	class CubemapArray : public FrameBufferAttachment
+	{
+	public:
+		CubemapArray(int width, int height, int depth, bool IsDepthTexture);
+		virtual ~CubemapArray();
+		void Bind(uint32_t slot) const;
+		inline int GetDepth() const { return m_Depth; }
+	private:
+		int m_Depth;
 	};
 }

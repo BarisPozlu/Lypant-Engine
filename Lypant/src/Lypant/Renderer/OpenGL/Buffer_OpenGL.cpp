@@ -229,12 +229,24 @@ namespace lypant
 			glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, attachment->GetID());
 		}
 
-		else if (dynamic_cast<Texture2D*>(attachment.get()))
+		m_DepthStencilAttachment = attachment;
+	}
+
+	void FrameBuffer::AttachDepthBuffer(const std::shared_ptr<FrameBufferAttachment>& attachment)
+	{
+		Bind();
+
+		if (dynamic_cast<Texture2D*>(attachment.get()))
 		{
 			glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, attachment->GetID(), 0);
 		}
 
 		else if (dynamic_cast<Texture2DArray*>(attachment.get()))
+		{
+			glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, attachment->GetID(), 0);
+		}
+
+		else if (dynamic_cast<CubemapArray*>(attachment.get()))
 		{
 			glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, attachment->GetID(), 0);
 		}

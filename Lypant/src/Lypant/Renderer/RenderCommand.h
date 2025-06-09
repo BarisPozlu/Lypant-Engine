@@ -16,5 +16,6 @@ namespace lypant
 		inline static void SetBlending(bool value) { RendererAPI::SetBlending(value); }
 		inline static void SetBlendFunction(BlendFunc function) { RendererAPI::SetBlendFunc(function); };
 		inline static void DrawIndexed(const std::shared_ptr<VertexArray>& vertexArray) { RendererAPI::DrawIndexed(vertexArray); }
+		inline static void DrawIndexedInstanced(const std::shared_ptr<VertexArray>& vertexArray, int instanceCount) { RendererAPI::DrawIndexedInstanced(vertexArray, instanceCount); }
 	};
 }

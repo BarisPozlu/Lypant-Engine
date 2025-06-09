@@ -34,6 +34,9 @@ namespace lypant
 			int NumberOfPointLights = 0;
 			int NumberOfSpotLights = 0;
 			int NumberOfDirectionalLights = 0;
+			int NumberOfShadowCastingPointLights = 0;
+			int NumberOfShadowCastingSpotLights = 0;
+			int NumberOfShadowCastingDirectionalLights = 0;
 
 			std::shared_ptr<PerspectiveCamera> Camera;
 			std::shared_ptr<Skybox> Skybox;

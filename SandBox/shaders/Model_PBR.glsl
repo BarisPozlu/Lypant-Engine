@@ -151,6 +151,7 @@ uniform float u_CascadePlaneDistances[5];
 uniform mat4 u_DirectionalLightSpaceMatrices[5];
 
 uniform sampler2DArray u_SpotLightShadowMaps;
+uniform samplerCubeArray u_PointLightShadowMaps;
 
 vec3 CalculatePointLight(int i, vec3 normal, vec3 viewDirection, vec3 albedo, float roughness, float metallic, vec3 F0);
 vec3 CalculateSpotLight(int i, vec3 normal, vec3 viewDirection, vec3 albedo, float roughness, float metallic, vec3 F0);
@@ -158,14 +159,24 @@ vec3 CalculateDirectionalLight(int i, vec3 normal, vec3 viewDirection, vec3 albe
 
 float CalculateDirectionalLightShadowFactor(vec3 normal, vec3 lightDirection, int shadowMapIndex);
 float CalculateSpotLightShadowFactor(vec3 normal, vec3 lightDirection, int shadowMapIndex);
+float CalculatePointLightShadowFactor(vec3 normal, vec3 lightPosition, int shadowMapIndex);
 
 float DistributionGGX(vec3 normal, vec3 halfwayDirection, float roughness);
 float GeometrySchlickGGX(float NdotV, float roughness);
 float GeometrySmith(vec3 normal, vec3 viewDirection, vec3 lightDirection, float roughness);
-vec3 fresnelSchlick(float cosTheta, vec3 F0);
-vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness);
+vec3 FresnelSchlick(float cosTheta, vec3 F0);
+vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness);
 
 const float PI = 3.14159265359;
+
+vec3 SampleOffsetDirections[20] = vec3[]
+(
+   vec3( 1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1,  1,  1), 
+   vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1),
+   vec3( 1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1,  1,  0),
+   vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
+   vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
+); 
 
 void main()
 {
@@ -226,7 +237,7 @@ void main()
 		Lo += CalculateDirectionalLight(i, normal, viewDirection, albedo, roughness, metallic, F0);
 	}
 
-	vec3 Ks = fresnelSchlickRoughness(max(dot(normal, viewDirection), 0.0), F0, roughness);
+	vec3 Ks = FresnelSchlickRoughness(max(dot(normal, viewDirection), 0.0), F0, roughness);
 	vec3 Kd = 1.0 - Ks;
 	Kd *= 1.0 - metallic;
 
@@ -260,7 +271,7 @@ vec3 CalculatePointLight(int i, vec3 normal, vec3 viewDirection, vec3 albedo, fl
 	
 	// calculate cook-torrance BRDF
 	float D = DistributionGGX(normal, halfwayDirection, roughness);
-	vec3 F = fresnelSchlick(max(dot(halfwayDirection, viewDirection), 0.0), F0);
+	vec3 F = FresnelSchlick(max(dot(halfwayDirection, viewDirection), 0.0), F0);
 	float G = GeometrySmith(normal, viewDirection, lightDirection, roughness);
 
 	vec3 Kd = vec3(1.0) - F;
@@ -271,7 +282,7 @@ vec3 CalculatePointLight(int i, vec3 normal, vec3 viewDirection, vec3 albedo, fl
 
 	vec3 specular = numerator / denominator;
 
-	return (Kd * albedo / PI + specular) * radiance * max(dot(normal, lightDirection), 0.0);
+	return (Kd * albedo / PI + specular) * radiance * max(dot(normal, lightDirection), 0.0) * (1 - CalculatePointLightShadowFactor(normal, u_PointLights[i].Position, u_PointLights[i].ShadowMapIndex));
 }
 
 vec3 CalculateSpotLight(int i, vec3 normal, vec3 viewDirection, vec3 albedo, float roughness, float metallic, vec3 F0)
@@ -291,7 +302,7 @@ vec3 CalculateSpotLight(int i, vec3 normal, vec3 viewDirection, vec3 albedo, flo
 
 	// calculate cook-torrance BRDF
 	float D = DistributionGGX(normal, halfwayDirection, roughness);
-	vec3 F = fresnelSchlick(max(dot(halfwayDirection, viewDirection), 0.0), F0);
+	vec3 F = FresnelSchlick(max(dot(halfwayDirection, viewDirection), 0.0), F0);
 	float G = GeometrySmith(normal, viewDirection, lightDirection, roughness);
 
 	vec3 Kd = vec3(1.0) - F;
@@ -313,7 +324,7 @@ vec3 CalculateDirectionalLight(int i, vec3 normal, vec3 viewDirection, vec3 albe
 
 	// calculate cook-torrance BRDF
 	float D = DistributionGGX(normal, halfwayDirection, roughness);
-	vec3 F = fresnelSchlick(max(dot(halfwayDirection, viewDirection), 0.0), F0);
+	vec3 F = FresnelSchlick(max(dot(halfwayDirection, viewDirection), 0.0), F0);
 	float G = GeometrySmith(normal, viewDirection, -u_DirectionalLights[i].Direction, roughness);
 
 	vec3 Kd = vec3(1.0) - F;
@@ -407,6 +418,28 @@ float CalculateSpotLightShadowFactor(vec3 normal, vec3 lightDirection, int shado
 	return shadowFactor / 9;
 }
 
+float CalculatePointLightShadowFactor(vec3 normal, vec3 lightPosition, int shadowMapIndex)
+{
+	// There is no PCF for point lights for now as they are already super expensive
+	if (shadowMapIndex == -1)
+	{
+		return 0.0;
+	}
+
+	float shadowFactor = 0;
+
+	vec3 lightToFragment = v_WorldPosition - lightPosition;
+
+	float distanceFromLight = length(lightToFragment);
+	float bias = 0.05;
+	
+	float sampledDistance = texture(u_PointLightShadowMaps, vec4(lightToFragment, shadowMapIndex)).r;
+	sampledDistance *= 25.0;
+	shadowFactor += distanceFromLight - bias > sampledDistance ? 1.0 : 0.0;
+	
+	return shadowFactor;
+}
+
 float DistributionGGX(vec3 normal, vec3 halfwayDirection, float roughness)
 {
     float a      = roughness * roughness;
@@ -442,12 +475,12 @@ float GeometrySmith(vec3 normal, vec3 viewDirection, vec3 lightDirection, float 
     return ggx1 * ggx2;
 }
 
-vec3 fresnelSchlick(float cosTheta, vec3 F0)
+vec3 FresnelSchlick(float cosTheta, vec3 F0)
 {
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
-vec3 fresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
+vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness)
 {
     return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }  

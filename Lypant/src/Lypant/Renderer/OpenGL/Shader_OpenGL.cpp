@@ -11,17 +11,18 @@ namespace lypant
     {
         switch (type)
         {
-            case GL_FLOAT:              return ShaderDataType::Float;
-            case GL_FLOAT_VEC2:         return ShaderDataType::Float2;
-            case GL_FLOAT_VEC3:         return ShaderDataType::Float3;
-            case GL_FLOAT_VEC4:         return ShaderDataType::Float4;
-            case GL_FLOAT_MAT3:         return ShaderDataType::Mat3;
-            case GL_FLOAT_MAT4:         return ShaderDataType::Mat4;
-            case GL_INT:                return ShaderDataType::Int;
-            case GL_BOOL:               return ShaderDataType::Bool;
-            case GL_SAMPLER_2D:         return ShaderDataType::Sampler2D;
-            case GL_SAMPLER_CUBE:       return ShaderDataType::Samplercube;
-            case GL_SAMPLER_2D_ARRAY:   return ShaderDataType::Sampler2DArray;
+            case GL_FLOAT:                  return ShaderDataType::Float;
+            case GL_FLOAT_VEC2:             return ShaderDataType::Float2;
+            case GL_FLOAT_VEC3:             return ShaderDataType::Float3;
+            case GL_FLOAT_VEC4:             return ShaderDataType::Float4;
+            case GL_FLOAT_MAT3:             return ShaderDataType::Mat3;
+            case GL_FLOAT_MAT4:             return ShaderDataType::Mat4;
+            case GL_INT:                    return ShaderDataType::Int;
+            case GL_BOOL:                   return ShaderDataType::Bool;
+            case GL_SAMPLER_2D:             return ShaderDataType::Sampler2D;
+            case GL_SAMPLER_CUBE:           return ShaderDataType::SamplerCube;
+            case GL_SAMPLER_2D_ARRAY:       return ShaderDataType::Sampler2DArray;
+            case GL_SAMPLER_CUBE_MAP_ARRAY: return ShaderDataType::SamplerCubeArray;
         }
 
         LY_CORE_ASSERT(false, "Invalid OpenGL data type!");
@@ -190,7 +191,7 @@ namespace lypant
 
         for (auto& [name, type] : m_UniformNamesToTypesMap)
         {
-            if (type == ShaderDataType::Sampler2D || type == ShaderDataType::Samplercube || type == ShaderDataType::Sampler2DArray)
+            if (type == ShaderDataType::Sampler2D || type == ShaderDataType::SamplerCube || type == ShaderDataType::Sampler2DArray || type == ShaderDataType::SamplerCubeArray)
             {
                 SetUniformInt(name, samplerValue++);
             }

@@ -21,5 +21,6 @@ namespace lypant
 		static void SetBlending(bool value);
 		static void SetBlendFunc(BlendFunc function);
 		static void DrawIndexed(const std::shared_ptr<VertexArray>& vertexArray);
+		static void DrawIndexedInstanced(const std::shared_ptr<VertexArray>& vertexArray, int instanceCount);
 	};
 }
