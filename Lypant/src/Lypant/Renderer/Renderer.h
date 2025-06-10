@@ -27,7 +27,7 @@ namespace lypant
 		static void BeginShadowPass(const Scene::SceneData& sceneData, LightType lightType);
 		static void EndShadowPass();
 		static void SubmitForShadowPass(const Mesh& mesh, const glm::mat4& modelMatrix, LightType lightType, int count);
-		static void Submit(const std::shared_ptr<Skybox>& skybox);
+		static void Submit(const Skybox& skybox);
 		// You should set anti aliasing before you call BeginScene().
 		static void SetAntiAliasing(AntiAliasingSetting setting);
 		static void SetExposure(float exposure);
@@ -67,10 +67,12 @@ namespace lypant
 			}
 		public:
 			// IBL data
-			std::shared_ptr<Skybox> EnvironmentMap;
+			std::shared_ptr<Cubemap> EnvironmentMap;
+			float AmbientStrength;
 			std::shared_ptr<Cubemap> DiffuseIrradianceMap;
 			std::shared_ptr<Cubemap> PrefilteredMap;
 			std::shared_ptr<Texture2D> BRDFIntegrationMap;
+			std::shared_ptr<Shader> SkyboxShader;
 
 			// Light/camera data
 			UniformBuffer* EnvironmentUniformBuffer = nullptr;

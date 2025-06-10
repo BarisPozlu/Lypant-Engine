@@ -299,7 +299,7 @@ namespace lypant
 	/////////////////////////////////////////////////////////////////////////////////////////////
 
 
-	Cubemap::Cubemap(const std::string& path)
+	Cubemap::Cubemap(const std::string& path) : m_Path(path)
 	{
 		glCreateTextures(GL_TEXTURE_CUBE_MAP, 1, &m_RendererID);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, m_RendererID);
@@ -329,7 +329,7 @@ namespace lypant
 		}
 	}
 
-	Cubemap::Cubemap(int width, int height, bool generateMipmap, bool floatingBuffer)
+	Cubemap::Cubemap(int width, int height, bool generateMipmap, bool floatingBuffer, const std::string& path) : m_Path(path)
 	{
 		m_Width = width;
 		m_Height = height;

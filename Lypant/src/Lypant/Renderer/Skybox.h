@@ -11,7 +11,7 @@ namespace lypant
 	class Skybox
 	{
 	public:
-		Skybox(const std::string& path, bool equirectangular = false);
+		Skybox(const std::string& path, bool equirectangular = true);
 
 		inline const std::shared_ptr<VertexArray>& GetVertexArray() const { return m_VertexArray; }
 		inline const std::shared_ptr<Shader>& GetShader() const { return m_Shader; }

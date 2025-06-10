@@ -8,7 +8,7 @@
 
 namespace lypant
 {
-	Skybox::Skybox(const std::string& path, bool equirectangular)
+    Skybox::Skybox(const std::string& path, bool equirectangular)
 	{
         m_VertexArray = util::VertexArrays::GetCubemapCube();
         m_Shader = Shader::Load("shaders/Skybox.glsl");

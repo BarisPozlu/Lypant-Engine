@@ -111,7 +111,7 @@ namespace lypant
 
 			std::shared_ptr<Texture2D> equirectangularTexture = Texture2D::Load(path, false, false, true);
 
-			std::shared_ptr<Cubemap> cubemap = std::make_shared<Cubemap>(1024, 1024, false, true);
+			std::shared_ptr<Cubemap> cubemap = std::make_shared<Cubemap>(1024, 1024, false, true, path);
 
 			FrameBuffer frameBuffer;
 			RenderCommand::SetViewport(0, 0, 1024, 1024);

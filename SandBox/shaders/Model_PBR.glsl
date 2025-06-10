@@ -142,6 +142,7 @@ uniform vec3 u_Albedo;
 uniform float u_Roughness;
 uniform float u_Metallic;
 
+uniform float u_AmbientStrength;
 uniform samplerCube u_DiffuseIrradianceMap;
 uniform samplerCube u_PreFilteredMap;
 uniform sampler2D u_BRDFIntegrationMap;
@@ -253,7 +254,7 @@ void main()
 	vec3 specular = preFilteredSample * (BRDFSample.x * Ks + BRDFSample.y);
 
 	//vec3 ambient = (diffuse + specular) * ao;
-	vec3 ambient = (diffuse + specular);
+	vec3 ambient = (diffuse + specular) * u_AmbientStrength;
 
 	o_Color = vec4(Lo + ambient, 1.0);
 }

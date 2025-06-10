@@ -4,6 +4,7 @@
 #include "Components.h"
 #include "BehaviorComponent.h"
 #include "Lypant/Renderer/Renderer.h"
+#include "Lypant/Renderer/Texture.h"
 
 namespace lypant
 {
@@ -43,9 +44,9 @@ namespace lypant
 		return entities;
 	}
 
-	void Scene::Tick(float deltaTime, const std::shared_ptr<PerspectiveCamera>& camera, const std::shared_ptr<Skybox>& skybox)
+	void Scene::Tick(float deltaTime, const std::shared_ptr<PerspectiveCamera>& camera)
 	{
-		UpdateSceneData(camera, skybox);
+		UpdateSceneData(camera);
 
 		// Update Components
 		m_Registry.view<BehaviorComponent>().each([this, deltaTime](entt::entity entityHandle, BehaviorComponent& component)
@@ -115,7 +116,7 @@ namespace lypant
 		Renderer::EndScene();
 	}
 
-	void Scene::UpdateSceneData(const std::shared_ptr<PerspectiveCamera>& camera, const std::shared_ptr<Skybox>& skybox)
+	void Scene::UpdateSceneData(const std::shared_ptr<PerspectiveCamera>& camera)
 	{
 		int shadowMapIndex = 0;
 		m_SceneData.NumberOfShadowCastingPointLights = 0;
@@ -243,7 +244,12 @@ namespace lypant
 		}
 
 		m_SceneData.Camera = camera;
-		m_SceneData.Skybox = skybox;
+		//TODO: For now there has to be a sky light component
+		LY_CORE_ASSERT(m_Registry.storage<SkyLightComponent>().size() == 1, "Only one sky light component is allowed");
+
+		SkyLightComponent& skyLight = **m_Registry.storage<SkyLightComponent>().raw();
+		m_SceneData.EnvironmentMap = skyLight.Cubemap;
+		m_SceneData.AmbientStrength = skyLight.Intensity;
 	}
 
 }

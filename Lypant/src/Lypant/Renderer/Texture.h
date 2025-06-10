@@ -60,9 +60,13 @@ namespace lypant
 	public:
 		// The path expected is the path of one of the textures. Textures should be named as "top", "bottom" etc and they should be in the same directory.
 		Cubemap(const std::string& path);
-		Cubemap(int width, int height, bool generateMipMap = false, bool floatingBuffer = false);
+		// Cubemap is not loaded from the optional string parameter, It is supposed to be given when creating from an equirectangular texture
+		Cubemap(int width, int height, bool generateMipMap = false, bool floatingBuffer = false, const std::string& path = std::string());
 		virtual ~Cubemap();
-		void Bind(uint32_t slot) const;	
+		void Bind(uint32_t slot) const;
+		inline const std::string& GetPath() const { return m_Path; }
+	private:
+		std::string m_Path;
 	};
 
 	class CubemapArray : public FrameBufferAttachment

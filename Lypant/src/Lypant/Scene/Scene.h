@@ -12,6 +12,7 @@ namespace lypant
 	struct PointLightComponent;
 	struct SpotLightComponent;
 	struct DirectionalLightComponent;
+	class Cubemap;
 
 	class Scene
 	{
@@ -22,9 +23,9 @@ namespace lypant
 		Entity CreateEntity();
 		// entities do not have parent-child relationship yet, all entities created here have transform and mesh components attached to them
 		std::vector<Entity> LoadModel(const std::string& path, bool loadMaterials = true, bool flipUVs = true);
-		void Tick(float deltaTime, const std::shared_ptr<PerspectiveCamera>& camera, const std::shared_ptr<Skybox>& skybox);
+		void Tick(float deltaTime, const std::shared_ptr<PerspectiveCamera>& camera);
 	private:
-		void UpdateSceneData(const std::shared_ptr<PerspectiveCamera>& camera, const std::shared_ptr<Skybox>& skybox);
+		void UpdateSceneData(const std::shared_ptr<PerspectiveCamera>& camera);
 	private:
 		struct SceneData
 		{
@@ -39,7 +40,8 @@ namespace lypant
 			int NumberOfShadowCastingDirectionalLights = 0;
 
 			std::shared_ptr<PerspectiveCamera> Camera;
-			std::shared_ptr<Skybox> Skybox;
+			std::shared_ptr<Cubemap> EnvironmentMap;
+			float AmbientStrength;
 		};
 
 		SceneData m_SceneData;

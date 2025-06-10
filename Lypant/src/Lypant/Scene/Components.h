@@ -5,6 +5,8 @@
 #include "glm/gtc/matrix_transform.hpp"
 #include "Lypant/Renderer/Mesh.h"
 #include "Entity.h"
+#include "Lypant/Renderer/Texture.h"
+#include "Lypant/Util/Util.h"
 
 namespace lypant
 {
@@ -141,4 +143,23 @@ namespace lypant
 		friend class DirectionalLight;
 	};
 
+	struct SkyLightComponent
+	{
+	public:
+		SkyLightComponent(const std::string& path, bool equirectangular = true, float Intensity = 1.0f) : Intensity(Intensity)
+		{
+			if (equirectangular)
+			{
+				Cubemap = util::CreateCubemapFromEquirectangularTexture(path);
+			}
+
+			else
+			{
+				Cubemap = std::make_shared<::lypant::Cubemap>(path);
+			}
+		}
+	public:
+		std::shared_ptr<Cubemap> Cubemap;
+		float Intensity;
+	};
 }

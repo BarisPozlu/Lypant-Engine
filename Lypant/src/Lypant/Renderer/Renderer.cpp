@@ -22,6 +22,7 @@ namespace lypant
 		s_RendererData->EnvironmentBuffer = new char[bufferSize];
 		s_RendererData->EnvironmentUniformBuffer = new UniformBuffer(bufferSize, nullptr);
 
+		s_RendererData->SkyboxShader = Shader::Load("shaders/Skybox.glsl");
 		CreatePostProcessFrameBuffer();
 		s_RendererData->PostProcessQuadVertexArray = util::VertexArrays::GetQuad();
 
@@ -95,13 +96,15 @@ namespace lypant
 
 	void Renderer::BeginScene(const Scene::SceneData& sceneData)
 	{
-		if (s_RendererData->EnvironmentMap != sceneData.Skybox)
+		if (!s_RendererData->EnvironmentMap || s_RendererData->EnvironmentMap->GetPath() != sceneData.EnvironmentMap->GetPath())
 		{
-			s_RendererData->DiffuseIrradianceMap = util::CreateDiffuseIrradianceMap(sceneData.Skybox->GetCubemap());
-			s_RendererData->PrefilteredMap = util::CreatePreFilteredMap(sceneData.Skybox->GetCubemap());
+			s_RendererData->EnvironmentMap = sceneData.EnvironmentMap;
+			s_RendererData->DiffuseIrradianceMap = util::CreateDiffuseIrradianceMap(s_RendererData->EnvironmentMap);
+			s_RendererData->PrefilteredMap = util::CreatePreFilteredMap(s_RendererData->EnvironmentMap);
 		}
-
-		s_RendererData->EnvironmentMap = sceneData.Skybox;
+		
+		s_RendererData->AmbientStrength = sceneData.AmbientStrength;
+		
 		UpdateEnvironmentBuffers(sceneData);
 
 		if (s_RendererData->MSAAFrameBuffer)
@@ -119,7 +122,12 @@ namespace lypant
 
 	void Renderer::EndScene()
 	{
-		Submit(s_RendererData->EnvironmentMap);
+		// Render Environment map
+		util::VertexArrays::GetCubemapCube()->Bind();
+		s_RendererData->SkyboxShader->Bind();
+		s_RendererData->EnvironmentMap->Bind(0);
+
+		RenderCommand::DrawIndexed(util::VertexArrays::GetCubemapCube());
 
 		if (s_RendererData->MSAAFrameBuffer)
 		{
@@ -160,6 +168,7 @@ namespace lypant
 		mesh.GetVertexArray()->Bind();
 		mesh.GetMaterial()->Bind();
 
+		shader->SetUniformFloat("u_AmbientStrength", s_RendererData->AmbientStrength);
 		shader->SetUniformMatrix4Float("u_ModelMatrix", (float*)&modelMatrix[0][0]);
 		shader->SetUniformMatrix3Float("u_NormalMatrix", (float*)&(glm::transpose(glm::inverse(glm::mat3(modelMatrix))))[0][0]);
 
@@ -303,13 +312,13 @@ namespace lypant
 		}
 	}
 
-	void Renderer::Submit(const std::shared_ptr<Skybox>& skybox)
+	void Renderer::Submit(const Skybox& skybox)
 	{
-		skybox->GetVertexArray()->Bind();
-		skybox->GetShader()->Bind();
-		skybox->GetCubemap()->Bind(0);
+		skybox.GetVertexArray()->Bind();
+		skybox.GetShader()->Bind();
+		skybox.GetCubemap()->Bind(0);
 
-		RenderCommand::DrawIndexed(skybox->GetVertexArray());
+		RenderCommand::DrawIndexed(skybox.GetVertexArray());
 	}
 
 	void Renderer::SetAntiAliasing(AntiAliasingSetting setting)

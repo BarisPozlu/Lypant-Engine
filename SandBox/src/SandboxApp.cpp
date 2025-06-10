@@ -52,9 +52,9 @@ public:
 
 		std::shared_ptr<Material> lightMaterial = std::make_shared<Material>("shaders/FlatColor.glsl", glm::vec3(20.0, 0.0, 0.0));
 
-		m_Skybox1 = std::make_shared<Skybox>("textures/skybox/flamingo_pan_4k.hdr", true);
-		m_Skybox2 = std::make_shared<Skybox>("textures/skybox/example2.jpeg", true);
-		m_Skybox3 = std::make_shared<Skybox>("textures/skybox/example1.hdr", true);
+		//m_Skybox1 = std::make_shared<Skybox>("textures/skybox/flamingo_pan_4k.hdr", true);
+		//m_Skybox2 = std::make_shared<Skybox>("textures/skybox/example2.jpeg", true);
+		//m_Skybox3 = std::make_shared<Skybox>("textures/skybox/example1.hdr", true);
 
 		std::shared_ptr<Material> sphereMaterial = std::make_shared<Material>("shaders/Model_PBR.glsl", "textures/light-gold/albedo.png", "textures/light-gold/roughness.png", "textures/light-gold/metallic.png", "textures/light-gold/normal.png", "textures/light-gold/ao.png");
 		std::shared_ptr<Material> rustedIronMaterial = std::make_shared<Material>("shaders/Model_PBR.glsl", "textures/rusted-iron/albedo.png", "textures/rusted-iron/roughness.png", "textures/rusted-iron/metallic.png", "textures/rusted-iron/normal.png", "textures/rusted-iron/ao.png");
@@ -79,8 +79,6 @@ public:
 			m_PointLights[i].AddComponent<PointLightComponent>(colors[i]);
 		}
 
-		
-
 		//m_LightEntity3 = m_Scene->CreateEntity();
 		//m_LightEntity3.GetComponent<TransformComponent>().Scale = glm::vec3(0.3f);
 		//m_LightEntity3.GetComponent<TransformComponent>().Position = glm::vec3(-2.0, 2.0, 0.0);
@@ -93,10 +91,10 @@ public:
 		m_Weapon.GetComponent<TransformComponent>().Scale = glm::vec3(0.015f);
 		m_Weapon.GetComponent<TransformComponent>().Rotation = glm::normalize(glm::angleAxis(glm::radians(-90.0f), glm::vec3(0, 1, 0)) * glm::angleAxis(glm::radians(-90.0f), glm::vec3(1, 0, 0)));
 		*/
-		//m_Helmet = m_Scene->LoadModel("models/helmet/DamagedHelmet.gltf")[0];
-		//m_Helmet.GetComponent<TransformComponent>().Position = glm::vec3(2.0f, 0.0f, -2.0f);
-		//m_Helmet.GetComponent<TransformComponent>().Scale = glm::vec3(0.75f);
-		//m_Helmet.GetComponent<TransformComponent>().Rotation = glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0)));
+		/*m_Helmet = m_Scene->LoadModel("models/helmet/DamagedHelmet.gltf")[0];
+		m_Helmet.GetComponent<TransformComponent>().Position = glm::vec3(0.2f, 1.2f, -2.0f);
+		m_Helmet.GetComponent<TransformComponent>().Scale = glm::vec3(0.75f);
+		m_Helmet.GetComponent<TransformComponent>().Rotation = glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0)));*/
 
 		//m_Helmet.AddComponent<BehaviorComponent>().Bind<TestScript>();
 
@@ -110,6 +108,8 @@ public:
 			entity.GetComponent<TransformComponent>().Rotation = glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
 		}
 
+		m_SkyLight = m_Scene->CreateEntity();
+		m_SkyLight.AddComponent<SkyLightComponent>("textures/skybox/example2.jpeg", true, 0.15f);
 	}
 
 	virtual void Tick(float deltaTime) override
@@ -118,24 +118,11 @@ public:
 
 		m_Camera->Tick(deltaTime);
 
+		m_Scene->Tick(deltaTime, m_Camera);
+
 		Renderer::SetAntiAliasing(m_AASetting);
 		Renderer::SetExposure(m_Exposure);
 		Renderer::SetBloom(m_IsBloomEnabled);
-
-		if (m_ExampleCounter == 0)
-		{
-			m_Scene->Tick(deltaTime, m_Camera, m_Skybox1);
-		}
-
-		else if (m_ExampleCounter == 1)
-		{
-			m_Scene->Tick(deltaTime, m_Camera, m_Skybox2);
-		}
-
-		else
-		{
-			m_Scene->Tick(deltaTime, m_Camera, m_Skybox3);
-		}
 	}
 
 	virtual void OnEvent(Event& event) override
@@ -159,11 +146,7 @@ public:
 	{
 		ImGui::Begin("Settings");
 		
-		//ImGui::Text(("FPS: " + std::to_string(m_FPS)).c_str());
-		//ImGui::DragFloat3("Point Light entity position", (float*)&m_PointLight1.GetComponent<TransformComponent>().Position, 0.05f, -20.0f, 20.0f);
-		//ImGui::DragFloat3("Point Light entity2 position", (float*)&m_PointLight2.GetComponent<TransformComponent>().Position, 0.05f, -20.0f, 20.0f);
-		//ImGui::DragFloat3("Point Light entity3 position", (float*)&m_PointLight2.GetComponent<TransformComponent>().Position, 0.05f, -20.0f, 20.0f);
-		//ImGui::ColorEdit3("Light entity color", (float*)&m_LightEntity.GetComponent<PointLightComponent>().Color);
+		ImGui::Text(("FPS: " + std::to_string(m_FPS)).c_str());
 		
 		static const char* options[]
 		{
@@ -181,12 +164,7 @@ public:
 		//directionalLightComponent.SetDirection(directionalLightComponent.Direction);
 
 		ImGui::Checkbox("Bloom", &m_IsBloomEnabled);
-
-		//ImGui::Checkbox("Direcitonal light cast shadows", &m_DirectionalLightEntity.GetComponent<DirectionalLightComponent>().CastShadows);
-		//ImGui::Checkbox("Spotlight1 cast shadows", &m_LightEntity2.GetComponent<SpotLightComponent>().CastShadows);
-		//ImGui::Checkbox("Spotlight2 cast shadows", &m_LightEntity3.GetComponent<SpotLightComponent>().CastShadows);
-		//ImGui::Checkbox("Point light cast shadows", &m_PointLight1.GetComponent<PointLightComponent>().CastShadows);
-		//ImGui::Checkbox("Point light2 cast shadows", &m_PointLight2.GetComponent<PointLightComponent>().CastShadows);
+		ImGui::DragFloat("Ambient Strength", &m_SkyLight.GetComponent<SkyLightComponent>().Intensity, 0.01f, 0.0f, 1.0f);
 
 		ImGui::End();
 
@@ -194,6 +172,7 @@ public:
 
 private:
 	std::shared_ptr<Scene> m_Scene;
+	Entity m_SkyLight;
 	Entity m_Weapon;
 	Entity m_Helmet;
 	Entity m_GoldSphereEntity;

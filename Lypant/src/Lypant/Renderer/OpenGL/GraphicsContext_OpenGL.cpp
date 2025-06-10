@@ -10,7 +10,7 @@ namespace lypant
 {
 	static void APIENTRY DebugMessageCallBack(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const char* message, const void* userParam)
 	{
-		if (id == 131185) return;
+		if (id == 131185 || type == GL_DEBUG_TYPE_PERFORMANCE) return;
 
 		LY_CORE_ERROR("id: {0}, message: {1}", id, message);
 		LY_CORE_ASSERT(false, "OpenGL debug callback!");
