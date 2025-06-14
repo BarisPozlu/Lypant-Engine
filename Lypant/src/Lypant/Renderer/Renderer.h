@@ -45,8 +45,8 @@ namespace lypant
 		static void DeleteBloomResources();
 		static void CreateBloomTexture(const std::shared_ptr<Texture2D>& sceneTexture);
 		static std::vector<glm::vec4> GetWorldPositionOfFrustumCorners(const glm::mat4& viewProjectionMatrix);
-		static void CalculateDirectionalLightSpaceMatrices(const DirectionalLightComponent& light, const PerspectiveCamera& camera);
-		static void CalculateDirectionalLightSpaceMatrix(const DirectionalLightComponent& light, const PerspectiveCamera& camera, float nearPlane, float farPlane, int cascade);
+		static void CalculateDirectionalLightSpaceMatrices(const glm::vec3& lightDirection, const PerspectiveCamera& camera);
+		static void CalculateDirectionalLightSpaceMatrix(const glm::vec3& lightDirection, const PerspectiveCamera& camera, float nearPlane, float farPlane, int cascade);
 	private:
 		struct RendererData
 		{

@@ -214,7 +214,7 @@ namespace lypant
 			for (int i = 0; i < sceneData.NumberOfDirectionalLights; i++)
 			{
 				if (!sceneData.DirectionalLightComponents[i].CastShadows) continue;
-				CalculateDirectionalLightSpaceMatrices(sceneData.DirectionalLightComponents[i], *sceneData.Camera);
+				CalculateDirectionalLightSpaceMatrices(sceneData.DirectionalLightComponents[i].Direction, *sceneData.Camera);
 				for (int j = 0; j < s_RendererData->DirectionalLightSpaceMatrices.size(); j++)
 				{
 					s_RendererData->CascadedShadowMapShader->SetUniformMatrix4Float("u_DirectionalLightSpaceMatrices[" + std::to_string(j) + "]", &s_RendererData->DirectionalLightSpaceMatrices[j][0][0]);
@@ -581,19 +581,19 @@ namespace lypant
 		return positions;
 	}
 
-	void Renderer::CalculateDirectionalLightSpaceMatrices(const DirectionalLightComponent& light, const PerspectiveCamera& camera)
+	void Renderer::CalculateDirectionalLightSpaceMatrices(const glm::vec3& lightDirection, const PerspectiveCamera& camera)
 	{
 		s_RendererData->CascadePlaneDistances = { camera.GetFarPlane() / 50.0f, camera.GetFarPlane() / 25.0f, camera.GetFarPlane() / 10.0f, camera.GetFarPlane() / 2.0f, camera.GetFarPlane()};
 
-		CalculateDirectionalLightSpaceMatrix(light, camera, camera.GetNearPlane(), s_RendererData->CascadePlaneDistances[0], 0);
+		CalculateDirectionalLightSpaceMatrix(lightDirection, camera, camera.GetNearPlane(), s_RendererData->CascadePlaneDistances[0], 0);
 
 		for (int i = 1; i < s_RendererData->DirectionalLightSpaceMatrices.size(); i++)
 		{
-			CalculateDirectionalLightSpaceMatrix(light, camera, s_RendererData->CascadePlaneDistances[i - 1], s_RendererData->CascadePlaneDistances[i], i);
+			CalculateDirectionalLightSpaceMatrix(lightDirection, camera, s_RendererData->CascadePlaneDistances[i - 1], s_RendererData->CascadePlaneDistances[i], i);
 		}
 	}
 
-	void Renderer::CalculateDirectionalLightSpaceMatrix(const DirectionalLightComponent& light, const PerspectiveCamera& camera, float nearPlane, float farPlane, int cascade)
+	void Renderer::CalculateDirectionalLightSpaceMatrix(const glm::vec3& lightDirection, const PerspectiveCamera& camera, float nearPlane, float farPlane, int cascade)
 	{
 		glm::mat4 cameraCascadedProjection = glm::perspective(camera.GetFovY(), camera.GetAspectRatio(), nearPlane, farPlane);
 		std::vector<glm::vec4> frustumCorners = GetWorldPositionOfFrustumCorners(cameraCascadedProjection * camera.GetViewMatrix());
@@ -605,46 +605,33 @@ namespace lypant
 		}
 		center /= frustumCorners.size();
 
-		// TODO: Current solution is not the best solution for edge cases. Update it
+		// TODO: Current solution is not the best solution for edge cases
 		glm::vec3 upVector(0.0f, 1.0f, 0.0f);
-		if (glm::abs(glm::dot(upVector, light.Direction)) > 0.99f)
+		if (glm::abs(glm::dot(upVector, lightDirection)) > 0.99f)
 		{
 			upVector = glm::vec3(0.0f, 0.0f, -1.0f);
 		}
+
+		float radius = farPlane * camera.GetAspectRatio() * glm::tan(camera.GetFovY() / 2.0) * 1.4f;
 		
-		glm::mat4 viewMatrix = glm::lookAt(center - glm::vec3(light.Direction), center, upVector);
+		float texelsPerUnitWorld = s_RendererData->DirectionalLightShadowMaps->GetWidth() / (radius * 2.0f);
+		glm::mat4 scalar = glm::scale(glm::mat4(1.0f), glm::vec3(texelsPerUnitWorld));
 
-		float minX = std::numeric_limits<float>::max();
-		float maxX = std::numeric_limits<float>::lowest();
-		float minY = std::numeric_limits<float>::max();
-		float maxY = std::numeric_limits<float>::lowest();
-		float minZ = std::numeric_limits<float>::max();
-		float maxZ = std::numeric_limits<float>::lowest();
-		for (const glm::vec4& corner : frustumCorners)
-		{
-			glm::vec4 LightSpaceCorner = viewMatrix * corner;
-			minX = std::min(minX, LightSpaceCorner.x);
-			maxX = std::max(maxX, LightSpaceCorner.x);
-			minY = std::min(minY, LightSpaceCorner.y);
-			maxY = std::max(maxY, LightSpaceCorner.y);
-			minZ = std::min(minZ, LightSpaceCorner.z);
-			maxZ = std::max(maxZ, LightSpaceCorner.z);
-		}
+		glm::mat4 texelSpaceMatrix = scalar * glm::lookAt(glm::vec3(0.0f), lightDirection, upVector);
+		glm::mat4 inverseTexelSpaceMatrix = glm::inverse(texelSpaceMatrix);
 
-		// if the far plane of the camera is too low, it causes the rectangular prisms to be too small (orthographic projection)
-		// note that we use camera's far plane to determine the cascade plane distances 
-		// which in turn makes it so that for low cascade values the light is outside the prism which causes the near plane to be positive
-		// that is something we don't want so that the objects that are behind the light can also cast shadows
-		// I noticed this bug when I got close to an object (which makes it so that we use the first cascade) and a very closeby object that was
-		// supposed to cast shadows wasn't casting shadows because it was not within the near and far plane so nowhere to be found in the shadow map
+		glm::vec4 centerTexelSpace = texelSpaceMatrix * glm::vec4(center, 1.0f);
+		centerTexelSpace.x = glm::floor(centerTexelSpace.x);
+		centerTexelSpace.y = glm::floor(centerTexelSpace.y);
+		
+		center = inverseTexelSpaceMatrix * centerTexelSpace;
+
+		glm::mat4 viewMatrix = glm::lookAt(center - glm::normalize(lightDirection) * radius * 2.0f, center, upVector);
+
 		constexpr float zMult = 10.0f;
-		LY_CORE_ASSERT(minZ < 0, "minZ is always supposed to be negative");
-		LY_CORE_ASSERT(maxZ > 0, "maxZ is always supposed to be positive");
-		minZ *= zMult;
-		maxZ *= zMult;
 
-		glm::mat4 projectionMatrix = glm::ortho(minX, maxX, minY, maxY, -maxZ, -minZ);
-		
+		glm::mat4 projectionMatrix = glm::ortho(-radius, radius, -radius, radius, -radius * zMult, radius * zMult);
+
 		s_RendererData->DirectionalLightSpaceMatrices[cascade] = projectionMatrix * viewMatrix;
 	}
 }

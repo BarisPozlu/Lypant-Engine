@@ -56,6 +56,7 @@ namespace lypant
 		void Textures::Destroy()
 		{
 			s_White3Channel1x1.reset();
+			s_White1Channel1x1.reset();
 			s_BRDFIntegrationMap.reset();
 		}
 

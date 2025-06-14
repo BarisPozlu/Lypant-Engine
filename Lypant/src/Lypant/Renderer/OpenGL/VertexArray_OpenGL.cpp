@@ -53,14 +53,16 @@ namespace lypant
 		vertexBuffer->Bind();
 
 		const auto& blocks = vertexBuffer->GetLayout().GetBlocks();
-		for (; m_VertexAttribPointer < blocks.size(); m_VertexAttribPointer++)
+		for (int i = 0; i < blocks.size(); i++)
 		{
-			const auto& block = blocks[m_VertexAttribPointer];
+			const auto& block = blocks[i];
 			glEnableVertexAttribArray(m_VertexAttribPointer);
 			glVertexAttribPointer(m_VertexAttribPointer, GetCountFromShaderDataType(block.Type),
 				GetGLTypeFromShaderDataType(block.Type),
 				GL_FALSE,
 				vertexBuffer->GetLayout().GetStride(), (const void*)block.Offset);
+
+			m_VertexAttribPointer++;
 		}
 
 		m_VertexBuffers.push_back(vertexBuffer);

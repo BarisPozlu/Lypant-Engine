@@ -49,57 +49,24 @@ public:
 	ExampleLayer()
 	{
 		m_Camera = std::make_shared<EditorPerspectiveCamera>(glm::vec3(0.0f, 1.0f, 2.5f), glm::radians(45.0f), 1280.0f / 720.0f, 0.1f, 500.0f);
-
-		std::shared_ptr<Material> lightMaterial = std::make_shared<Material>("shaders/FlatColor.glsl", glm::vec3(20.0, 0.0, 0.0));
-
-		//m_Skybox1 = std::make_shared<Skybox>("textures/skybox/flamingo_pan_4k.hdr", true);
-		//m_Skybox2 = std::make_shared<Skybox>("textures/skybox/example2.jpeg", true);
-		//m_Skybox3 = std::make_shared<Skybox>("textures/skybox/example1.hdr", true);
-
-		std::shared_ptr<Material> sphereMaterial = std::make_shared<Material>("shaders/Model_PBR.glsl", "textures/light-gold/albedo.png", "textures/light-gold/roughness.png", "textures/light-gold/metallic.png", "textures/light-gold/normal.png", "textures/light-gold/ao.png");
-		std::shared_ptr<Material> rustedIronMaterial = std::make_shared<Material>("shaders/Model_PBR.glsl", "textures/rusted-iron/albedo.png", "textures/rusted-iron/roughness.png", "textures/rusted-iron/metallic.png", "textures/rusted-iron/normal.png", "textures/rusted-iron/ao.png");
-
 		m_Scene = std::make_shared<Scene>();
-
-		//m_GoldSphereEntity = m_Scene->CreateEntity();
-		//m_GoldSphereEntity.GetComponent<TransformComponent>().Position = glm::vec3(1.0, 1.0, -4.0);
-		//m_GoldSphereEntity.GetComponent<TransformComponent>().Scale = glm::vec3(0.3f);
-		//m_GoldSphereEntity.AddComponent<MeshComponent>(DefaultGeometry::Sphere, sphereMaterial);
 		
-		m_PointLights.reserve(6);
+		m_PointLights.reserve(2);
 
-		glm::vec3 colors[]{ glm::vec3(10.0, 0.0, 0.0), glm::vec3(10.0, 10.0, 0.0), glm::vec3(10.0, 0.0, 10.0), glm::vec3(10.0, 10.0, 10.0), glm::vec3(15.0, 25.0, 5.0), glm::vec3(15.0f, 30.0f, 25.0f)};
+		glm::vec3 colors[]{ glm::vec3(15.0, 25.0, 5.0), glm::vec3(15.0f, 30.0f, 25.0f)};
 
-		for (int i = 0; i < 6; i++)
+		for (int i = 0; i < 2; i++)
 		{
 			m_PointLights.push_back(m_Scene->CreateEntity());
 			m_PointLights[i].GetComponent<TransformComponent>().Position = glm::vec3(-1.0f, 1.0f, -6.5 + i * 3.2f);
 			m_PointLights[i].GetComponent<TransformComponent>().Scale = glm::vec3(0.5f);
 			m_PointLights[i].AddComponent<MeshComponent>(DefaultGeometry::Cube, std::make_shared<Material>("shaders/FlatColor.glsl", colors[i]));
 			m_PointLights[i].AddComponent<PointLightComponent>(colors[i]);
+			m_PointLights[i].AddComponent<BehaviorComponent>().Bind<TestScript>();
 		}
 
-		//m_LightEntity3 = m_Scene->CreateEntity();
-		//m_LightEntity3.GetComponent<TransformComponent>().Scale = glm::vec3(0.3f);
-		//m_LightEntity3.GetComponent<TransformComponent>().Position = glm::vec3(-2.0, 2.0, 0.0);
-		//m_LightEntity3.AddComponent<MeshComponent>(DefaultGeometry::Cube, std::make_shared<Material>("shaders/FlatColor.glsl", glm::vec3(5.0, 5.0, 10.0)));
-		//m_LightEntity3.AddComponent<SpotLightComponent>(glm::vec3(5.0, 5.0, 10.0), glm::vec3(1, 0, 0));
-
-		// these specific models are just one 1 mesh
-		/*m_Weapon = m_Scene->LoadModel("models/weapon/weapon1.glb")[0];
-		//m_Weapon.GetComponent<TransformComponent>().Position = glm::vec3(0.0f, 3.0f, -1.5f);
-		m_Weapon.GetComponent<TransformComponent>().Scale = glm::vec3(0.015f);
-		m_Weapon.GetComponent<TransformComponent>().Rotation = glm::normalize(glm::angleAxis(glm::radians(-90.0f), glm::vec3(0, 1, 0)) * glm::angleAxis(glm::radians(-90.0f), glm::vec3(1, 0, 0)));
-		*/
-		/*m_Helmet = m_Scene->LoadModel("models/helmet/DamagedHelmet.gltf")[0];
-		m_Helmet.GetComponent<TransformComponent>().Position = glm::vec3(0.2f, 1.2f, -2.0f);
-		m_Helmet.GetComponent<TransformComponent>().Scale = glm::vec3(0.75f);
-		m_Helmet.GetComponent<TransformComponent>().Rotation = glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0, 0.0, 0.0)));*/
-
-		//m_Helmet.AddComponent<BehaviorComponent>().Bind<TestScript>();
-
-		//m_DirectionalLightEntity = m_Scene->CreateEntity();
-		//m_DirectionalLightEntity.AddComponent<DirectionalLightComponent>(glm::vec3(5.0f), glm::vec3(0.0f, -1.0f, -1.0f));
+		m_DirectionalLightEntity = m_Scene->CreateEntity();
+		m_DirectionalLightComponent = &m_DirectionalLightEntity.AddComponent<DirectionalLightComponent>(glm::vec3(5.0f), glm::vec3(0.1f, -0.8f, 0.0f));
 
 		m_Sponza = m_Scene->LoadModel("models/sponza/Sponza.gltf", true, false);
 		for (auto& entity : m_Sponza)
@@ -107,22 +74,31 @@ public:
 			entity.GetComponent<TransformComponent>().Scale = glm::vec3(0.01f);
 			entity.GetComponent<TransformComponent>().Rotation = glm::normalize(glm::angleAxis(glm::radians(90.0f), glm::vec3(0, 1, 0)));
 		}
+		
+		// this specific model is just one 1 mesh
+		m_Weapon = m_Scene->LoadModel("models/weapon/weapon1.glb")[0];
+		m_Weapon.GetComponent<TransformComponent>().Position = glm::vec3(1.3f, 1.0f, -7.5f);
+		m_Weapon.GetComponent<TransformComponent>().Scale = glm::vec3(0.015f);
+		m_Weapon.GetComponent<TransformComponent>().Rotation = glm::normalize(glm::angleAxis(glm::radians(-90.0f), glm::vec3(0, 1, 0)) * glm::angleAxis(glm::radians(-90.0f), glm::vec3(1, 0, 0)));
 
 		m_SkyLight = m_Scene->CreateEntity();
-		m_SkyLight.AddComponent<SkyLightComponent>("textures/skybox/example2.jpeg", true, 0.15f);
+		m_SkyLight.AddComponent<SkyLightComponent>("textures/skybox/example2.jpeg", true);
+
+		m_Cubemap1 = util::CreateCubemapFromEquirectangularTexture("textures/skybox/example2.jpeg");
+		m_Cubemap2 = util::CreateCubemapFromEquirectangularTexture("textures/skybox/example1.hdr");
+		m_Cubemap3 = util::CreateCubemapFromEquirectangularTexture("textures/skybox/flamingo_pan_4k.hdr");
 	}
 
 	virtual void Tick(float deltaTime) override
 	{
 		m_FPS = 1.0 / deltaTime;
 
-		m_Camera->Tick(deltaTime);
-
-		m_Scene->Tick(deltaTime, m_Camera);
-
 		Renderer::SetAntiAliasing(m_AASetting);
 		Renderer::SetExposure(m_Exposure);
 		Renderer::SetBloom(m_IsBloomEnabled);
+
+		m_Camera->Tick(deltaTime);
+		m_Scene->Tick(deltaTime, m_Camera);
 	}
 
 	virtual void OnEvent(Event& event) override
@@ -131,23 +107,46 @@ public:
 
 		EventDispatcher dispatcher(event);
 
-		dispatcher.Dispatch<KeyPressEvent>([this](KeyPressEvent event)
+		dispatcher.Dispatch<KeyPressEvent>([this](KeyPressEvent& event) 
 			{
 				if (event.GetKeyCode() == LY_KEY_C)
 				{
-					m_ExampleCounter == 2 ? m_ExampleCounter = 0 : m_ExampleCounter++;
+					static int counter = 1;
+
+					if (counter == 0)
+					{
+						m_SkyLight.GetComponent<SkyLightComponent>().Cubemap = m_Cubemap1;
+						counter++;
+					}
+
+					else if (counter == 1)
+					{
+						m_SkyLight.GetComponent<SkyLightComponent>().Cubemap = m_Cubemap2;
+						counter++;
+					}
+
+					else
+					{
+						m_SkyLight.GetComponent<SkyLightComponent>().Cubemap = m_Cubemap3;
+						counter = 0;
+					}
+
 				}
 
 				return false;
 			});
+		
 	}
 
 	virtual void OnImGuiRender() override
 	{
 		ImGui::Begin("Settings");
-		
+
 		ImGui::Text(("FPS: " + std::to_string(m_FPS)).c_str());
-		
+
+		ImGui::Text("Press C to change the environment map");
+		ImGui::Text("Press the arrow keys to change the position of the point lights");
+
 		static const char* options[]
 		{
 			"None", "MSAA2X", "MSAA4X", "MSAA8X", "MSAA16X"
@@ -157,40 +156,32 @@ public:
 
 		ImGui::DragFloat("Exposure", &m_Exposure, 0.01f, 0.1f, 5.0f);
 
-		//auto& directionalLightComponent = m_DirectionalLightEntity.GetComponent<DirectionalLightComponent>();
-
-		//ImGui::SliderFloat3("Directional Light", (float*)&directionalLightComponent.Direction, -1, 1);
-		//ImGui::SliderFloat3("Directional Light Color", (float*)&directionalLightComponent.Color, 0, 50);
-		//directionalLightComponent.SetDirection(directionalLightComponent.Direction);
-
 		ImGui::Checkbox("Bloom", &m_IsBloomEnabled);
 		ImGui::DragFloat("Ambient Strength", &m_SkyLight.GetComponent<SkyLightComponent>().Intensity, 0.01f, 0.0f, 1.0f);
 
-		ImGui::End();
+		ImGui::SliderFloat3("Directional Light", (float*)&m_DirectionalLightComponent->Direction, -1, 1);
+		m_DirectionalLightComponent->SetDirection(m_DirectionalLightComponent->Direction);
 
+		ImGui::End();
 	}
 
 private:
+	std::shared_ptr<EditorPerspectiveCamera> m_Camera;
 	std::shared_ptr<Scene> m_Scene;
+
 	Entity m_SkyLight;
-	Entity m_Weapon;
-	Entity m_Helmet;
-	Entity m_GoldSphereEntity;
 	std::vector<Entity> m_PointLights;
-
 	std::vector<Entity> m_Sponza;
-
+	Entity m_Weapon;
 	Entity m_DirectionalLightEntity;
 
-	std::shared_ptr<Skybox> m_Skybox1;
-	std::shared_ptr<Skybox> m_Skybox2;
-	std::shared_ptr<Skybox> m_Skybox3;
+	DirectionalLightComponent* m_DirectionalLightComponent;
+
+	std::shared_ptr<Cubemap> m_Cubemap1;
+	std::shared_ptr<Cubemap> m_Cubemap2;
+	std::shared_ptr<Cubemap> m_Cubemap3;
 
 	float m_FPS = 0;
-	int m_ExampleCounter = 0;
-
-	std::shared_ptr<EditorPerspectiveCamera> m_Camera;
-
 	AntiAliasingSetting m_AASetting = AntiAliasingSetting::MSAA16X;
 	float m_Exposure = 1.0f;
 	bool m_IsBloomEnabled = true;

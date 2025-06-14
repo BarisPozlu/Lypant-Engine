@@ -38,7 +38,7 @@ A modern, real-time rendering engine written in C++ and powered by OpenGL, desig
 
 ## Building the Engine (Windows)
 
-1. Make sure you have CMake and visual studio 2022 installed with the MSVC compiler
+1. Make sure you have CMake and Visual Studio 2022 installed with the MSVC compiler
    
 2. Clone the repository (recursive to pull submodules):
    ```bash
@@ -68,14 +68,13 @@ A modern, real-time rendering engine written in C++ and powered by OpenGL, desig
 
 Even though a `premake` binary is not provided for non-Windows platforms, the build process is still similar:
 
-1. Clone the repository with submodules.
-2. Run the `SetupLibraries` script manually.
-3. Run `premake5` yourself to generate platform-specific project files:
+1. Make sure you have Premake5 installed
+2. Clone the repository with submodules.
+3. Run the `SetupLibraries` script manually.
+4. Run `premake5` yourself to generate platform-specific project files:
    ```bash
    premake5 gmake2    # for Linux Makefiles
    premake5 xcode4    # for macOS
    ```
-
-> Make sure you have [Premake5] installed globally or locally.
 
 ---
