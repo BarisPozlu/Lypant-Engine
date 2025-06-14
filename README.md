@@ -27,6 +27,12 @@ A modern, real-time rendering engine written in C++ and powered by OpenGL, desig
 
 ---
 
+## Video
+
+https://github.com/user-attachments/assets/5c49be1e-d631-4b19-b4de-e359312f9d86
+
+---
+
 ## Screenshots
 
 ![Scene 1](assets/screenshots/scene1.png)
@@ -72,6 +78,7 @@ Even though a `premake` binary is not provided for non-Windows platforms, the bu
 2. Clone the repository with submodules.
 3. Run the `SetupLibraries` script manually.
 4. Run `premake5` yourself to generate platform-specific project files:
+
    ```bash
    premake5 gmake2    # for Linux Makefiles
    premake5 xcode4    # for macOS
