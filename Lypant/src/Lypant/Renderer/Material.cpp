@@ -90,14 +90,23 @@ namespace lypant
 
 					else if (UseCombinedORM && name.find("ORM") != std::string::npos)
 					{
-						LY_CORE_ASSERT(ORMMap, "AORoughnessMetallic map is nullptr despite the shader having a AORoughnessMetallic map.")
+						LY_CORE_ASSERT(ORMMap, "AORoughnessMetallic map is nullptr despite the use combined orm being set to true.")
 						ORMMap->Bind(Shader->GetUniformValueInt(name));
 					}
 
 					else if (!UseCombinedORM && name.find("AmbientOcclusion") != std::string::npos)
 					{
-						LY_CORE_ASSERT(AmbientOcclusionMap, "AmbientOcclusionMap map is nullptr despite the shader having an AmbientOcclusion map.")
-						AmbientOcclusionMap->Bind(Shader->GetUniformValueInt(name));
+						int slot = Shader->GetUniformValueInt(name);
+
+						if (AmbientOcclusionMap)
+						{
+							AmbientOcclusionMap->Bind(slot);
+						}
+
+						else
+						{
+							util::Textures::GetWhite1Channel1x1()->Bind(slot);
+						}
 					}
 
 					else if (!UseCombinedORM && name.find("Roughness") != std::string::npos)
@@ -134,7 +143,7 @@ namespace lypant
 					{
 						if (UseNormalMap)
 						{
-							LY_CORE_ASSERT(NormalMap, "Normal map is nullptr despite the shader having a Normal map.")
+							LY_CORE_ASSERT(NormalMap, "Normal map is nullptr despite the use normal map being set to true.")
 							NormalMap->Bind(Shader->GetUniformValueInt(name));
 						}
 					}

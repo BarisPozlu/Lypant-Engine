@@ -14,14 +14,14 @@ namespace lypant
 		static std::shared_ptr<Texture2D> CreateWhite3Channel1x1()
 		{
 			uint32_t color = 0xFFFFFFFF;
-			std::shared_ptr<Texture2D> texture = std::make_shared<Texture2D>(1, 1, reinterpret_cast<unsigned char*>(&color), false);
+			std::shared_ptr<Texture2D> texture = std::make_shared<Texture2D>(1, 1, reinterpret_cast<unsigned char*>(&color));
 			return texture;
 		}
 
 		static std::shared_ptr<Texture2D> CreateWhite1Channel1x1()
 		{
 			uint32_t color = 0xFFFFFFFF;
-			std::shared_ptr<Texture2D> texture = std::make_shared<Texture2D>(1, 1, reinterpret_cast<unsigned char*>(&color), false, false, 1);
+			std::shared_ptr<Texture2D> texture = std::make_shared<Texture2D>(1, 1, reinterpret_cast<unsigned char*>(&color), true, false, 1);
 			return texture;
 		}
 
