@@ -25,10 +25,10 @@ namespace lypant
 		#endif
 	}
 
-	void GraphicsContext::Init(void* windowHandle)
+	void GraphicsContext::Init(GLFWwindow* windowHandle)
 	{
 		m_WindowHandle = windowHandle;
-		glfwMakeContextCurrent((GLFWwindow*)m_WindowHandle);
+		glfwMakeContextCurrent(m_WindowHandle);
 		LY_CORE_VERIFY(gladLoadGLLoader((GLADloadproc)glfwGetProcAddress), "GLAD could not initialize");
 
 		#ifdef LYPANT_DEBUG

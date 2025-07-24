@@ -48,7 +48,9 @@ project "Lypant"
 		"%{prj.name}/vendor/glm",
 		"%{prj.name}/vendor/stb_image",
 		"%{prj.name}/vendor/assimp/include",
-		"%{prj.name}/vendor/entt/include"
+		"%{prj.name}/vendor/entt/include",
+		"%{prj.name}/vendor/vulkan/include",
+		"%{prj.name}/vendor/vma"
 	}
 
 	links
@@ -56,7 +58,8 @@ project "Lypant"
 		"GLFW",
 		"Glad",
 		"ImGui",
-		"opengl32.lib"
+		"opengl32.lib",
+		"%{prj.name}/vendor/vulkan/lib/vulkan-1.lib"
 	}
 
 	filter "system:windows"

@@ -32,14 +32,11 @@ namespace lypant
 			#endif
 		}
 
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
-
-		m_GraphicsContext.Hint();
+		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
 		m_Window = glfwCreateWindow(m_Data.Width, m_Data.Height, m_Data.Title.c_str(), nullptr, nullptr);
 		LY_CORE_ASSERT(m_Window, "Could not create GLFW Window.");
-		m_GraphicsContext.Init(m_Window);
+		m_GraphicsContext = std::make_unique<GraphicsContext>(m_Window);
 
 		glfwSetWindowUserPointer(m_Window, &m_Data);
 		SetVSync(true);
@@ -147,5 +144,19 @@ namespace lypant
 		}
 
 		m_Data.IsVSync = enabled;
+	}
+
+	unsigned int Window::GetFramebufferWidth() const
+	{
+		int width;
+		glfwGetFramebufferSize(m_Window, &width, nullptr);
+		return width;
+	}
+
+	unsigned int Window::GetFramebufferHeight() const
+	{
+		int height;
+		glfwGetFramebufferSize(m_Window, nullptr, &height);
+		return height;
 	}
 }

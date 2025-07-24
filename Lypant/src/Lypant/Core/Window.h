@@ -37,12 +37,16 @@ namespace lypant
 		inline bool IsVSync() const { return m_Data.IsVSync; };
 
 		inline GLFWwindow* GetGLFWwindow() const { return m_Window; }
+		// in screen coords
 		inline unsigned int GetWidth() const { return m_Data.Width; }
 		inline unsigned int GetHeight() const { return m_Data.Height; };
-
+		// in pixel coords
+		unsigned int GetFramebufferWidth() const;
+		unsigned int GetFramebufferHeight() const;
+		inline const std::unique_ptr<GraphicsContext>& GetGraphicsContext() const { return m_GraphicsContext; }
 	private:
 		GLFWwindow* m_Window;
-		GraphicsContext m_GraphicsContext;
+		std::unique_ptr<GraphicsContext> m_GraphicsContext;
 
 		// this is to give a pointer to glfw.
 		struct WindowData
