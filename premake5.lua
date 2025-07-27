@@ -13,7 +13,6 @@ workspace "Lypant"
 outputdir = "%{cfg.system}-%{cfg.architecture}-%{cfg.buildcfg}/"
 
 include "Lypant/vendor/GLFW"
-include "Lypant/vendor/Glad"
 include "Lypant/vendor/ImGui"
 
 project "Lypant"
@@ -43,7 +42,6 @@ project "Lypant"
 		"%{prj.name}/src",
 		"%{prj.name}/vendor/spdlog/include",
 		"%{prj.name}/vendor/GLFW/include",
-		"%{prj.name}/vendor/Glad/include",
 		"%{prj.name}/vendor/ImGui",
 		"%{prj.name}/vendor/glm",
 		"%{prj.name}/vendor/stb_image",
@@ -53,13 +51,16 @@ project "Lypant"
 		"%{prj.name}/vendor/vma"
 	}
 
+	libdirs
+	{
+		"%{prj.name}/vendor/vulkan/lib"
+	}
+
 	links
 	{
 		"GLFW",
-		"Glad",
 		"ImGui",
-		"opengl32.lib",
-		"%{prj.name}/vendor/vulkan/lib/vulkan-1.lib"
+		"vulkan-1.lib"
 	}
 
 	filter "system:windows"
@@ -70,7 +71,6 @@ project "Lypant"
 		{
 			"LYPANT_PLATFORM_WINDOWS",
 			"LYPANT_BUILD",
-			"LYPANT_OPENGL",
 			"GLFW_INCLUDE_NONE"
 		}
 

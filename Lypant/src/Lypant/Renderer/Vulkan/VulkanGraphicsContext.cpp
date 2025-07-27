@@ -1,28 +1,37 @@
 #include "lypch.h"
-#include "Lypant/Renderer/GraphicsContext.h"
+#include "VulkanGraphicsContext.h"
 #include <GLFW/glfw3.h>
-#include "Lypant/Renderer/SwapChain.h"
+#include "VulkanSwapChain.h"
 #include "Lypant/Core/Application.h"
+#include "VulkanRenderer.h"
 
 namespace lypant
 {
+	static constexpr std::array<const char*, 1> s_RequiredLayers = { "VK_LAYER_KHRONOS_validation" };
 	static constexpr std::array<const char*, 2> s_RequiredDeviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME };
 
-	GraphicsContext::GraphicsContext(GLFWwindow* windowHandle)
+	VulkanGraphicsContext::VulkanGraphicsContext(GLFWwindow* windowHandle)
 	{
 		CreateInstance();
 		CreateSurface(windowHandle);
 		CreateDevice();
-		m_SwapChain = std::make_unique<SwapChain>();
+		vkGetDeviceQueue(m_Device, m_GraphicsQueueFamilyIndex, 0, &m_GraphicsQueue);
+		m_SwapChain = new VulkanSwapChain(m_Device, m_Surface, m_DeviceSurfaceDetails);
 	}
 
-	GraphicsContext::~GraphicsContext()
+	VulkanGraphicsContext::~VulkanGraphicsContext()
 	{
+		delete m_SwapChain;
 		vkDestroyDevice(m_Device, nullptr);
 		vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
 		auto DestroyDebugMessenger = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(m_Instance, "vkDestroyDebugUtilsMessengerEXT");
 		DestroyDebugMessenger(m_Instance, m_DebugMessenger, nullptr);
 		vkDestroyInstance(m_Instance, nullptr);
+	}
+
+	const std::unique_ptr<VulkanGraphicsContext>& VulkanGraphicsContext::Get()
+	{
+		return reinterpret_cast<const std::unique_ptr<VulkanGraphicsContext>&>(Application::Get().GetWindow().GetGraphicsContext());
 	}
 
 	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
@@ -33,13 +42,13 @@ namespace lypant
 	{
 		if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
 		{
-			LY_ERROR("Validation layer: {0}", pCallbackData->pMessage);
-			__debugbreak();
+			LY_CORE_ERROR("Validation layer: {0}", pCallbackData->pMessage);
+			LY_CORE_ASSERT(false, "Vulkan debug callback");
 		}
 
 		else if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
 		{
-			LY_WARNING("Validation layer: {0}", pCallbackData->pMessage);
+			LY_CORE_WARNING("Validation layer: {0}", pCallbackData->pMessage);
 		}
 
 		return VK_FALSE;
@@ -47,15 +56,13 @@ namespace lypant
 
 	static void EnableValidationLayers(VkInstanceCreateInfo* instanceInfo)
 	{
-		constexpr std::array<const char*, 1> requiredLayers = { "VK_LAYER_KHRONOS_validation" };
-
 		uint32_t layerCount;
 		vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
 
 		std::vector<VkLayerProperties> layers(layerCount);
 		vkEnumerateInstanceLayerProperties(&layerCount, layers.data());
 
-		for (const char* requiredLayer : requiredLayers)
+		for (const char* requiredLayer : s_RequiredLayers)
 		{
 			bool found = false;
 
@@ -68,14 +75,14 @@ namespace lypant
 				}
 			}
 
-			LY_ASSERT(found, "Could not find requested layers");
+			LY_CORE_ASSERT(found, "Could not find requested layers");
 		}
 
-		instanceInfo->enabledLayerCount = requiredLayers.size();
-		instanceInfo->ppEnabledLayerNames = requiredLayers.data();
+		instanceInfo->enabledLayerCount = s_RequiredLayers.size();
+		instanceInfo->ppEnabledLayerNames = s_RequiredLayers.data();
 	}
 
-	void GraphicsContext::CreateInstance()
+	void VulkanGraphicsContext::CreateInstance()
 	{
 		VkApplicationInfo appInfo{};
 		appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -117,18 +124,19 @@ namespace lypant
 
 		vkCreateInstance(&instanceInfo, nullptr, &m_Instance);
 
+		// TODO: these functions should load once during start up, move them somewhere else
 		#ifdef LYPANT_DEBUG
 		auto CreateDebugMessenger = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(m_Instance, "vkCreateDebugUtilsMessengerEXT");
 		CreateDebugMessenger(m_Instance, &messengerInfo, nullptr, &m_DebugMessenger);
 		#endif
 	}
 
-	void GraphicsContext::CreateSurface(GLFWwindow* windowHandle)
+	void VulkanGraphicsContext::CreateSurface(GLFWwindow* windowHandle)
 	{
 		glfwCreateWindowSurface(m_Instance, windowHandle, nullptr, &m_Surface);
 	}
 
-	void GraphicsContext::CreateDevice()
+	void VulkanGraphicsContext::CreateDevice()
 	{
 		uint32_t deviceCount;
 		vkEnumeratePhysicalDevices(m_Instance, &deviceCount, nullptr);
@@ -151,12 +159,12 @@ namespace lypant
 			}
 		}
 
-		LY_ASSERT(m_PhysicalDevice != VK_NULL_HANDLE, "Could not select a physical device");
+		LY_CORE_ASSERT(m_PhysicalDevice != VK_NULL_HANDLE, "Could not select a physical device");
 
 		VkDeviceQueueCreateInfo queueInfo{};
 		queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		queueInfo.queueCount = 1;
-		queueInfo.queueFamilyIndex = m_GraphicsQueueIndex;
+		queueInfo.queueFamilyIndex = m_GraphicsQueueFamilyIndex;
 		float priority = 1;
 		queueInfo.pQueuePriorities = &priority;
 
@@ -179,11 +187,11 @@ namespace lypant
 
 		vkCreateDevice(m_PhysicalDevice, &deviceInfo, nullptr, &m_Device);
 
-		LY_ASSERT(m_Device != VK_NULL_HANDLE, "Could not select a device");
-		LY_INFO("Selected device: {0}", properties.deviceName);
+		LY_CORE_ASSERT(m_Device != VK_NULL_HANDLE, "Could not select a device");
+		LY_CORE_INFO("Selected device: {0}", properties.deviceName);
 	}
 
-	bool GraphicsContext::IsDeviceSuitable(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceProperties& properties, const VkPhysicalDeviceFeatures& features)
+	bool VulkanGraphicsContext::IsDeviceSuitable(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceProperties& properties, const VkPhysicalDeviceFeatures& features)
 	{
 		// Geometry shader and anisotropy filtering check
 		if (!features.geometryShader || !features.samplerAnisotropy) return false;
@@ -251,7 +259,7 @@ namespace lypant
 				vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, m_Surface, &supported);
 				if (supported)
 				{
-					m_GraphicsQueueIndex = i;
+					m_GraphicsQueueFamilyIndex = i;
 					return true;
 				}
 			}

@@ -6,8 +6,8 @@
 #include "Lypant/Renderer/Renderer.h"
 #include <GLFW/glfw3.h> // temp
 #include "Lypant/Input/Input.h" // temp
-#include "Lypant/Util/VertexArrays.h"
-#include "Lypant/Util/Textures.h"
+//#include "Lypant/Util/VertexArrays.h"
+//#include "Lypant/Util/Textures.h"
 
 namespace lypant
 {
@@ -20,16 +20,20 @@ namespace lypant
 
 		Log::Init();
 
+		Renderer::SetGraphicsAPI(GraphicsAPI::Vulkan);
+
 		m_Window = std::make_unique<Window>();
 		m_Window->SetEventCallback(std::bind(&Application::OnEvent, this, std::placeholders::_1));
 
-		util::VertexArrays::Create();
-		util::Textures::Create();
+		m_Renderer = Renderer::Create();
 
-		Renderer::Init(m_Window->GetWidth(), m_Window->GetHeight());
+		//util::VertexArrays::Create();
+		//util::Textures::Create();
 
-		m_ImGuiLayer = new ImGuiLayer();
-		PushOverlay(m_ImGuiLayer);
+		//Renderer::Init(m_Window->GetWidth(), m_Window->GetHeight());
+
+		//m_ImGuiLayer = new ImGuiLayer();
+		//PushOverlay(m_ImGuiLayer);
 
 		Input::Init();
 	}
@@ -37,9 +41,9 @@ namespace lypant
 	Application::~Application()
 	{
 		Input::Shutdown();
-		Renderer::Shutdown();
-		util::Textures::Destroy();
-		util::VertexArrays::Destroy();
+		//Renderer::Shutdown();
+		//util::Textures::Destroy();
+		//util::VertexArrays::Destroy();
 	}
 
 	void Application::Run()
@@ -60,14 +64,14 @@ namespace lypant
 				}
 			}
 
-			m_ImGuiLayer->Begin();
+			//m_ImGuiLayer->Begin();
 
 			for (Layer* layer : m_LayerStack)
 			{
 				layer->OnImGuiRender();
 			}
 
-			m_ImGuiLayer->End();
+			//m_ImGuiLayer->End();
 
 			m_Window->Tick();
 		}
@@ -92,7 +96,7 @@ namespace lypant
 				}
 
 				m_Minimized = false;
-				Renderer::OnWindowResize(resizeEvent.GetWidth(), resizeEvent.GetHeight());
+				//Renderer::OnWindowResize(resizeEvent.GetWidth(), resizeEvent.GetHeight());
 				return false;
 			});
 

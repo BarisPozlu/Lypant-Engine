@@ -4,6 +4,7 @@
 #include "Lypant/Event/WindowEvent.h"
 #include "Lypant/Event/KeyEvent.h"
 #include "Lypant/Event/MouseEvent.h"
+#include "Lypant/Renderer/Renderer.h"
 
 namespace lypant
 {
@@ -36,10 +37,11 @@ namespace lypant
 
 		m_Window = glfwCreateWindow(m_Data.Width, m_Data.Height, m_Data.Title.c_str(), nullptr, nullptr);
 		LY_CORE_ASSERT(m_Window, "Could not create GLFW Window.");
-		m_GraphicsContext = std::make_unique<GraphicsContext>(m_Window);
+
+		m_GraphicsContext = GraphicsContext::Create(m_Window);
 
 		glfwSetWindowUserPointer(m_Window, &m_Data);
-		SetVSync(true);
+		//SetVSync(true);
 
 		glfwSetWindowSizeCallback(m_Window, [](GLFWwindow* window, int width, int height)
 			{
@@ -129,7 +131,7 @@ namespace lypant
 	void Window::Tick()
 	{
 		glfwPollEvents();
-		m_GraphicsContext.SwapBuffers();
+		//m_GraphicsContext.SwapBuffers();
 	}
 
 	void Window::SetVSync(bool enabled)
