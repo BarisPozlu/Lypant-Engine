@@ -21,6 +21,8 @@ namespace lypant
 			}
 		}
 
+		m_ImageFormat = selectedFormat.format;
+
 		VkPresentModeKHR selectedMode = VK_PRESENT_MODE_FIFO_KHR;
 
 		for (int i = 0; i < deviceSurfaceDetails.Modes.size(); i++)
@@ -32,17 +34,15 @@ namespace lypant
 			}
 		}
 
-		VkExtent2D imageExtent;
-
 		if (deviceSurfaceDetails.Capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
 		{
-			imageExtent = deviceSurfaceDetails.Capabilities.currentExtent;
+			m_ImageExtent = deviceSurfaceDetails.Capabilities.currentExtent;
 		}
 
 		else
 		{
-			imageExtent.width = Application::Get().GetWindow().GetFramebufferWidth(), Application::GetWindow().GetFramebufferHeight();
-			imageExtent.height = Application::Get().GetWindow().GetFramebufferWidth(), Application::GetWindow().GetFramebufferHeight();
+			m_ImageExtent.width = Application::Get().GetWindow().GetFramebufferWidth(), Application::GetWindow().GetFramebufferHeight();
+			m_ImageExtent.height = Application::Get().GetWindow().GetFramebufferWidth(), Application::GetWindow().GetFramebufferHeight();
 		}
 
 		uint32_t imageCount = deviceSurfaceDetails.Capabilities.minImageCount + 1;
@@ -55,7 +55,7 @@ namespace lypant
 		swapChainInfo.minImageCount = imageCount;
 		swapChainInfo.imageFormat = selectedFormat.format;
 		swapChainInfo.imageColorSpace = selectedFormat.colorSpace;
-		swapChainInfo.imageExtent = imageExtent;
+		swapChainInfo.imageExtent = m_ImageExtent;
 		swapChainInfo.imageArrayLayers = 1;
 		swapChainInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 		swapChainInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -90,21 +90,21 @@ namespace lypant
 
 			vkCreateImageView(device, &imageViewInfo, nullptr, &imageView);
 
-			m_Images.emplace_back(images[i], imageView, imageExtent, selectedFormat.format);
+			m_Images.emplace_back(images[i], imageView, m_ImageExtent, selectedFormat.format);
 		}
 	}
 
 	VulkanSwapChain::~VulkanSwapChain()
 	{
 		const auto& graphicsContext = VulkanGraphicsContext::Get();
-		vkDestroySwapchainKHR(graphicsContext->GetDevice(), m_SwapChain, nullptr);
+		vkDestroySwapchainKHR(graphicsContext.GetDevice(), m_SwapChain, nullptr);
 	}
 
 	VulkanImage2D& VulkanSwapChain::GetNextImage(VkSemaphore signalSemaphore)
 	{
 		const auto& graphicsContext = VulkanGraphicsContext::Get();
 
-		vkAcquireNextImageKHR(graphicsContext->GetDevice(), m_SwapChain, UINT64_MAX, signalSemaphore, VK_NULL_HANDLE, &m_ImageIndex);
+		vkAcquireNextImageKHR(graphicsContext.GetDevice(), m_SwapChain, UINT64_MAX, signalSemaphore, VK_NULL_HANDLE, &m_ImageIndex);
 		return m_Images[m_ImageIndex];
 	}
 }

@@ -43,7 +43,7 @@ namespace lypant
 		// in pixel coords
 		unsigned int GetFramebufferWidth() const;
 		unsigned int GetFramebufferHeight() const;
-		inline const std::unique_ptr<GraphicsContext>& GetGraphicsContext() const { return m_GraphicsContext; }
+		inline GraphicsContext& GetGraphicsContext() const { return *m_GraphicsContext; }
 	private:
 		GLFWwindow* m_Window;
 		std::unique_ptr<GraphicsContext> m_GraphicsContext;

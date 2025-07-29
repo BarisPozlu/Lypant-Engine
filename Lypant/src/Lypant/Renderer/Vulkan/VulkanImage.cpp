@@ -78,7 +78,7 @@ namespace lypant
 	VulkanImage2D::~VulkanImage2D()
 	{
 		const auto& graphicsContext = VulkanGraphicsContext::Get();
-		vkDestroyImageView(graphicsContext->GetDevice(), m_ImageView, nullptr);
+		vkDestroyImageView(graphicsContext.GetDevice(), m_ImageView, nullptr);
 
 		if (m_Allocation)
 		{

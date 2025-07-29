@@ -7,9 +7,9 @@
 [submodule "Lypant/vendor/glm"]
 	path = Lypant/vendor/glm
 	url = https://github.com/g-truc/glm
-[submodule "Lypant/vendor/ImGui"]
-	path = Lypant/vendor/ImGui
-	url = https://github.com/BarisPozlu/imgui
 [submodule "Lypant/vendor/assimp"]
 	path = Lypant/vendor/assimp
 	url = https://github.com/assimp/assimp
+[submodule "Lypant/vendor/ImGui"]
+	path = Lypant/vendor/ImGui
+	url = https://github.com/BarisPozlu/imgui.git

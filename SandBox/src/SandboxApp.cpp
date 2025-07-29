@@ -11,11 +11,11 @@ public:
 
 	virtual void Tick(float deltaTime) override
 	{
-		Renderer::BeginRendering();
+		/*Renderer::BeginRendering();
 
 		Renderer::ClearImage();
 
-		Renderer::EndRendering();
+		Renderer::EndRendering();*/
 	}
 
 	virtual void OnEvent(Event& event) override
@@ -24,6 +24,11 @@ public:
 
 	virtual void OnImGuiRender() override
 	{
+		ImGui::Begin("hey");
+
+		ImGui::ShowDemoWindow();
+
+		ImGui::End();
 	}
 };
 

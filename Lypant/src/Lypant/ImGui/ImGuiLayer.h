@@ -4,16 +4,15 @@
 
 namespace lypant
 {
-	class LYPANT_API ImGuiLayer : public Layer
+	class ImGuiLayer : public Layer
 	{
 	public:
-		ImGuiLayer();
-		virtual ~ImGuiLayer();
-
-		virtual void OnAttach() override;
-		virtual void OnDetach() override;
-
-		void Begin();
-		void End();
+		static ImGuiLayer* Create();
+		virtual ~ImGuiLayer() = default;
+	protected:
+		ImGuiLayer() = default;
+	public:
+		virtual void Begin() = 0;
+		virtual void End() = 0;
 	};
 }

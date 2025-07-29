@@ -20,20 +20,18 @@ namespace lypant
 
 		Log::Init();
 
-		Renderer::SetGraphicsAPI(GraphicsAPI::Vulkan);
+		GraphicsContext::SetGraphicsAPI(GraphicsAPI::Vulkan);
 
 		m_Window = std::make_unique<Window>();
 		m_Window->SetEventCallback(std::bind(&Application::OnEvent, this, std::placeholders::_1));
 
-		m_Renderer = Renderer::Create();
-
 		//util::VertexArrays::Create();
 		//util::Textures::Create();
 
-		//Renderer::Init(m_Window->GetWidth(), m_Window->GetHeight());
+		Renderer::Init();
 
-		//m_ImGuiLayer = new ImGuiLayer();
-		//PushOverlay(m_ImGuiLayer);
+		m_ImGuiLayer = ImGuiLayer::Create();
+		PushOverlay(m_ImGuiLayer);
 
 		Input::Init();
 	}
@@ -41,7 +39,7 @@ namespace lypant
 	Application::~Application()
 	{
 		Input::Shutdown();
-		//Renderer::Shutdown();
+		Renderer::Shutdown();
 		//util::Textures::Destroy();
 		//util::VertexArrays::Destroy();
 	}
@@ -54,6 +52,8 @@ namespace lypant
 			float deltaTime = time - m_LastFrameTime;
 			m_LastFrameTime = time;
 
+			Renderer::BeginRendering();
+
 			if (!m_Minimized)
 			{
 				Input::Tick(deltaTime);
@@ -64,14 +64,16 @@ namespace lypant
 				}
 			}
 
-			//m_ImGuiLayer->Begin();
+			m_ImGuiLayer->Begin();
 
 			for (Layer* layer : m_LayerStack)
 			{
 				layer->OnImGuiRender();
 			}
 
-			//m_ImGuiLayer->End();
+			m_ImGuiLayer->End();
+
+			Renderer::EndRendering();
 
 			m_Window->Tick();
 		}

@@ -2,8 +2,6 @@
 #include "VulkanGraphicsContext.h"
 #include <GLFW/glfw3.h>
 #include "VulkanSwapChain.h"
-#include "Lypant/Core/Application.h"
-#include "VulkanRenderer.h"
 
 namespace lypant
 {
@@ -27,11 +25,6 @@ namespace lypant
 		auto DestroyDebugMessenger = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(m_Instance, "vkDestroyDebugUtilsMessengerEXT");
 		DestroyDebugMessenger(m_Instance, m_DebugMessenger, nullptr);
 		vkDestroyInstance(m_Instance, nullptr);
-	}
-
-	const std::unique_ptr<VulkanGraphicsContext>& VulkanGraphicsContext::Get()
-	{
-		return reinterpret_cast<const std::unique_ptr<VulkanGraphicsContext>&>(Application::Get().GetWindow().GetGraphicsContext());
 	}
 
 	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(

@@ -23,6 +23,7 @@ namespace lypant
 		virtual ~VulkanImage2D();
 		inline VkImage GetImage() const { return m_Image; }
 		inline VkImageView GetImageView() const { return m_ImageView; }
+		inline VkExtent2D GetImageExtent() const { return m_ImageExtent; }
 
 		//TODO: Aspect is always color change that
 		void TransitionImage(VkCommandBuffer commandBuffer, const TransitionSpecification& spec);

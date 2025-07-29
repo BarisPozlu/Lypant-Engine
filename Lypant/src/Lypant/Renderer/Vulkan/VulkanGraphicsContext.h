@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Lypant/Renderer/GraphicsContext.h"
+#include "Lypant/Core/Application.h"
 #include <vulkan/vulkan.h>
 #include <memory>
 #include <vector>
@@ -23,12 +24,14 @@ namespace lypant
 	public:
 		VulkanGraphicsContext(GLFWwindow* windowHandle);
 		virtual ~VulkanGraphicsContext();
-		static const std::unique_ptr<VulkanGraphicsContext>& Get();
-		inline VkDevice GetDevice() const { return m_Device; }
+		inline static VulkanGraphicsContext& Get() { return reinterpret_cast<VulkanGraphicsContext&>(Application::Get().GetGraphicsContext()); }
+		inline VkInstance GetInstance() const { return m_Instance; }
 		inline VkSurfaceKHR GetSurface() const { return m_Surface; }
+		inline VkPhysicalDevice GetPhysicalDevice() const { return m_PhysicalDevice; }
+		inline VkDevice GetDevice() const { return m_Device; }
+		inline const VulkanDeviceSurfaceDetails& GetDeviceSurfaceDetails() const { return m_DeviceSurfaceDetails; }
 		inline uint32_t GetGraphicsQueueFamilyIndex() const { return m_GraphicsQueueFamilyIndex; }
 		inline VkQueue GetGraphicsQueue() const { return m_GraphicsQueue; }
-		inline const VulkanDeviceSurfaceDetails& GetDeviceSurfaceDetails() const { return m_DeviceSurfaceDetails; }
 		inline VulkanSwapChain& GetSwapChain() { return *m_SwapChain; }
 	private:
 		void CreateInstance();
@@ -46,6 +49,6 @@ namespace lypant
 		VulkanDeviceSurfaceDetails m_DeviceSurfaceDetails;
 		uint32_t m_GraphicsQueueFamilyIndex = UINT32_MAX;
 		VkQueue m_GraphicsQueue = VK_NULL_HANDLE;
-		VulkanSwapChain* m_SwapChain;
+		VulkanSwapChain* m_SwapChain = nullptr;
 	};
 }
