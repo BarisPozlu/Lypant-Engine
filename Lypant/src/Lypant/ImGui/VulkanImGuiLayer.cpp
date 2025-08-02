@@ -4,13 +4,10 @@
 #include "imgui_impl_vulkan.h"
 #include "imgui_impl_glfw.h"
 #include "Lypant/Core/Application.h"
+#include <Lypant/Renderer/Renderer.h>
 #include <Lypant/Renderer/Vulkan/VulkanRenderCommandBuffer.h>
 #include <Lypant/Renderer/Vulkan/VulkanGraphicsContext.h>
 #include <Lypant/Renderer/Vulkan/VulkanSwapChain.h>
-#include <GLFW/glfw3.h>
-
-
-#include <Lypant/Renderer/Renderer.h>
 
 namespace lypant
 {

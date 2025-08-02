@@ -1,31 +1,32 @@
 #include <lypch.h>
-#include "Image.h"
+#include "Buffer.h"
 #include "GraphicsContext.h"
-#include "Vulkan/VulkanImage.h"
+#include "Vulkan/VulkanBuffer.h"
 
 namespace lypant
 {
-	std::shared_ptr<Image2D> Image2D::Create(const std::string& path, const Image2DSpecification& spec)
+	std::shared_ptr<VertexBuffer> VertexBuffer::Create(void* data, uint32_t size)
 	{
 		switch (GraphicsContext::GetGraphicsAPI())
 		{
 			case GraphicsAPI::None: LY_CORE_ASSERT(false, "None graphics api is not supported."); break;
-			case GraphicsAPI::Vulkan: return std::make_shared<VulkanImage2D>(path, spec); break;
+			case GraphicsAPI::Vulkan: return std::make_shared<VulkanVertexBuffer>(data, size); break;
 		}
 
 		LY_CORE_ASSERT(false, "Unknown Graphics API");
 		return nullptr;
 	}
 
-	std::shared_ptr<Image2D> Image2D::Create(uint32_t width, uint32_t height, uint32_t channels, void* data, const Image2DSpecification& spec)
+	std::shared_ptr<IndexBuffer> IndexBuffer::Create(void* data, uint32_t count)
 	{
 		switch (GraphicsContext::GetGraphicsAPI())
 		{
 			case GraphicsAPI::None: LY_CORE_ASSERT(false, "None graphics api is not supported."); break;
-			case GraphicsAPI::Vulkan: return std::make_shared<VulkanImage2D>(width, height, channels, data, spec); break;
+			case GraphicsAPI::Vulkan: return std::make_shared<VulkanIndexBuffer>(data, count); break;
 		}
 
 		LY_CORE_ASSERT(false, "Unknown Graphics API");
 		return nullptr;
 	}
+
 }

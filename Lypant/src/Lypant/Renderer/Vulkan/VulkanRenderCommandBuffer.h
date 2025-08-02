@@ -6,7 +6,6 @@
 
 namespace lypant
 {
-	//TODO: protected?
 	class VulkanRenderCommandBuffer : public RenderCommandBuffer
 	{
 	public:
@@ -34,7 +33,7 @@ namespace lypant
 		inline static constexpr uint32_t s_MaxFramesInFlight = 2;
 	private:
 		std::array<FrameData, s_MaxFramesInFlight> m_FrameData;
-		uint32_t m_CurrentFrame = 0;
 		std::vector<VkSemaphore> m_RenderFinishedSemaphores;
+		uint32_t m_CurrentFrame = 0;
 	};
 }

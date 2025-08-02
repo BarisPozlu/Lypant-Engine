@@ -3,8 +3,7 @@
 #include "Lypant/Renderer/GraphicsContext.h"
 #include "Lypant/Core/Application.h"
 #include <vulkan/vulkan.h>
-#include <memory>
-#include <vector>
+#include <vk_mem_alloc.h>
 
 struct GLFWwindow;
 
@@ -33,11 +32,12 @@ namespace lypant
 		inline uint32_t GetGraphicsQueueFamilyIndex() const { return m_GraphicsQueueFamilyIndex; }
 		inline VkQueue GetGraphicsQueue() const { return m_GraphicsQueue; }
 		inline VulkanSwapChain& GetSwapChain() { return *m_SwapChain; }
+		inline VmaAllocator GetAllocator() const { return m_Allocator; }
 	private:
 		void CreateInstance();
 		void CreateSurface(GLFWwindow* windowHandle);
 		void CreateDevice();
-		bool IsDeviceSuitable(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceProperties& properties, const VkPhysicalDeviceFeatures& features);
+		bool IsDeviceSuitable(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceProperties2& properties, const VkPhysicalDeviceFeatures2& features, const VkPhysicalDeviceVulkan12Features& vk12Features);
 	private:
 		VkInstance m_Instance = VK_NULL_HANDLE;
 		#ifdef LYPANT_DEBUG
@@ -50,5 +50,6 @@ namespace lypant
 		uint32_t m_GraphicsQueueFamilyIndex = UINT32_MAX;
 		VkQueue m_GraphicsQueue = VK_NULL_HANDLE;
 		VulkanSwapChain* m_SwapChain = nullptr;
+		VmaAllocator m_Allocator = nullptr;
 	};
 }

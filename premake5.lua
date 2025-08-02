@@ -34,7 +34,9 @@ project "Lypant"
 		"%{prj.name}/src/**.h",
 		"%{prj.name}/src/**.cpp",
 		"%{prj.name}/vendor/stb_image/**.h",
-		"%{prj.name}/vendor/stb_image/**.cpp"
+		"%{prj.name}/vendor/stb_image/**.cpp",
+		"%{prj.name}/vendor/vma/**.h",
+		"%{prj.name}/vendor/vma/**.cpp"
 	}
 
 	includedirs
@@ -60,7 +62,8 @@ project "Lypant"
 	{
 		"GLFW",
 		"ImGui",
-		"vulkan-1.lib"
+		"vulkan-1.lib",
+		"shaderc.lib"
 	}
 
 	filter "system:windows"

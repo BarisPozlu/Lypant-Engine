@@ -1,133 +1,25 @@
 #pragma once
 
-#include "lypch.h"
-#include "RenderCommandBuffer.h"
 #include <memory>
-//#include "RenderCommand.h"
-//#include "Lypant/Camera/PerspectiveCamera.h"
-//#include "Material.h"
-//#include <glm/glm.hpp>
-//#include "Light.h"
-//#include "Mesh.h"
-//#include "Model.h"
-//#include "Skybox.h"
-//#include "Lypant/Scene/Scene.h"
+#include "RenderCommandBuffer.h"
 
 namespace lypant
 {
-	//enum class AntiAliasingSetting
-	//{
-	//	None, MSAA2X, MSAA4X, MSAA8X, MSAA16X
-	//};
-
 	class Renderer
 	{
-	// public for now
 	public:
-		static void Init() { s_RenderCommandBuffer = RenderCommandBuffer::Create(); }
-		static void Shutdown() { s_RenderCommandBuffer.reset(); }
-		inline static void BeginRendering() { s_RenderCommandBuffer->BeginCommands(); s_RenderCommandBuffer->SetRenderTargetToDefault(); }
-		inline static void EndRendering() { s_RenderCommandBuffer->EndCommands(); }
-		//TODO: put this inside rendererdata later
-		inline static std::unique_ptr<RenderCommandBuffer> s_RenderCommandBuffer;
-		//TODO: This is needed for imgui make the func private later and imgui friend
-		inline static RenderCommandBuffer& GetRenderCommandBuffer() { return *s_RenderCommandBuffer; }
-		//static void BeginScene(const Scene::SceneData& sceneData);
-		//static void EndScene();
-		//static void Submit(const Mesh& mesh, const glm::mat4& modelMatrix);
-		//static void BeginShadowPass(const Scene::SceneData& sceneData, LightType lightType);
-		//static void EndShadowPass();
-		//static void SubmitForShadowPass(const Mesh& mesh, const glm::mat4& modelMatrix, LightType lightType, int count);
-		//static void Submit(const Skybox& skybox);
-		//// You should set anti aliasing before you call BeginScene().
-		//static void SetAntiAliasing(AntiAliasingSetting setting);
-		//static void SetExposure(float exposure);
-		//static void SetBloom(bool enabled);
-	private:
-		/*static void Init(uint32_t windowWidth, uint32_t windowHeight);
+		static void Init();
 		static void Shutdown();
-		static void OnWindowResize(uint32_t width, uint32_t height);
-		static void UpdateEnvironmentBuffers(const Scene::SceneData& sceneData);
-		static void CreateMSAAFrameBuffer(uint32_t samples);
-		static void UpdateMSAAFrameBufferAttachments(uint32_t samples);
-		static void CreatePostProcessFrameBuffer();
-		static void UpdatePostProcessFrameBufferAttachments();
-		static void CreateBloomResources();
-		static void DeleteBloomResources();
-		static void CreateBloomTexture(const std::shared_ptr<Texture2D>& sceneTexture);
-		static std::vector<glm::vec4> GetWorldPositionOfFrustumCorners(const glm::mat4& viewProjectionMatrix);
-		static void CalculateDirectionalLightSpaceMatrices(const glm::vec3& lightDirection, const PerspectiveCamera& camera);
-		static void CalculateDirectionalLightSpaceMatrix(const glm::vec3& lightDirection, const PerspectiveCamera& camera, float nearPlane, float farPlane, int cascade);*/
+		static void BeginRendering();
+		static void EndRendering();
+		// TODO: This is needed so that ImGui can record to its command buffer, might want to find another way later
+		static RenderCommandBuffer& GetRenderCommandBuffer();
 	private:
-		//struct RendererData
-		//{
-		//public:
-		//	RendererData() {}
+		struct RendererData
+		{
+			std::unique_ptr<RenderCommandBuffer> Cmd;
+		};
 
-		//	~RendererData()
-		//	{
-		//		delete EnvironmentUniformBuffer;
-		//		delete[] EnvironmentBuffer;
-
-		//		delete MSAAFrameBuffer;
-		//		delete PostProcessFrameBuffer;
-
-		//		delete BloomFrameBuffer;
-
-		//		delete ShadowMapFrameBuffer;
-		//	}
-		//public:
-		//	// IBL data
-		//	std::shared_ptr<Cubemap> EnvironmentMap;
-		//	float AmbientStrength;
-		//	std::shared_ptr<Cubemap> DiffuseIrradianceMap;
-		//	std::shared_ptr<Cubemap> PrefilteredMap;
-		//	std::shared_ptr<Texture2D> BRDFIntegrationMap;
-		//	std::shared_ptr<Shader> SkyboxShader;
-
-		//	// Light/camera data
-		//	UniformBuffer* EnvironmentUniformBuffer = nullptr;
-		//	char* EnvironmentBuffer = nullptr;
-
-		//	uint32_t WindowWidth = 0;
-		//	uint32_t WindowHeight = 0;
-
-		//	// Anti-aliasing data
-		//	AntiAliasingSetting AntiAliasingSetting = AntiAliasingSetting::None; 
-		//	FrameBuffer* MSAAFrameBuffer = nullptr;
-
-		//	// Post-process data
-		//	FrameBuffer* PostProcessFrameBuffer = nullptr; 
-		//	std::shared_ptr<VertexArray> PostProcessQuadVertexArray;
-		//	std::shared_ptr<Shader> PostProcessShader;
-		//	float Exposure = 1.0f;
-
-		//	// Bloom data
-		//	FrameBuffer* BloomFrameBuffer = nullptr; 
-		//	std::array<std::shared_ptr<Texture2D>, 6> BloomMipTextures; // more mip levels mean larger bloom radius, can be adjusted here
-		//	std::shared_ptr<Shader> BloomDownsampleShader;
-		//	std::shared_ptr<Shader> BloomUpsampleShader;
-		//	bool IsBloomEnabled = false;
-
-		//	// Shadow map data
-		//	FrameBuffer* ShadowMapFrameBuffer = nullptr;
-		//	// Only one directional light can cast shadows
-		//	std::shared_ptr<Shader> CascadedShadowMapShader;
-		//	std::shared_ptr<Texture2DArray> DirectionalLightShadowMaps;
-		//	std::array<glm::mat4, 5> DirectionalLightSpaceMatrices;
-		//	std::array<float, 5> CascadePlaneDistances;
-		//	// At most 8 spot lights can cast shadows
-		//	std::shared_ptr<Shader> DirectionalShadowMapShader;
-		//	std::shared_ptr<Texture2DArray> SpotLightShadowMaps;
-		//	std::array<glm::mat4, 8> SpotLightSpaceMatrices;
-		//	// At most 8 point lights can cast shadows
-		//	std::shared_ptr<Shader> OmnidirectionalShadowMapShader;
-		//	std::shared_ptr<CubemapArray> PointLightShadowMaps;
-		//};
-
-		//static RendererData* s_RendererData;
-	private:
-		friend class Application;
-		friend class Scene;
+		static RendererData* s_Data;
 	};
 }

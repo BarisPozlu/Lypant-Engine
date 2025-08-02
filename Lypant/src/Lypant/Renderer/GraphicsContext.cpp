@@ -1,6 +1,5 @@
 #include "lypch.h"
 #include "GraphicsContext.h"
-#include "Renderer.h"
 #include "Vulkan/VulkanGraphicsContext.h"
 
 namespace lypant

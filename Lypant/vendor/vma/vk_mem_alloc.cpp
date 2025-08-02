@@ -1,2 +1,4 @@
-﻿#define VMA_IMPLEMENTATION
+﻿#include <lypch.h>
+
+#define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"

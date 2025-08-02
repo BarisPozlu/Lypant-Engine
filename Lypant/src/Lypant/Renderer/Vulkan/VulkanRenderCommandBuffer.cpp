@@ -1,6 +1,5 @@
 #include <lypch.h>
 #include "VulkanRenderCommandBuffer.h"
-#include <Lypant/Core/Application.h>
 #include "VulkanGraphicsContext.h"
 #include "VulkanSwapChain.h"
 #include "VulkanImage.h"
@@ -171,6 +170,5 @@ namespace lypant
 			vkDestroySemaphore(graphicsContext.GetDevice(), m_FrameData[i].ImageReceivedSemaphore, nullptr);
 		}
 	}
-
 
 }

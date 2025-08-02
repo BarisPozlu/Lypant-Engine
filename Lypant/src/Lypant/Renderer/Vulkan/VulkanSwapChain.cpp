@@ -1,7 +1,6 @@
 #include "lypch.h"
 #include "VulkanSwapChain.h"
 #include "VulkanGraphicsContext.h"
-#include <glm/glm.hpp>
 #include "Lypant/Core/Application.h"
 
 namespace lypant

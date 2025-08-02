@@ -8,8 +8,8 @@ namespace lypant
 	{
 	public:
 		static std::unique_ptr<RenderCommandBuffer> Create();
-		virtual ~RenderCommandBuffer() = default;
 		RenderCommandBuffer() = default;
+		virtual ~RenderCommandBuffer() = default;
 		virtual void BeginCommands() = 0;
 		virtual void EndCommands() = 0;
 		virtual void SetRenderTargetToDefault() = 0;

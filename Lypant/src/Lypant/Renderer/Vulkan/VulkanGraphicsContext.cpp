@@ -6,6 +6,7 @@
 namespace lypant
 {
 	static constexpr std::array<const char*, 1> s_RequiredLayers = { "VK_LAYER_KHRONOS_validation" };
+	//TODO: dynamic rendering is not extension in vk 1.3, enable it in the 1.3 features
 	static constexpr std::array<const char*, 2> s_RequiredDeviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME };
 
 	VulkanGraphicsContext::VulkanGraphicsContext(GLFWwindow* windowHandle)
@@ -15,10 +16,18 @@ namespace lypant
 		CreateDevice();
 		vkGetDeviceQueue(m_Device, m_GraphicsQueueFamilyIndex, 0, &m_GraphicsQueue);
 		m_SwapChain = new VulkanSwapChain(m_Device, m_Surface, m_DeviceSurfaceDetails);
+
+		VmaAllocatorCreateInfo allocatorInfo{};
+		allocatorInfo.instance = m_Instance;
+		allocatorInfo.physicalDevice = m_PhysicalDevice;
+		allocatorInfo.device = m_Device;
+		allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+		vmaCreateAllocator(&allocatorInfo, &m_Allocator);
 	}
 
 	VulkanGraphicsContext::~VulkanGraphicsContext()
 	{
+		vmaDestroyAllocator(m_Allocator);
 		delete m_SwapChain;
 		vkDestroyDevice(m_Device, nullptr);
 		vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
@@ -137,18 +146,23 @@ namespace lypant
 		std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
 		vkEnumeratePhysicalDevices(m_Instance, &deviceCount, physicalDevices.data());
 
-		VkPhysicalDeviceProperties properties;
-		VkPhysicalDeviceFeatures features;
+		VkPhysicalDeviceProperties2 properties{};
+		properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+		VkPhysicalDeviceVulkan12Features vk12features{};
+		vk12features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+		VkPhysicalDeviceFeatures2 features{};
+		features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		features.pNext = &vk12features;
 
 		for (auto physicalDevice : physicalDevices)
 		{
-			vkGetPhysicalDeviceProperties(physicalDevice, &properties);
-			vkGetPhysicalDeviceFeatures(physicalDevice, &features);
+			vkGetPhysicalDeviceProperties2(physicalDevice, &properties);
+			vkGetPhysicalDeviceFeatures2(physicalDevice, &features);
 
-			if (IsDeviceSuitable(physicalDevice, properties, features))
+			if (IsDeviceSuitable(physicalDevice, properties, features, vk12features))
 			{
 				m_PhysicalDevice = physicalDevice;
-				if (properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) break;
+				if (properties.properties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) break;
 			}
 		}
 
@@ -165,14 +179,21 @@ namespace lypant
 		dynamicRenderingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
 		dynamicRenderingFeatures.dynamicRendering = VK_TRUE;
 
-		VkPhysicalDeviceFeatures enabledFeatures{};
-		enabledFeatures.geometryShader = VK_TRUE;
-		enabledFeatures.samplerAnisotropy = VK_TRUE;
+		VkPhysicalDeviceVulkan12Features enabledvk12Features{};
+		enabledvk12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+		enabledvk12Features.bufferDeviceAddress = VK_TRUE;
+		enabledvk12Features.descriptorIndexing = VK_TRUE;
+		enabledvk12Features.pNext = &dynamicRenderingFeatures;
+
+		VkPhysicalDeviceFeatures2 enabledFeatures{};
+		enabledFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		enabledFeatures.features.geometryShader = VK_TRUE;
+		enabledFeatures.features.samplerAnisotropy = VK_TRUE;
+		enabledFeatures.pNext = &enabledvk12Features;
 
 		VkDeviceCreateInfo deviceInfo{};
 		deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-		deviceInfo.pNext = &dynamicRenderingFeatures;
-		deviceInfo.pEnabledFeatures = &enabledFeatures;
+		deviceInfo.pNext = &enabledFeatures;
 		deviceInfo.queueCreateInfoCount = 1;
 		deviceInfo.pQueueCreateInfos = &queueInfo;
 		deviceInfo.enabledExtensionCount = s_RequiredDeviceExtensions.size();
@@ -181,13 +202,16 @@ namespace lypant
 		vkCreateDevice(m_PhysicalDevice, &deviceInfo, nullptr, &m_Device);
 
 		LY_CORE_ASSERT(m_Device != VK_NULL_HANDLE, "Could not select a device");
-		LY_CORE_INFO("Selected device: {0}", properties.deviceName);
+		LY_CORE_INFO("Selected device: {0}", properties.properties.deviceName);
 	}
 
-	bool VulkanGraphicsContext::IsDeviceSuitable(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceProperties& properties, const VkPhysicalDeviceFeatures& features)
+	bool VulkanGraphicsContext::IsDeviceSuitable(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceProperties2& properties, const VkPhysicalDeviceFeatures2& features, const VkPhysicalDeviceVulkan12Features& vk12Features)
 	{
 		// Geometry shader and anisotropy filtering check
-		if (!features.geometryShader || !features.samplerAnisotropy) return false;
+		if (!features.features.geometryShader || !features.features.samplerAnisotropy) return false;
+
+		// Buffer device address and descriptor indexing check
+		if (!vk12Features.bufferDeviceAddress || !vk12Features.descriptorIndexing) return false;
 
 		// Extension checks
 		uint32_t extensionCount;

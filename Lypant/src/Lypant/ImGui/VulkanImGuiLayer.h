@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Lypant/ImGui/ImGuiLayer.h"
-#include <vulkan/vulkan.h>
 
 namespace lypant
 {
@@ -12,7 +11,7 @@ namespace lypant
 		virtual ~VulkanImGuiLayer();
 		virtual void OnAttach() override;
 		virtual void OnDetach() override;
-		void Begin();
-		void End();
+		virtual void Begin() override;
+		virtual void End() override;
 	};
 }
