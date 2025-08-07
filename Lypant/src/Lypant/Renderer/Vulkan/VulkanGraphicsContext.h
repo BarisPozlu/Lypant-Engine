@@ -32,7 +32,7 @@ namespace lypant
 		inline uint32_t GetGraphicsQueueFamilyIndex() const { return m_GraphicsQueueFamilyIndex; }
 		inline VkQueue GetGraphicsQueue() const { return m_GraphicsQueue; }
 		inline VulkanSwapChain& GetSwapChain() { return *m_SwapChain; }
-		inline VmaAllocator GetAllocator() const { return m_Allocator; }
+		inline VmaAllocator GetAllocator() const { return m_VmaAllocator; }
 	private:
 		void CreateInstance();
 		void CreateSurface(GLFWwindow* windowHandle);
@@ -50,6 +50,6 @@ namespace lypant
 		uint32_t m_GraphicsQueueFamilyIndex = UINT32_MAX;
 		VkQueue m_GraphicsQueue = VK_NULL_HANDLE;
 		VulkanSwapChain* m_SwapChain = nullptr;
-		VmaAllocator m_Allocator = nullptr;
+		VmaAllocator m_VmaAllocator = nullptr;
 	};
 }

@@ -12,7 +12,7 @@ namespace lypant
 		~VulkanImmediateCommandScope();
 		inline VkCommandBuffer GetCommandBuffer() { return s_CommandBuffer; }
 	private:
-		static void Init();
+		static void Init(VkDevice device, uint32_t graphicsQueueFamilyIndex);
 		static void Shutdown();
 	private:
 		inline static VkCommandPool s_CommandPool = VK_NULL_HANDLE;

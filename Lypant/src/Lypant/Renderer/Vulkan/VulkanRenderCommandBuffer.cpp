@@ -4,12 +4,34 @@
 #include "VulkanSwapChain.h"
 #include "VulkanImage.h"
 
+
+
 namespace lypant
 {
 	VulkanRenderCommandBuffer::VulkanRenderCommandBuffer()
 	{
 		CreateCommandResources();
 		CreateSyncResources();
+
+		m_Shader = std::make_shared<VulkanShader>("shaders/VulkanTest.glsl");
+		m_Pipeline = std::make_shared<VulkanGraphicsPipeline>(GraphicsPipelineSpecification(), m_Shader);
+
+		float vertexData[]
+		{
+			-0.5f,	0.5f, 
+			 0.5f,	0.5f, 
+			 0.5f, -0.5f,
+			-0.5f, -0.5f
+		};
+
+		uint32_t indexData[]
+		{
+			0, 1, 2, 2, 3, 0
+		};
+
+		m_VertexBuffer = std::make_shared<VulkanVertexBuffer>(vertexData, sizeof(vertexData));
+
+		m_IndexBuffer = std::make_shared<VulkanIndexBuffer>(indexData, 6);
 	}
 
 	VulkanRenderCommandBuffer::~VulkanRenderCommandBuffer()
@@ -72,6 +94,33 @@ namespace lypant
 		m_CurrentFrame = (m_CurrentFrame + 1) % s_MaxFramesInFlight;
 	}
 
+	void VulkanRenderCommandBuffer::Test()
+	{
+		vkCmdBindPipeline(GetCurrentFrame().CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Get());
+
+		vkCmdBindIndexBuffer(GetCurrentFrame().CommandBuffer, m_IndexBuffer->Get(), 0, VK_INDEX_TYPE_UINT32);
+
+		VkViewport viewport;
+		viewport.x = 0;
+		viewport.y = 0;
+		viewport.width = 1280;
+		viewport.height = 720;
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		vkCmdSetViewport(GetCurrentFrame().CommandBuffer, 0, 1, &viewport);
+
+		VkRect2D scissor;
+		scissor.offset = { 0, 0 };
+		scissor.extent = { 1280, 720 };
+		vkCmdSetScissor(GetCurrentFrame().CommandBuffer, 0, 1, &scissor);
+
+		uint64_t deviceAddress = m_VertexBuffer->GetDeviceAddress();
+
+		vkCmdPushConstants(GetCurrentFrame().CommandBuffer, m_Shader->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(uint64_t), &deviceAddress);
+
+		vkCmdDrawIndexed(GetCurrentFrame().CommandBuffer, 6, 1, 0, 0, 0);
+	}
+
 	void VulkanRenderCommandBuffer::SetRenderTargetToDefault()
 	{
 		auto& graphicsContext = VulkanGraphicsContext::Get();
@@ -96,6 +145,9 @@ namespace lypant
 		renderingInfo.pColorAttachments = &renderingAttachmentInfo;
 
 		vkCmdBeginRendering(GetCurrentFrame().CommandBuffer, &renderingInfo);
+
+		//TODO: Remove
+		Test();
 	}
 
 	void VulkanRenderCommandBuffer::CreateCommandResources()

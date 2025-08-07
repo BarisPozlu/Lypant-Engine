@@ -14,6 +14,7 @@ outputdir = "%{cfg.system}-%{cfg.architecture}-%{cfg.buildcfg}/"
 
 include "Lypant/vendor/GLFW"
 include "Lypant/vendor/ImGui"
+include "Lypant/vendor/Spirv-Reflect"
 
 project "Lypant"
 
@@ -21,7 +22,7 @@ project "Lypant"
 	kind "StaticLib"
 	language "C++"
 	cppdialect "C++17"
-	staticruntime "on"
+	staticruntime "off"
 
 	targetdir ("bin/" .. outputdir .. "%{prj.name}")
 	objdir ("bin-int/" .. outputdir .. "%{prj.name}")
@@ -36,7 +37,7 @@ project "Lypant"
 		"%{prj.name}/vendor/stb_image/**.h",
 		"%{prj.name}/vendor/stb_image/**.cpp",
 		"%{prj.name}/vendor/vma/**.h",
-		"%{prj.name}/vendor/vma/**.cpp"
+		"%{prj.name}/vendor/vma/**.cpp",
 	}
 
 	includedirs
@@ -50,7 +51,8 @@ project "Lypant"
 		"%{prj.name}/vendor/assimp/include",
 		"%{prj.name}/vendor/entt/include",
 		"%{prj.name}/vendor/vulkan/include",
-		"%{prj.name}/vendor/vma"
+		"%{prj.name}/vendor/vma",
+		"%{prj.name}/vendor/SPIRV-Reflect"
 	}
 
 	libdirs
@@ -62,8 +64,8 @@ project "Lypant"
 	{
 		"GLFW",
 		"ImGui",
-		"vulkan-1.lib",
-		"shaderc.lib"
+		"Spirv-Reflect",
+		"vulkan-1.lib"
 	}
 
 	filter "system:windows"
@@ -87,7 +89,8 @@ project "Lypant"
 		links
 		{
 			"Lypant/vendor/assimp/lib/Debug/assimp-vc143-mtd.lib",
-			"Lypant/vendor/assimp/contrib/zlib/Debug/zlibstaticd.lib"
+			"Lypant/vendor/assimp/contrib/zlib/Debug/zlibstaticd.lib",
+			"shaderc_combinedd.lib"
 		}
 			
 	filter "configurations:Release"
@@ -98,7 +101,8 @@ project "Lypant"
 		links 
 		{
 			"Lypant/vendor/assimp/lib/Release/assimp-vc143-mt.lib",
-			"Lypant/vendor/assimp/contrib/zlib/Release/zlibstatic.lib"
+			"Lypant/vendor/assimp/contrib/zlib/Release/zlibstatic.lib",
+			"shaderc_combined.lib"
 		}
 
 project "Sandbox"
@@ -112,7 +116,7 @@ project "Sandbox"
 	kind "ConsoleApp"
 	language "C++"
 	cppdialect "C++17"
-	staticruntime "on"
+	staticruntime "off"
 
 	targetdir ("bin/" .. outputdir .. "%{prj.name}")
 	objdir ("bin-int/" .. outputdir .. "%{prj.name}")

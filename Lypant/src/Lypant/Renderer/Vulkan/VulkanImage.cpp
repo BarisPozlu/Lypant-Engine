@@ -166,7 +166,7 @@ namespace lypant
 
 	VulkanImage2D::VulkanImage2D(const std::string& path, const Image2DSpecification& spec)
 	{
-		auto& GraphicsContext = VulkanGraphicsContext::Get();
+		auto& graphicsContext = VulkanGraphicsContext::Get();
 
 		int width;
 		int height;
@@ -206,7 +206,7 @@ namespace lypant
 		allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 		allocInfo.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT; // TODO: Not sure if this is needed
 
-		vmaCreateImage(GraphicsContext.GetAllocator(), &imageInfo, &allocInfo, &m_Image, &m_Allocation, nullptr);
+		vmaCreateImage(graphicsContext.GetAllocator(), &imageInfo, &allocInfo, &m_Image, &m_Allocation, nullptr);
 
 		uint32_t size = width * height * GetSizeFromFormat(imageInfo.format);
 		VulkanStagingBuffer stagingBuffer(size);
@@ -238,7 +238,7 @@ namespace lypant
 
 	VulkanImage2D::VulkanImage2D(uint32_t width, uint32_t height, uint32_t channels, void* data, const Image2DSpecification& spec)
 	{
-		auto& GraphicsContext = VulkanGraphicsContext::Get();
+		auto& graphicsContext = VulkanGraphicsContext::Get();
 
 		m_Extent.width = width;
 		m_Extent.height = height;
@@ -261,7 +261,7 @@ namespace lypant
 		allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 		allocInfo.requiredFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT; // TODO: Not sure if this is needed
 
-		vmaCreateImage(GraphicsContext.GetAllocator(), &imageInfo, &allocInfo, &m_Image, &m_Allocation, nullptr);
+		vmaCreateImage(graphicsContext.GetAllocator(), &imageInfo, &allocInfo, &m_Image, &m_Allocation, nullptr);
 
 		uint32_t size = width * height * GetSizeFromFormat(imageInfo.format);
 		VulkanStagingBuffer stagingBuffer(size);
@@ -305,7 +305,7 @@ namespace lypant
 
 		if (m_Allocation)
 		{
-			//TODO
+			vmaDestroyImage(graphicsContext.GetAllocator(), m_Image, m_Allocation);
 		}
 	}
 

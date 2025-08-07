@@ -2,6 +2,8 @@
 #include "VulkanGraphicsContext.h"
 #include <GLFW/glfw3.h>
 #include "VulkanSwapChain.h"
+#include "VulkanDescriptorSet.h"
+#include "VulkanCommandBuffer.h"
 
 namespace lypant
 {
@@ -22,17 +24,23 @@ namespace lypant
 		allocatorInfo.physicalDevice = m_PhysicalDevice;
 		allocatorInfo.device = m_Device;
 		allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
-		vmaCreateAllocator(&allocatorInfo, &m_Allocator);
+		vmaCreateAllocator(&allocatorInfo, &m_VmaAllocator);
+		VulkanImmediateCommandScope::Init(m_Device, m_GraphicsQueueFamilyIndex);
+		//VulkanDescriptorSetAllocator::Init();
 	}
 
 	VulkanGraphicsContext::~VulkanGraphicsContext()
 	{
-		vmaDestroyAllocator(m_Allocator);
+		//VulkanDescriptorSetAllocator::Shutdown();
+		VulkanImmediateCommandScope::Shutdown();
+		vmaDestroyAllocator(m_VmaAllocator);
 		delete m_SwapChain;
 		vkDestroyDevice(m_Device, nullptr);
 		vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
+		#ifdef LYPANT_DEBUG
 		auto DestroyDebugMessenger = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(m_Instance, "vkDestroyDebugUtilsMessengerEXT");
 		DestroyDebugMessenger(m_Instance, m_DebugMessenger, nullptr);
+		#endif
 		vkDestroyInstance(m_Instance, nullptr);
 	}
 
@@ -210,8 +218,8 @@ namespace lypant
 		// Geometry shader and anisotropy filtering check
 		if (!features.features.geometryShader || !features.features.samplerAnisotropy) return false;
 
-		// Buffer device address and descriptor indexing check
-		if (!vk12Features.bufferDeviceAddress || !vk12Features.descriptorIndexing) return false;
+		// Buffer device address check
+		if (!vk12Features.bufferDeviceAddress) return false;
 
 		// Extension checks
 		uint32_t extensionCount;

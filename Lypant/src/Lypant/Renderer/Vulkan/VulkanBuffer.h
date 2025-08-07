@@ -11,6 +11,7 @@ namespace lypant
 	public:
 		VulkanVertexBuffer(void* data, uint32_t size);
 		virtual ~VulkanVertexBuffer();
+		inline VkDeviceAddress GetDeviceAddress() const { return m_DeviceAddress; }
 	private:
 		VkBuffer m_Buffer;
 		VmaAllocation m_Allocation;
@@ -23,6 +24,7 @@ namespace lypant
 	public:
 		VulkanIndexBuffer(void* data, uint32_t count);
 		virtual ~VulkanIndexBuffer();
+		inline VkBuffer Get() const { return m_Buffer; }
 	private:
 		VkBuffer m_Buffer;
 		VmaAllocation m_Allocation;
