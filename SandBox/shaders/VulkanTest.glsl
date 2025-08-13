@@ -4,9 +4,12 @@
 
 #extension GL_EXT_buffer_reference : require
 
+layout (location = 0) out vec2 v_TexCoord;
+
 struct Vertex
 {
 	vec2 Position;
+	vec2 TexCoord;
 };
 
 layout (buffer_reference) readonly buffer VertexBuffer
@@ -21,7 +24,9 @@ layout (push_constant) uniform PushConstant
 
 void main()
 {
-	gl_Position = vec4(PushConstants.vertexBuffer.vertices[gl_VertexIndex].Position, 0, 1);
+	Vertex vertex = PushConstants.vertexBuffer.vertices[gl_VertexIndex];
+	v_TexCoord = vertex.TexCoord;
+	gl_Position = vec4(vertex.Position, 0, 1);
 }
 
 #endif
@@ -30,9 +35,13 @@ void main()
 
 layout (location = 0) out vec4 o_Color;
 
+layout (location = 0) in vec2 v_TexCoord;
+
+layout (set = 0, binding = 0) uniform sampler2D u_Texture;
+
 void main()
 {
-	o_Color = vec4(0.5, 0.5, 0.5, 1.0);
+	o_Color = texture(u_Texture, v_TexCoord);
 }
 
 #endif

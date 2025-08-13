@@ -13,7 +13,7 @@ namespace lypant
 	{
 	public:
 		virtual ~GraphicsContext() = default;
-		static std::unique_ptr<GraphicsContext> Create(void* window);
+		static GraphicsContext* Create(void* window);
 		inline static void SetGraphicsAPI(GraphicsAPI API) { s_GraphicsAPI = API; }
 		inline static GraphicsAPI GetGraphicsAPI() { return s_GraphicsAPI; }
 	private:

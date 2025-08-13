@@ -16,23 +16,23 @@ namespace lypant
 	};
 
 	// TODO: duplicate?
-	static TransitionFlags GetTransitionFlags(const TransitionSpecification& spec)
+	static TransitionFlags GetTransitionFlags(const TransitionSpecification& spec, VkImageLayout oldLayout)
 	{
 		TransitionFlags flags;
 
-		if (spec.OldLayout == VK_IMAGE_LAYOUT_UNDEFINED)
+		if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED)
 		{
 			flags.SrcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 			flags.SrcAccessMask = 0;
 		}
 
-		else if (spec.OldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+		else if (oldLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
 		{
 			flags.SrcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 			flags.SrcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 		}
 
-		else if (spec.OldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+		else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
 		{
 			flags.SrcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
 			flags.SrcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -61,6 +61,12 @@ namespace lypant
 			flags.DstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 		}
 
+		else if (spec.NewLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+		{
+			flags.DstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+			flags.DstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		}
+
 		else
 		{
 			LY_CORE_ASSERT(false, "transition flags could not be determined");
@@ -69,7 +75,7 @@ namespace lypant
 		return flags;
 	}
 
-	static VkFormat GetFormat(const Image2DSpecification& spec, int channels)
+	static VkFormat GetFormat(const ImageParams& spec, int channels)
 	{
 		switch (channels)
 		{
@@ -138,7 +144,7 @@ namespace lypant
 		return VK_FORMAT_MAX_ENUM;
 	}
 
-	// Returns bytes per pixel
+	// Returns bytes per pixel.
 	static uint32_t GetSizeFromFormat(VkFormat format)
 	{
 		switch (format)
@@ -164,7 +170,7 @@ namespace lypant
 		return 0;
 	}
 
-	VulkanImage2D::VulkanImage2D(const std::string& path, const Image2DSpecification& spec)
+	VulkanImage::VulkanImage(const std::string& path, const ImageSpecification& spec)
 	{
 		auto& graphicsContext = VulkanGraphicsContext::Get();
 
@@ -173,7 +179,7 @@ namespace lypant
 		int channels;
 		void* buffer;
 
-		if (spec.FloatingImage)
+		if (spec.Params.FloatingImage)
 		{
 			buffer = stbi_loadf(path.c_str(), &width, &height, &channels, 0);
 		}
@@ -187,20 +193,21 @@ namespace lypant
 
 		m_Extent.width = width;
 		m_Extent.height = height;
+		m_Format = GetFormat(spec.Params, channels);
 
 		VkImageCreateInfo imageInfo{};
 		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 		imageInfo.imageType = VK_IMAGE_TYPE_2D;
-		imageInfo.extent.width = m_Extent.height;
-		imageInfo.extent.height = m_Extent.width;
-		imageInfo.extent.depth = 1;
+		imageInfo.extent.width = width;
+		imageInfo.extent.height = height;
+		imageInfo.extent.depth = spec.Depth;
 		imageInfo.mipLevels = 1; // TODO:
-		imageInfo.arrayLayers = 1;
-		imageInfo.format = GetFormat(spec, channels);
+		imageInfo.arrayLayers = spec.Layers;
+		imageInfo.format = m_Format;
 		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+		imageInfo.samples = VK_SAMPLE_COUNT_1_BIT; // TODO:
 
 		VmaAllocationCreateInfo allocInfo{};
 		allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
@@ -223,25 +230,42 @@ namespace lypant
 
 			VulkanImmediateCommandScope scope;
 
-			TransitionImage(scope.GetCommandBuffer(), { VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL });
+			TransitionImage(scope.GetCommandBuffer(), { VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL });
 
 			vkCmdCopyBufferToImage(scope.GetCommandBuffer(), stagingBuffer.GetBuffer(), m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
 			//TODO: I don't know if I should do this
-			TransitionImage(scope.GetCommandBuffer(), { VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL});
+			TransitionImage(scope.GetCommandBuffer(), { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL });
 		}
 
 		stbi_image_free(buffer);
 
+		m_Sampler = std::make_unique<VulkanSampler>(spec.Params.SamplerSpec);
+
+		VkImageViewCreateInfo viewInfo{};
+		viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+		viewInfo.image = m_Image;
+		viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		viewInfo.format = m_Format;
+		viewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		// TODO: change
+		viewInfo.subresourceRange.baseMipLevel = 0;
+		viewInfo.subresourceRange.levelCount = 1;
+		viewInfo.subresourceRange.baseArrayLayer = 0;
+		viewInfo.subresourceRange.layerCount = 1;
+
+		vkCreateImageView(graphicsContext.GetDevice(), &viewInfo, nullptr, &m_ImageView);
+
 		//TODO: Generate Mip map if needed here
 	}
 
-	VulkanImage2D::VulkanImage2D(uint32_t width, uint32_t height, uint32_t channels, void* data, const Image2DSpecification& spec)
+	VulkanImage::VulkanImage(const void* data, const ImageSpecification& spec)
 	{
 		auto& graphicsContext = VulkanGraphicsContext::Get();
 
-		m_Extent.width = width;
-		m_Extent.height = height;
+		m_Extent.width = spec.Width;
+		m_Extent.height = spec.Height;
+		m_Format = GetFormat(spec.Params, spec.Channels);
 
 		VkImageCreateInfo imageInfo{};
 		imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -251,7 +275,7 @@ namespace lypant
 		imageInfo.extent.depth = 1;
 		imageInfo.mipLevels = 1; // TODO:
 		imageInfo.arrayLayers = 1;
-		imageInfo.format = GetFormat(spec, channels);
+		imageInfo.format = m_Format;
 		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
 		imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		imageInfo.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
@@ -263,33 +287,40 @@ namespace lypant
 
 		vmaCreateImage(graphicsContext.GetAllocator(), &imageInfo, &allocInfo, &m_Image, &m_Allocation, nullptr);
 
-		uint32_t size = width * height * GetSizeFromFormat(imageInfo.format);
-		VulkanStagingBuffer stagingBuffer(size);
-
-		memcpy(stagingBuffer.GetMappedMemory(), data, size);
-
+		if (data)
 		{
-			VkBufferImageCopy region{};
-			region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			region.imageSubresource.mipLevel = 0;
-			region.imageSubresource.baseArrayLayer = 0;
-			region.imageSubresource.layerCount = 1;
-			region.imageExtent = { m_Extent.width, m_Extent.height, 1 };
+			uint32_t size = spec.Width * spec.Height * GetSizeFromFormat(imageInfo.format);
+			VulkanStagingBuffer stagingBuffer(size);
 
-			VulkanImmediateCommandScope scope;
+			memcpy(stagingBuffer.GetMappedMemory(), data, size);
 
-			TransitionImage(scope.GetCommandBuffer(), { VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL });
+			{
+				VkBufferImageCopy region{};
+				region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+				region.imageSubresource.mipLevel = 0;
+				region.imageSubresource.baseArrayLayer = 0;
+				region.imageSubresource.layerCount = 1;
+				region.imageExtent = { m_Extent.width, m_Extent.height, 1 };
 
-			vkCmdCopyBufferToImage(scope.GetCommandBuffer(), stagingBuffer.GetBuffer(), m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+				VulkanImmediateCommandScope scope;
 
-			//TODO: I don't know if I should do this
-			TransitionImage(scope.GetCommandBuffer(), { VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL });
+				TransitionImage(scope.GetCommandBuffer(), { VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL });
+
+				vkCmdCopyBufferToImage(scope.GetCommandBuffer(), stagingBuffer.GetBuffer(), m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+				//TODO: I don't know if I should do this
+				TransitionImage(scope.GetCommandBuffer(), { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL });
+			}
+
 		}
+
+		m_Sampler = std::make_unique<VulkanSampler>(spec.Params.SamplerSpec);
 
 		//TODO: Generate Mip map if needed here
 	}
 
-	VulkanImage2D::VulkanImage2D(VkImage image, VkImageView imageView, VkExtent2D imageExtent, VkFormat imageFormat)
+
+	VulkanImage::VulkanImage(VkImage image, VkImageView imageView, VkExtent2D imageExtent, VkFormat imageFormat)
 	{
 		m_Image = image;
 		m_ImageView = imageView;
@@ -298,10 +329,15 @@ namespace lypant
 		m_Format = imageFormat;
 	}
 
-	VulkanImage2D::~VulkanImage2D()
+	VulkanImage::~VulkanImage()
 	{
 		const auto& graphicsContext = VulkanGraphicsContext::Get();
-		vkDestroyImageView(graphicsContext.GetDevice(), m_ImageView, nullptr);
+		// TODO: Remove the if
+		if (m_ImageView)
+		{
+			vkDestroyImageView(graphicsContext.GetDevice(), m_ImageView, nullptr);
+		}
+		
 
 		if (m_Allocation)
 		{
@@ -309,11 +345,13 @@ namespace lypant
 		}
 	}
 
-	void VulkanImage2D::TransitionImage(VkCommandBuffer commandBuffer, const TransitionSpecification& spec)
+	void VulkanImage::TransitionImage(VkCommandBuffer commandBuffer, const TransitionSpecification& spec)
 	{
+		if (m_CurrentLayout == spec.NewLayout) return;
+
 		VkImageMemoryBarrier imageMemoryBarrier{};
 		imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		imageMemoryBarrier.oldLayout = spec.OldLayout;
+		imageMemoryBarrier.oldLayout = m_CurrentLayout;
 		imageMemoryBarrier.newLayout = spec.NewLayout;
 		imageMemoryBarrier.image = m_Image;
 		imageMemoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
@@ -322,11 +360,13 @@ namespace lypant
 		imageMemoryBarrier.subresourceRange.baseArrayLayer = 0;
 		imageMemoryBarrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
 
-		TransitionFlags flags = GetTransitionFlags(spec);
+		TransitionFlags flags = GetTransitionFlags(spec, m_CurrentLayout);
 
 		imageMemoryBarrier.srcAccessMask = flags.SrcAccessMask;
 		imageMemoryBarrier.dstAccessMask = flags.DstAccessMask;
 	
 		vkCmdPipelineBarrier(commandBuffer, flags.SrcStageMask, flags.DstStageMask, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+
+		m_CurrentLayout = spec.NewLayout;
 	}
 }

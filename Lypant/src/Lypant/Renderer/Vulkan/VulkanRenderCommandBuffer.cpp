@@ -3,8 +3,7 @@
 #include "VulkanGraphicsContext.h"
 #include "VulkanSwapChain.h"
 #include "VulkanImage.h"
-
-
+#include "VulkanRenderPass.h"
 
 namespace lypant
 {
@@ -13,15 +12,12 @@ namespace lypant
 		CreateCommandResources();
 		CreateSyncResources();
 
-		m_Shader = std::make_shared<VulkanShader>("shaders/VulkanTest.glsl");
-		m_Pipeline = std::make_shared<VulkanGraphicsPipeline>(GraphicsPipelineSpecification(), m_Shader);
-
 		float vertexData[]
 		{
-			-0.5f,	0.5f, 
-			 0.5f,	0.5f, 
-			 0.5f, -0.5f,
-			-0.5f, -0.5f
+			-1.0f,	1.0f, 0.0f, 1.0f,
+			 1.0f,	1.0f, 1.0f, 1.0f,
+			 1.0f, -1.0f, 1.0f, 0.0f,
+			-1.0f, -1.0f, 0.0f, 0.0f
 		};
 
 		uint32_t indexData[]
@@ -36,7 +32,7 @@ namespace lypant
 
 	VulkanRenderCommandBuffer::~VulkanRenderCommandBuffer()
 	{
-		vkDeviceWaitIdle(VulkanGraphicsContext::Get().GetDevice());
+		vkQueueWaitIdle(VulkanGraphicsContext::Get().GetGraphicsQueue());
 		DestroyCommandResources();
 		DestroySyncResources();
 	}
@@ -58,9 +54,7 @@ namespace lypant
 		auto& graphicsContext = VulkanGraphicsContext::Get();
 		auto& swapChain = graphicsContext.GetSwapChain();
 
-		vkCmdEndRendering(GetCurrentFrame().CommandBuffer);
-
-		swapChain.GetCurrentImage().TransitionImage(GetCurrentFrame().CommandBuffer, { VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR });
+		swapChain.GetCurrentImage()->TransitionImage(GetCurrentFrame().CommandBuffer, { VK_IMAGE_LAYOUT_PRESENT_SRC_KHR });
 
 		vkEndCommandBuffer(GetCurrentFrame().CommandBuffer);
 
@@ -94,9 +88,44 @@ namespace lypant
 		m_CurrentFrame = (m_CurrentFrame + 1) % s_MaxFramesInFlight;
 	}
 
+	void VulkanRenderCommandBuffer::BeginSubpass(const Subpass& subpass)
+	{
+		const VulkanSubpass& vulkanSubpass = reinterpret_cast<const VulkanSubpass&>(subpass);
+
+		VkPipeline pipeline = vulkanSubpass.GetGraphicsPipeline()->GetVkPipeline();
+		const auto& shader = vulkanSubpass.GetShader();
+		const auto& descriptorSet = vulkanSubpass.GetDescriptorSet();
+		const auto& renderTarget = vulkanSubpass.GetRenderTarget();
+
+		vkCmdBindPipeline(GetCurrentFrame().CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+
+		if (descriptorSet)
+		{
+			VkDescriptorSet vkDescriptorSet = descriptorSet->GetVkDescriptorSet();
+			vkCmdBindDescriptorSets(GetCurrentFrame().CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipelineLayout(), 0, 1, &vkDescriptorSet, 0, nullptr);
+		}
+
+		const VkRenderingInfo& renderingInfo = renderTarget->PrepareForRendering(*this);
+
+		vkCmdBeginRendering(GetCurrentFrame().CommandBuffer, &renderingInfo);
+
+		// TODO: remove
+		uint64_t deviceAddress = m_VertexBuffer->GetDeviceAddress();
+
+		vkCmdPushConstants(GetCurrentFrame().CommandBuffer, shader->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(uint64_t), &deviceAddress);
+
+		// TODO: Remove
+		Test();
+	}
+
+	void VulkanRenderCommandBuffer::EndSubpass(const Subpass& subpass)
+	{
+		vkCmdEndRendering(GetCurrentFrame().CommandBuffer);
+	}
+
 	void VulkanRenderCommandBuffer::Test()
 	{
-		vkCmdBindPipeline(GetCurrentFrame().CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->Get());
+		//vkCmdBindPipeline(GetCurrentFrame().CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->GetVkPipeline());
 
 		vkCmdBindIndexBuffer(GetCurrentFrame().CommandBuffer, m_IndexBuffer->Get(), 0, VK_INDEX_TYPE_UINT32);
 
@@ -114,40 +143,9 @@ namespace lypant
 		scissor.extent = { 1280, 720 };
 		vkCmdSetScissor(GetCurrentFrame().CommandBuffer, 0, 1, &scissor);
 
-		uint64_t deviceAddress = m_VertexBuffer->GetDeviceAddress();
 
-		vkCmdPushConstants(GetCurrentFrame().CommandBuffer, m_Shader->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(uint64_t), &deviceAddress);
 
 		vkCmdDrawIndexed(GetCurrentFrame().CommandBuffer, 6, 1, 0, 0, 0);
-	}
-
-	void VulkanRenderCommandBuffer::SetRenderTargetToDefault()
-	{
-		auto& graphicsContext = VulkanGraphicsContext::Get();
-		auto& image = graphicsContext.GetSwapChain().GetNextImage(GetCurrentFrame().ImageReceivedSemaphore);
-
-		image.TransitionImage(GetCurrentFrame().CommandBuffer, { VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
-
-		VkRenderingAttachmentInfoKHR renderingAttachmentInfo{};
-		renderingAttachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
-		renderingAttachmentInfo.imageView = image.GetImageView();
-		renderingAttachmentInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		renderingAttachmentInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		renderingAttachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		renderingAttachmentInfo.clearValue = { 0.5f, 0.0f, 0.0f, 1.0f };
-
-		VkRenderingInfoKHR renderingInfo{};
-		renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR;
-		renderingInfo.renderArea.offset = { 0, 0 };
-		renderingInfo.renderArea.extent = image.GetImageExtent();
-		renderingInfo.layerCount = 1;
-		renderingInfo.colorAttachmentCount = 1;
-		renderingInfo.pColorAttachments = &renderingAttachmentInfo;
-
-		vkCmdBeginRendering(GetCurrentFrame().CommandBuffer, &renderingInfo);
-
-		//TODO: Remove
-		Test();
 	}
 
 	void VulkanRenderCommandBuffer::CreateCommandResources()

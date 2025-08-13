@@ -1,6 +1,7 @@
 #include <lypch.h>
 #include "VulkanDescriptorSet.h"
 #include "VulkanGraphicsContext.h"
+#include "VulkanImage.h"
 
 namespace lypant
 {
@@ -23,7 +24,7 @@ namespace lypant
 
 		if (result == VK_ERROR_OUT_OF_POOL_MEMORY || result == VK_ERROR_FRAGMENTED_POOL)
 		{
-			CreatePool();
+			CreatePool(VulkanGraphicsContext::Get().GetDevice());
 			allocateInfo.descriptorPool = s_DescriptorPools[s_PoolIndex];
 			vkAllocateDescriptorSets(graphicsContext.GetDevice(), &allocateInfo, &descriptorSet);
 		}
@@ -31,9 +32,9 @@ namespace lypant
 		return descriptorSet;
 	}
 
-	void VulkanDescriptorSetAllocator::Init()
+	void VulkanDescriptorSetAllocator::Init(VkDevice device)
 	{
-		CreatePool();
+		CreatePool(device);
 	}
 
 	void VulkanDescriptorSetAllocator::Shutdown()
@@ -44,7 +45,7 @@ namespace lypant
 		}
 	}
 
-	void VulkanDescriptorSetAllocator::CreatePool()
+	void VulkanDescriptorSetAllocator::CreatePool(VkDevice device)
 	{
 		VkDescriptorPoolSize poolSize{};
 		poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -58,9 +59,59 @@ namespace lypant
 
 		VkDescriptorPool pool;
 
-		vkCreateDescriptorPool(VulkanGraphicsContext::Get().GetDevice(), &poolInfo, nullptr, &pool);
+		vkCreateDescriptorPool(device, &poolInfo, nullptr, &pool);
 
 		s_DescriptorPools.push_back(pool);
 		s_PoolIndex++;
+	}
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+	VulkanDescriptorSet::VulkanDescriptorSet(VkDescriptorSetLayout layout)
+	{
+		m_DescriptorSet = VulkanDescriptorSetAllocator::Allocate(layout);
+	}
+
+	VulkanDescriptorSet::~VulkanDescriptorSet()
+	{
+
+	}
+
+	void VulkanDescriptorSet::Update(const std::vector<DataBinding>& dataBindings)
+	{
+		std::vector<VkWriteDescriptorSet> setWrites(dataBindings.size());
+
+		std::vector<VkDescriptorImageInfo> imageInfos;
+
+		for (int i = 0; i < dataBindings.size(); i++)
+		{
+			const DataBinding& dataBinding = dataBindings[i];
+			VkWriteDescriptorSet& setWrite = setWrites[i];
+
+			if (dataBinding.Image)
+			{
+				const auto& vulkanImage = reinterpret_cast<const std::shared_ptr<VulkanImage>&>(dataBinding.Image);
+
+				VkDescriptorImageInfo imageInfo{};
+				imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+				imageInfo.imageView = vulkanImage->GetImageView();
+				imageInfo.sampler = vulkanImage->GetSampler();
+
+				imageInfos.push_back(imageInfo);
+
+				setWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+				setWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+				setWrite.descriptorCount = 1;
+				setWrite.dstSet = m_DescriptorSet;
+				setWrite.dstBinding = dataBinding.Binding;
+				setWrite.dstArrayElement = 0;
+				setWrite.pImageInfo = &imageInfos.back();
+			}
+
+		}
+
+		vkUpdateDescriptorSets(VulkanGraphicsContext::Get().GetDevice(), setWrites.size(), setWrites.data(), 0, nullptr);
 	}
 }

@@ -110,6 +110,12 @@ namespace lypant
         auto& graphicsContext = VulkanGraphicsContext::Get();
 
         vkDestroyPipelineLayout(graphicsContext.GetDevice(), m_PipelineLayout, nullptr);
+
+        for (VkDescriptorSetLayout layout : m_DescriptorSetLayouts)
+        {
+            vkDestroyDescriptorSetLayout(graphicsContext.GetDevice(), layout, nullptr);
+        }
+
         for (VkShaderModule shaderModule : m_ShaderModules)
         {
             vkDestroyShaderModule(graphicsContext.GetDevice(), shaderModule, nullptr);

@@ -25,13 +25,13 @@ namespace lypant
 		allocatorInfo.device = m_Device;
 		allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
 		vmaCreateAllocator(&allocatorInfo, &m_VmaAllocator);
-		VulkanImmediateCommandScope::Init(m_Device, m_GraphicsQueueFamilyIndex);
-		//VulkanDescriptorSetAllocator::Init();
+		VulkanImmediateCommandScope::Init(m_Device, m_GraphicsQueueFamilyIndex);	
+		VulkanDescriptorSetAllocator::Init(m_Device);
 	}
 
 	VulkanGraphicsContext::~VulkanGraphicsContext()
 	{
-		//VulkanDescriptorSetAllocator::Shutdown();
+		VulkanDescriptorSetAllocator::Shutdown();
 		VulkanImmediateCommandScope::Shutdown();
 		vmaDestroyAllocator(m_VmaAllocator);
 		delete m_SwapChain;
@@ -208,6 +208,8 @@ namespace lypant
 		deviceInfo.ppEnabledExtensionNames = s_RequiredDeviceExtensions.data();
 
 		vkCreateDevice(m_PhysicalDevice, &deviceInfo, nullptr, &m_Device);
+
+		m_MaxSamplerAnisotropy = properties.properties.limits.maxSamplerAnisotropy;
 
 		LY_CORE_ASSERT(m_Device != VK_NULL_HANDLE, "Could not select a device");
 		LY_CORE_INFO("Selected device: {0}", properties.properties.deviceName);

@@ -2,6 +2,7 @@
 
 #include <memory>
 #include "RenderCommandBuffer.h"
+#include "RenderPass.h"
 
 namespace lypant
 {
@@ -12,14 +13,19 @@ namespace lypant
 		static void Shutdown();
 		static void BeginRendering();
 		static void EndRendering();
-		// TODO: This is needed so that ImGui can record to its command buffer, might want to find another way later
+		static void BeginScene();
+		static void EndScene();
+		// TODO: Remove
 		static RenderCommandBuffer& GetRenderCommandBuffer();
 	private:
 		struct RendererData
 		{
-			std::unique_ptr<RenderCommandBuffer> Cmd;
+			std::unique_ptr<Subpass> TestPass;
+			std::shared_ptr<Shader> TestShader;
+			std::shared_ptr<Image> TestImage;
+			
 		};
-
 		static RendererData* s_Data;
+		static RenderCommandBuffer* s_Cmd;
 	};
 }

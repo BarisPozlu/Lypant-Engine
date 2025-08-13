@@ -54,6 +54,9 @@ namespace lypant
 
 			Renderer::BeginRendering();
 
+			// TODO: Move
+			Renderer::BeginScene();
+
 			if (!m_Minimized)
 			{
 				Input::Tick(deltaTime);
@@ -63,6 +66,9 @@ namespace lypant
 					layer->Tick(deltaTime);
 				}
 			}
+
+			// TODO: Move
+			Renderer::EndScene();
 
 			m_ImGuiLayer->Begin();
 

@@ -46,7 +46,7 @@ namespace lypant
 		inline GraphicsContext& GetGraphicsContext() const { return *m_GraphicsContext; }
 	private:
 		GLFWwindow* m_Window;
-		std::unique_ptr<GraphicsContext> m_GraphicsContext;
+		GraphicsContext* m_GraphicsContext;
 
 		// this is to give a pointer to glfw.
 		struct WindowData

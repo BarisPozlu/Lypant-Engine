@@ -4,8 +4,10 @@
 
 namespace lypant
 {
-	VulkanGraphicsPipeline::VulkanGraphicsPipeline(const GraphicsPipelineSpecification& spec, const std::shared_ptr<VulkanShader>& shader)
+	VulkanGraphicsPipeline::VulkanGraphicsPipeline(const GraphicsPipelineSpecification& spec, const std::shared_ptr<Shader>& shader)
 	{
+		const auto& vulkanShader = reinterpret_cast<const std::shared_ptr<VulkanShader>&>(shader);
+
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
 
@@ -63,7 +65,7 @@ namespace lypant
 		graphicsPipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 		graphicsPipelineInfo.pNext = &renderingInfo;
 		graphicsPipelineInfo.stageCount = 2;
-		graphicsPipelineInfo.pStages = shader->GetShaderStageInfos().data();
+		graphicsPipelineInfo.pStages = vulkanShader->GetShaderStageInfos().data();
 		graphicsPipelineInfo.pVertexInputState = &vertexInputInfo;
 		graphicsPipelineInfo.pInputAssemblyState = &inputAssemblyInfo;
 		graphicsPipelineInfo.pViewportState = &viewportStateInfo;
@@ -71,7 +73,7 @@ namespace lypant
 		graphicsPipelineInfo.pMultisampleState = &multisamplingInfo;
 		graphicsPipelineInfo.pColorBlendState = &colorBlendInfo;
 		graphicsPipelineInfo.pDynamicState = &dynamicStateInfo;
-		graphicsPipelineInfo.layout = shader->GetPipelineLayout();
+		graphicsPipelineInfo.layout = vulkanShader->GetPipelineLayout();
 
 		vkCreateGraphicsPipelines(VulkanGraphicsContext::Get().GetDevice(), VK_NULL_HANDLE, 1, &graphicsPipelineInfo, nullptr, &m_GraphicsPipeline);
 	}

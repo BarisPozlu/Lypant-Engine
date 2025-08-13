@@ -70,7 +70,8 @@ namespace lypant
 		std::vector<VkImage> images(imageCount);
 		vkGetSwapchainImagesKHR(device, m_SwapChain, &imageCount, images.data());
 
-		m_Images.reserve(imageCount);
+		//m_Images.reserve(imageCount);
+		m_Images.resize(imageCount);
 
 		for (int i = 0; i < imageCount; i++)
 		{
@@ -89,7 +90,8 @@ namespace lypant
 
 			vkCreateImageView(device, &imageViewInfo, nullptr, &imageView);
 
-			m_Images.emplace_back(images[i], imageView, m_ImageExtent, selectedFormat.format);
+			//m_Images.emplace_back(images[i], imageView, m_ImageExtent, selectedFormat.format);
+			m_Images[i] = std::make_shared<VulkanImage>(images[i], imageView, m_ImageExtent, selectedFormat.format);
 		}
 	}
 
@@ -99,11 +101,16 @@ namespace lypant
 		vkDestroySwapchainKHR(graphicsContext.GetDevice(), m_SwapChain, nullptr);
 	}
 
-	VulkanImage2D& VulkanSwapChain::GetNextImage(VkSemaphore signalSemaphore)
+	const std::shared_ptr<VulkanImage>& VulkanSwapChain::GetNextImage(VkSemaphore signalSemaphore)
 	{
 		const auto& graphicsContext = VulkanGraphicsContext::Get();
 
 		vkAcquireNextImageKHR(graphicsContext.GetDevice(), m_SwapChain, UINT64_MAX, signalSemaphore, VK_NULL_HANDLE, &m_ImageIndex);
-		return m_Images[m_ImageIndex];
+
+		const auto& image = m_Images[m_ImageIndex];
+
+		image->m_CurrentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+		return image;
 	}
 }

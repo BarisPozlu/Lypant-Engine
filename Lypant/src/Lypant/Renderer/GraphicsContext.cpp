@@ -6,12 +6,12 @@ namespace lypant
 {
 	GraphicsAPI GraphicsContext::s_GraphicsAPI = GraphicsAPI::None;
 
-	std::unique_ptr<GraphicsContext> GraphicsContext::Create(void* window)
+	GraphicsContext* GraphicsContext::Create(void* window)
 	{
 		switch (GetGraphicsAPI())
 		{
 			case GraphicsAPI::None: LY_CORE_ASSERT(false, "None graphics api is not supported."); break;
-			case GraphicsAPI::Vulkan: return std::make_unique<VulkanGraphicsContext>(reinterpret_cast<GLFWwindow*>(window)); break;
+			case GraphicsAPI::Vulkan: return new VulkanGraphicsContext(reinterpret_cast<GLFWwindow*>(window)); break;
 		}
 
 		LY_CORE_ASSERT(false, "Unknown Graphics API");

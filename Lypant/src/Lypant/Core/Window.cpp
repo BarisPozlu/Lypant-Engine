@@ -125,6 +125,7 @@ namespace lypant
 
 	Window::~Window()
 	{
+		delete m_GraphicsContext;
 		glfwDestroyWindow(m_Window);
 	}
 

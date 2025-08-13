@@ -23,7 +23,12 @@ namespace lypant
 	public:
 		VulkanGraphicsContext(GLFWwindow* windowHandle);
 		virtual ~VulkanGraphicsContext();
-		inline static VulkanGraphicsContext& Get() { return reinterpret_cast<VulkanGraphicsContext&>(Application::Get().GetGraphicsContext()); }
+		// NOTE: Vulkan graphics context is needed in most vulkan resources. This acts as a convenience function. Might be bad.
+		inline static VulkanGraphicsContext& Get()
+		{	
+			LY_CORE_ASSERT(GraphicsContext::GetGraphicsAPI() == GraphicsAPI::Vulkan, "Trying to get vulkan graphics context while selected api is not vulkan");
+			return reinterpret_cast<VulkanGraphicsContext&>(Application::Get().GetGraphicsContext());
+		}
 		inline VkInstance GetInstance() const { return m_Instance; }
 		inline VkSurfaceKHR GetSurface() const { return m_Surface; }
 		inline VkPhysicalDevice GetPhysicalDevice() const { return m_PhysicalDevice; }
@@ -33,6 +38,7 @@ namespace lypant
 		inline VkQueue GetGraphicsQueue() const { return m_GraphicsQueue; }
 		inline VulkanSwapChain& GetSwapChain() { return *m_SwapChain; }
 		inline VmaAllocator GetAllocator() const { return m_VmaAllocator; }
+		inline float GetMaxSamplerAnisotropy() const { return m_MaxSamplerAnisotropy; }
 	private:
 		void CreateInstance();
 		void CreateSurface(GLFWwindow* windowHandle);
@@ -51,5 +57,6 @@ namespace lypant
 		VkQueue m_GraphicsQueue = VK_NULL_HANDLE;
 		VulkanSwapChain* m_SwapChain = nullptr;
 		VmaAllocator m_VmaAllocator = nullptr;
+		float m_MaxSamplerAnisotropy = 1;
 	};
 }
