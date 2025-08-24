@@ -12,10 +12,9 @@ namespace lypant
 		// TODO: Update
 		if (m_Shader->GetDescriptorSetLayouts().size())
 		{
-			m_DescriptorSet = std::make_shared<VulkanDescriptorSet>(m_Shader->GetDescriptorSetLayouts()[0]);
+			m_DescriptorSet = std::make_shared<VulkanDescriptorSet>(m_Shader->GetDescriptorSetLayout(0));
 			m_DescriptorSet->Update(dataBindings);
 		}
-		
 
 		m_GraphicsPipeline = reinterpret_cast<const std::shared_ptr<VulkanGraphicsPipeline>&>(GraphicsPipeline::Create(GraphicsPipelineSpecification(), m_Shader));
 	}

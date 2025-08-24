@@ -16,5 +16,6 @@ namespace lypant
 	public:
 		static std::shared_ptr<IndexBuffer> Create(void* data, uint32_t count);
 		virtual ~IndexBuffer() = default;
+		virtual uint32_t GetIndexCount() const = 0;
 	};
 }

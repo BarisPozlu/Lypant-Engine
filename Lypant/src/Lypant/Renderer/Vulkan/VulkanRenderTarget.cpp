@@ -32,7 +32,7 @@ namespace lypant
 
 	const VkRenderingInfo& VulkanRenderTarget::PrepareForRendering(VulkanRenderCommandBuffer& renderCommandBuffer)
 	{
-		m_ColorBuffer->TransitionImage(renderCommandBuffer.GetCommandBuffer(), { VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
+		m_ColorBuffer->TransitionLayout(renderCommandBuffer.GetCommandBuffer(), { VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
 
 		return m_RenderingInfo;
 	}
@@ -48,7 +48,7 @@ namespace lypant
 
 		AttachColorBuffer(image);
 
-		m_ColorBuffer->TransitionImage(renderCommandBuffer.GetCurrentFrame().CommandBuffer, { VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
+		m_ColorBuffer->TransitionLayout(renderCommandBuffer.GetCurrentFrame().CommandBuffer, { VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
 
 		return m_RenderingInfo;
 	}

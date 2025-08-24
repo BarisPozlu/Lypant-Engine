@@ -4,6 +4,7 @@
 #include "VulkanSwapChain.h"
 #include "VulkanImage.h"
 #include "VulkanRenderPass.h"
+#include "VulkanBuffer.h"
 
 namespace lypant
 {
@@ -11,23 +12,6 @@ namespace lypant
 	{
 		CreateCommandResources();
 		CreateSyncResources();
-
-		float vertexData[]
-		{
-			-1.0f,	1.0f, 0.0f, 1.0f,
-			 1.0f,	1.0f, 1.0f, 1.0f,
-			 1.0f, -1.0f, 1.0f, 0.0f,
-			-1.0f, -1.0f, 0.0f, 0.0f
-		};
-
-		uint32_t indexData[]
-		{
-			0, 1, 2, 2, 3, 0
-		};
-
-		m_VertexBuffer = std::make_shared<VulkanVertexBuffer>(vertexData, sizeof(vertexData));
-
-		m_IndexBuffer = std::make_shared<VulkanIndexBuffer>(indexData, 6);
 	}
 
 	VulkanRenderCommandBuffer::~VulkanRenderCommandBuffer()
@@ -54,7 +38,7 @@ namespace lypant
 		auto& graphicsContext = VulkanGraphicsContext::Get();
 		auto& swapChain = graphicsContext.GetSwapChain();
 
-		swapChain.GetCurrentImage()->TransitionImage(GetCurrentFrame().CommandBuffer, { VK_IMAGE_LAYOUT_PRESENT_SRC_KHR });
+		swapChain.GetCurrentImage()->TransitionLayout(GetCurrentFrame().CommandBuffer, { VK_IMAGE_LAYOUT_PRESENT_SRC_KHR });
 
 		vkEndCommandBuffer(GetCurrentFrame().CommandBuffer);
 
@@ -109,13 +93,16 @@ namespace lypant
 
 		vkCmdBeginRendering(GetCurrentFrame().CommandBuffer, &renderingInfo);
 
-		// TODO: remove
-		uint64_t deviceAddress = m_VertexBuffer->GetDeviceAddress();
+		VkViewport viewport{};
+		viewport.x = renderingInfo.renderArea.offset.x;
+		viewport.y = renderingInfo.renderArea.offset.y;
+		viewport.width = renderingInfo.renderArea.extent.width;
+		viewport.height = renderingInfo.renderArea.extent.height;
+		viewport.minDepth = 0.0f;
+		viewport.maxDepth = 1.0f;
+		vkCmdSetViewport(GetCurrentFrame().CommandBuffer, 0, 1, &viewport);
 
-		vkCmdPushConstants(GetCurrentFrame().CommandBuffer, shader->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(uint64_t), &deviceAddress);
-
-		// TODO: Remove
-		Test();
+		vkCmdSetScissor(GetCurrentFrame().CommandBuffer, 0, 1, &renderingInfo.renderArea);
 	}
 
 	void VulkanRenderCommandBuffer::EndSubpass(const Subpass& subpass)
@@ -123,29 +110,17 @@ namespace lypant
 		vkCmdEndRendering(GetCurrentFrame().CommandBuffer);
 	}
 
-	void VulkanRenderCommandBuffer::Test()
+	void VulkanRenderCommandBuffer::DrawMesh(const Mesh& mesh, const std::shared_ptr<Shader>& shader)
 	{
-		//vkCmdBindPipeline(GetCurrentFrame().CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline->GetVkPipeline());
+		const auto& vkVertexBuffer = reinterpret_cast<const std::shared_ptr<VulkanVertexBuffer>&>(mesh.GetVertexBuffer());
+		const auto& vkIndexBuffer = reinterpret_cast<const std::shared_ptr<VulkanIndexBuffer>&>(mesh.GetIndexBuffer());
+		const auto& vkShader = reinterpret_cast<const std::shared_ptr<VulkanShader>&>(shader);
+		VkDeviceAddress vertexBufferAddress = vkVertexBuffer->GetDeviceAddress();
 
-		vkCmdBindIndexBuffer(GetCurrentFrame().CommandBuffer, m_IndexBuffer->Get(), 0, VK_INDEX_TYPE_UINT32);
+		vkCmdPushConstants(GetCurrentFrame().CommandBuffer, vkShader->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(VkDeviceAddress), &vertexBufferAddress);
+		vkCmdBindIndexBuffer(GetCurrentFrame().CommandBuffer, vkIndexBuffer->Get(), 0, VK_INDEX_TYPE_UINT32);
 
-		VkViewport viewport;
-		viewport.x = 0;
-		viewport.y = 0;
-		viewport.width = 1280;
-		viewport.height = 720;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(GetCurrentFrame().CommandBuffer, 0, 1, &viewport);
-
-		VkRect2D scissor;
-		scissor.offset = { 0, 0 };
-		scissor.extent = { 1280, 720 };
-		vkCmdSetScissor(GetCurrentFrame().CommandBuffer, 0, 1, &scissor);
-
-
-
-		vkCmdDrawIndexed(GetCurrentFrame().CommandBuffer, 6, 1, 0, 0, 0);
+		vkCmdDrawIndexed(GetCurrentFrame().CommandBuffer, vkIndexBuffer->GetIndexCount(), 1, 0, 0, 0);
 	}
 
 	void VulkanRenderCommandBuffer::CreateCommandResources()

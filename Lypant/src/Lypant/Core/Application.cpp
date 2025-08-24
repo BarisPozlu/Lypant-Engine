@@ -8,6 +8,7 @@
 #include "Lypant/Input/Input.h" // temp
 //#include "Lypant/Util/VertexArrays.h"
 //#include "Lypant/Util/Textures.h"
+#include <Lypant/Util/MeshFactory.h>
 
 namespace lypant
 {
@@ -27,6 +28,7 @@ namespace lypant
 
 		//util::VertexArrays::Create();
 		//util::Textures::Create();
+		util::MeshFactory::Create();
 
 		Renderer::Init();
 
@@ -40,6 +42,7 @@ namespace lypant
 	{
 		Input::Shutdown();
 		Renderer::Shutdown();
+		util::MeshFactory::Destroy();
 		//util::Textures::Destroy();
 		//util::VertexArrays::Destroy();
 	}

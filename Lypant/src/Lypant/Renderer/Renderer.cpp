@@ -1,5 +1,6 @@
 #include "lypch.h"
 #include "Renderer.h"
+#include <Lypant/Util/MeshFactory.h> // temp
 
 namespace lypant
 {
@@ -41,11 +42,18 @@ namespace lypant
 	void Renderer::BeginScene()
 	{
 		s_Cmd->BeginSubpass(*s_Data->TestPass);
+
+		s_Cmd->DrawMesh(*util::MeshFactory::GetQuad(), s_Data->TestShader);
 	}
 
 	void Renderer::EndScene()
 	{
-		//s_Cmd->EndSubpass(*s_Data->TestPass);
+
+	}
+
+	void Renderer::SubmitMesh(const Mesh& mesh, const std::shared_ptr<Shader>& shader)
+	{
+		s_Cmd->DrawMesh(mesh, shader);
 	}
 
 	RenderCommandBuffer& Renderer::GetRenderCommandBuffer()

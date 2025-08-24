@@ -19,6 +19,11 @@ namespace lypant
 		uint32_t MipCount;
 	};
 
+	enum class ImageViewType
+	{
+		Sample, Attachment
+	};
+
 	class VulkanImage : public Image
 	{
 	public:
@@ -29,18 +34,34 @@ namespace lypant
 		virtual ~VulkanImage();
 
 		inline VkImage GetImage() const { return m_Image; }
-		inline VkImageView GetImageView() const { return m_ImageView; }
+		inline VkImageView GetImageView(ImageViewType type = ImageViewType::Sample) const
+		{
+			if (type == ImageViewType::Attachment)
+			{
+				if (m_ImageType == ImageType::Cubemap || m_ImageType == ImageType::CubemapArray)
+				{
+					return m_ImageViews[1];
+				}
+			}
+
+			return m_ImageViews[0];
+		}
 		inline VkExtent2D GetImageExtent() const { return m_Extent; }
 		inline VkSampler GetSampler() const { return m_Sampler->GetVkSampler(); }
 
 		//TODO: Aspect is always color change that
-		void TransitionImage(VkCommandBuffer commandBuffer, const TransitionSpecification& spec);
+		void TransitionLayout(VkCommandBuffer commandBuffer, const TransitionSpecification& spec);
+	private:
+		void CreateImage(const ImageSpecification& spec);
+		void UploadData(const void* buffer);
+		void CreateImageViews(const ImageSpecification& spec);
 	private:
 		VkImage m_Image;
-		VkImageView m_ImageView = VK_NULL_HANDLE;
+		std::vector<VkImageView> m_ImageViews;
 		VmaAllocation m_Allocation;
 		VkExtent2D m_Extent;
 		VkFormat m_Format;
+		ImageType m_ImageType;
 		// NOTE: In the future when multiple inital layouts are supported should change this
 		VkImageLayout m_CurrentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		// TODO: Samplers should not be created per image. Write the code so that we get the sampler we want from somewhere else

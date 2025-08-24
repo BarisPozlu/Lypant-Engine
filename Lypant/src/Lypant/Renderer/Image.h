@@ -6,7 +6,7 @@ namespace lypant
 {
 	enum class ImageType
 	{
-		Image1D, Image2D, Image3D
+		Unknown, Image2D, Image2DArray, Cubemap, CubemapArray
 	};
 
 	enum ImageUsageFlags
@@ -14,18 +14,11 @@ namespace lypant
 		ImageUsageFlagsNone = 0,
 		ImageUsageFlagsSample = 1,
 		ImageUsageFlagsColorAttachment = 2,
-		ImageUsageFlagsDepthAttachment = 4
+		ImageUsageFlagsDepthAttachment = 4,
+		ImageUsageFlagsTransferSrc = 8,
+		ImageUsageFlagsTransferDst = 16
 	};
 	
-	// Base class for graphics API specific images.
-	// Each image type when created, returns an image handle.
-	class Image
-	{
-	public:
-		Image() = default;
-		virtual ~Image() = default;
-	};
-
 	// Common image parameters across different types of images.
 	struct ImageParams
 	{
@@ -44,8 +37,18 @@ namespace lypant
 		uint32_t Channels = 0;
 		uint32_t Layers = 0;
 		uint32_t Samples = 0;
-		ImageUsageFlags UsageFlags = ImageUsageFlagsNone;
+		int UsageFlags = ImageUsageFlagsNone;
+		ImageType Type = ImageType::Unknown;
 		ImageParams Params;
+	};
+
+	// Base class for graphics API specific images.
+	// Each image type when created, returns an image handle.
+	class Image
+	{
+	public:
+		Image() = default;
+		virtual ~Image() = default;
 	};
 
 	// Image2D objects are images that can be loaded from a file, or can be given an array of pixels.
@@ -53,11 +56,18 @@ namespace lypant
 	class Image2D
 	{
 	public:
-		Image2D() = default;
-		virtual ~Image2D() = default;
 		// Load image from a file
-		static std::shared_ptr<Image> Create(const std::string& path, const ImageParams& spec);
+		static std::shared_ptr<Image> Create(const std::string& path, const ImageParams& params);
 		// Create image from already loaded data
-		static std::shared_ptr<Image> Create(uint32_t width, uint32_t height, uint32_t channels, const void* data, const ImageParams& spec);
+		static std::shared_ptr<Image> Create(uint32_t width, uint32_t height, uint32_t channels, const void* data, const ImageParams& params);
+	};
+
+	// Cubemaps are only loaded from equirectangular images.
+	// Usages are set to be sampled and color attachment. Since they have to be rendered to using equirectangular images.
+	class Cubemap
+	{
+	public:
+		// Creates and allocates memory for the cubemap without any data
+		static std::shared_ptr<Image> Create(uint32_t width, uint32_t height, uint32_t channels, const ImageParams& params);
 	};
 }

@@ -3,6 +3,7 @@
 #include <memory>
 #include "RenderCommandBuffer.h"
 #include "RenderPass.h"
+#include "Mesh.h"
 
 namespace lypant
 {
@@ -15,6 +16,7 @@ namespace lypant
 		static void EndRendering();
 		static void BeginScene();
 		static void EndScene();
+		static void SubmitMesh(const Mesh& mesh, const std::shared_ptr<Shader>& shader);
 		// TODO: Remove
 		static RenderCommandBuffer& GetRenderCommandBuffer();
 	private:

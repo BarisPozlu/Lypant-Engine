@@ -24,11 +24,13 @@ namespace lypant
 	public:
 		VulkanIndexBuffer(void* data, uint32_t count);
 		virtual ~VulkanIndexBuffer();
+		inline virtual uint32_t GetIndexCount() const override { return m_IndexCount; }
 		inline VkBuffer Get() const { return m_Buffer; }
 	private:
 		VkBuffer m_Buffer;
 		VmaAllocation m_Allocation;
 		VmaAllocationInfo m_AllocationInfo;
+		uint32_t m_IndexCount;
 	};
 
 	class VulkanStagingBuffer

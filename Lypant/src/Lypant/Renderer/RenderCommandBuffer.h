@@ -2,6 +2,7 @@
 
 #include <memory>
 #include "RenderPass.h"
+#include "Mesh.h"
 
 namespace lypant
 {
@@ -15,5 +16,6 @@ namespace lypant
 		virtual void EndCommands() = 0;
 		virtual void BeginSubpass(const Subpass& subpass) = 0;
 		virtual void EndSubpass(const Subpass& subpass) = 0;
+		virtual void DrawMesh(const Mesh& mesh, const std::shared_ptr<Shader>& shader) = 0;
 	};
 }

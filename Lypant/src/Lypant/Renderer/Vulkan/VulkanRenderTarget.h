@@ -13,6 +13,7 @@ namespace lypant
 		virtual ~VulkanRenderTarget() = default;
 		virtual void AttachColorBuffer(const std::shared_ptr<Image>& image) override;
 		virtual void AttachDepthStencilBuffer(const std::shared_ptr<Image>& image) override;
+		// PrepareForRendering maybe should be done within the render command buffer instead of here
 		virtual const VkRenderingInfo& PrepareForRendering(class VulkanRenderCommandBuffer& renderCommandBuffer);
 	protected:
 		std::shared_ptr<VulkanImage> m_ColorBuffer;		

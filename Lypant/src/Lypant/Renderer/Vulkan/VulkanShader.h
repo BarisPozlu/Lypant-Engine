@@ -13,6 +13,7 @@ namespace lypant
 		inline const std::array<VkPipelineShaderStageCreateInfo, 2>& GetShaderStageInfos() const { return m_ShaderStageInfos; }
 		inline VkPipelineLayout GetPipelineLayout() const { return m_PipelineLayout; }
 		inline const std::vector<VkDescriptorSetLayout>& GetDescriptorSetLayouts() const { return m_DescriptorSetLayouts; }
+		inline VkDescriptorSetLayout GetDescriptorSetLayout(int set) const { return m_DescriptorSetLayouts[set]; }
 	private:
 		void Reflect(const std::vector<uint32_t>& shaderCode);
 	private:

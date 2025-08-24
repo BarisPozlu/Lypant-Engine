@@ -5,11 +5,6 @@
 #include <Lypant/Renderer/RenderCommandBuffer.h>
 #include <Lypant/Renderer/RenderPass.h>
 
-// TODO: Remove
-#include "VulkanShader.h"
-#include "VulkanPipeline.h"
-#include "VulkanBuffer.h"
-
 namespace lypant
 {
 	class VulkanRenderCommandBuffer : public RenderCommandBuffer
@@ -19,12 +14,10 @@ namespace lypant
 		virtual ~VulkanRenderCommandBuffer();
 		virtual void BeginCommands() override;
 		virtual void EndCommands() override;
-
 		virtual void BeginSubpass(const Subpass& subpass) override;
 		virtual void EndSubpass(const Subpass& subpass) override;
+		virtual void DrawMesh(const Mesh& mesh, const std::shared_ptr<Shader>& shader) override;
 
-		// TODO: Remove
-		void Test();
 		inline VkCommandBuffer GetCommandBuffer() { return GetCurrentFrame().CommandBuffer; }
 	private:
 		struct FrameData
@@ -45,10 +38,6 @@ namespace lypant
 		std::array<FrameData, s_MaxFramesInFlight> m_FrameData;
 		std::vector<VkSemaphore> m_RenderFinishedSemaphores;
 		uint32_t m_CurrentFrame = 0;
-
-		//TODO: Remove
-		std::shared_ptr<VulkanVertexBuffer> m_VertexBuffer;
-		std::shared_ptr<VulkanIndexBuffer> m_IndexBuffer;
 	private:
 		// NOTE: Default render target needs to acquire the image from the swap chain and has to signal a semaphore that is stored in this class
 		friend class VulkanDefaultRenderTarget;
