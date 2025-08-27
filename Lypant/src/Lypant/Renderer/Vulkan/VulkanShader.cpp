@@ -7,6 +7,7 @@
 namespace lypant
 {
     static std::unordered_map<uint32_t, VkPushConstantRange> s_PushConstantMap;
+    static std::unordered_map<uint32_t, std::vector<VkDescriptorSetLayoutBinding>> s_DescriptorSetMap;
 
     static std::string ReadFile(const std::string& path)
     {
@@ -31,6 +32,9 @@ namespace lypant
         shaderc::Compiler compiler;
         shaderc::CompileOptions options;
 
+        //NOTE: this is needed so that names are also in the spirv binary
+        options.SetGenerateDebugInfo();
+
         options.SetOptimizationLevel(shaderc_optimization_level_performance);
 
         switch (type)
@@ -52,6 +56,27 @@ namespace lypant
         #endif
 
         return { result.cbegin(), result.cend() };
+    }
+
+    static VkDescriptorType GetDescriptorTypeFromReflBinding(const SpvReflectDescriptorBinding& reflBinding)
+    {
+        if (reflBinding.type_description->type_name)
+        {
+            std::string name = reflBinding.type_description->type_name;
+            if (name.find("Dynamic") != std::string::npos)
+            {
+                switch (reflBinding.descriptor_type)
+                {
+                    case SPV_REFLECT_DESCRIPTOR_TYPE_UNIFORM_BUFFER: return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+                    case SPV_REFLECT_DESCRIPTOR_TYPE_STORAGE_BUFFER: return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+                }
+
+                LY_CORE_ASSERT(false, "Binding is named to be dynamic but is not a uniform or a storage buffer");
+                return VK_DESCRIPTOR_TYPE_MAX_ENUM;
+            }
+        }
+
+        return static_cast<VkDescriptorType>(reflBinding.descriptor_type);
     }
 
 	VulkanShader::VulkanShader(const std::string& path)
@@ -86,12 +111,32 @@ namespace lypant
         Reflect(vertexShaderCode);
         Reflect(fragmentShaderCode);
 
+        m_DescriptorSetLayouts.reserve(s_DescriptorSetMap.size());
+
+        for (auto& [key, value] : s_DescriptorSetMap)
+        {
+            VkDescriptorSetLayoutCreateInfo createInfo{};
+            createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+            createInfo.bindingCount = value.size();
+            createInfo.pBindings = value.data();
+
+            vkCreateDescriptorSetLayout(VulkanGraphicsContext::Get().GetDevice(), &createInfo, nullptr, &m_DescriptorSetLayouts[key]);
+        }
+
         VkPipelineLayoutCreateInfo pipelineLayout{};
         pipelineLayout.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayout.setLayoutCount = m_DescriptorSetLayouts.size();
-        pipelineLayout.pSetLayouts = m_DescriptorSetLayouts.data();
         pipelineLayout.pushConstantRangeCount = s_PushConstantMap.size();
         
+        std::vector<VkDescriptorSetLayout> layouts;
+        layouts.reserve(m_DescriptorSetLayouts.size());
+        for (auto& [key, value] : m_DescriptorSetLayouts)
+        {
+            layouts.push_back(value);
+        }
+
+        pipelineLayout.pSetLayouts = layouts.data();
+
         std::vector<VkPushConstantRange> ranges;
         ranges.reserve(s_PushConstantMap.size());
         for (auto& [key, value] : s_PushConstantMap)
@@ -100,9 +145,11 @@ namespace lypant
         }
 
         pipelineLayout.pPushConstantRanges = ranges.data();
+
         vkCreatePipelineLayout(graphicsContext.GetDevice(), &pipelineLayout, nullptr, &m_PipelineLayout);
 
         s_PushConstantMap.clear();
+        s_DescriptorSetMap.clear();
 	}
 
 	VulkanShader::~VulkanShader()
@@ -111,9 +158,9 @@ namespace lypant
 
         vkDestroyPipelineLayout(graphicsContext.GetDevice(), m_PipelineLayout, nullptr);
 
-        for (VkDescriptorSetLayout layout : m_DescriptorSetLayouts)
+        for (auto [key, value] : m_DescriptorSetLayouts)
         {
-            vkDestroyDescriptorSetLayout(graphicsContext.GetDevice(), layout, nullptr);
+            vkDestroyDescriptorSetLayout(graphicsContext.GetDevice(), value, nullptr);
         }
 
         for (VkShaderModule shaderModule : m_ShaderModules)
@@ -134,36 +181,61 @@ namespace lypant
         std::vector<SpvReflectDescriptorSet*> reflSets(count);
         spvReflectEnumerateDescriptorSets(&reflModule, &count, reflSets.data());
 
-        m_DescriptorSetLayouts.resize(count);
-        std::vector<VkDescriptorSetLayoutBinding> bindings;
+        //m_DescriptorSetLayouts.resize(count);
+        //std::vector<VkDescriptorSetLayoutBinding> bindings;
+
+        //for (int i = 0; i < reflSets.size(); i++)
+        //{
+        //    const SpvReflectDescriptorSet& reflSet = *reflSets[i];
+
+        //    bindings.resize(reflSet.binding_count);
+
+        //    for (int j = 0; j < reflSet.binding_count; j++)
+        //    {
+        //        const SpvReflectDescriptorBinding& reflBinding = *reflSet.bindings[j];
+        //        VkDescriptorSetLayoutBinding& binding = bindings[j];
+
+        //        binding.binding = reflBinding.binding;
+        //        binding.stageFlags = static_cast<VkShaderStageFlagBits>(reflModule.shader_stage);
+        //        binding.descriptorType = GetDescriptorTypeFromReflBinding(reflBinding);
+
+        //        binding.descriptorCount = 1;
+        //        for (uint32_t dimension = 0; dimension < reflBinding.array.dims_count; dimension++)
+        //        {
+        //            binding.descriptorCount *= reflBinding.array.dims[dimension];
+        //        }
+        //    }
+
+        //    VkDescriptorSetLayoutCreateInfo createInfo{};
+        //    createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        //    createInfo.bindingCount = bindings.size();
+        //    createInfo.pBindings = bindings.data();
+
+        //    vkCreateDescriptorSetLayout(VulkanGraphicsContext::Get().GetDevice(), &createInfo, nullptr, &m_DescriptorSetLayouts[i]);
+        //}
 
         for (int i = 0; i < reflSets.size(); i++)
         {
             const SpvReflectDescriptorSet& reflSet = *reflSets[i];
 
-            bindings.resize(reflSet.binding_count);
-
             for (int j = 0; j < reflSet.binding_count; j++)
             {
                 const SpvReflectDescriptorBinding& reflBinding = *reflSet.bindings[j];
-                VkDescriptorSetLayoutBinding& binding = bindings[j];
+
+                auto& bindings = s_DescriptorSetMap[reflSet.set];
+                bindings.resize(bindings.size() + 1);
+
+                VkDescriptorSetLayoutBinding& binding = bindings.back();
 
                 binding.binding = reflBinding.binding;
                 binding.stageFlags = static_cast<VkShaderStageFlagBits>(reflModule.shader_stage);
-                binding.descriptorType = static_cast<VkDescriptorType>(reflBinding.descriptor_type);
+                binding.descriptorType = GetDescriptorTypeFromReflBinding(reflBinding);
 
                 binding.descriptorCount = 1;
                 for (uint32_t dimension = 0; dimension < reflBinding.array.dims_count; dimension++)
                 {
                     binding.descriptorCount *= reflBinding.array.dims[dimension];
                 }
-
-                VkDescriptorSetLayoutCreateInfo createInfo{};
-                createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-                createInfo.bindingCount = bindings.size();
-                createInfo.pBindings = bindings.data();
-
-                vkCreateDescriptorSetLayout(VulkanGraphicsContext::Get().GetDevice(), &createInfo, nullptr, &m_DescriptorSetLayouts[i]);
             }
         }
 

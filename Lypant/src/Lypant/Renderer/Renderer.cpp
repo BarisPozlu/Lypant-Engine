@@ -1,6 +1,7 @@
 #include "lypch.h"
 #include "Renderer.h"
 #include <Lypant/Util/MeshFactory.h> // temp
+#include <Lypant/Util/Util.h>
 
 namespace lypant
 {
@@ -13,13 +14,18 @@ namespace lypant
 
 		s_Cmd = RenderCommandBuffer::Create();
 
-		std::shared_ptr<RenderTarget> renderTarget = RenderTarget::CreateDefault();
+		std::shared_ptr<RenderTarget> renderTarget = RenderTarget::GetDefault();
 
 		s_Data->TestShader = Shader::Create("shaders/VulkanTest.glsl");
 
 		s_Data->TestImage = Image2D::Create("textures/vulkan-test.png", ImageParams());
 
-		s_Data->TestPass = Subpass::Create(renderTarget, s_Data->TestShader, { { s_Data->TestImage, 0 } });
+		float testArray[]
+		{
+			1.0f, 0.5f, 0.5f
+		};
+
+		s_Data->TestPass = Subpass::Create(renderTarget, s_Data->TestShader, { { s_Data->TestImage, 0 } }, 12, testArray, false);
 	}
 
 	void Renderer::Shutdown()
@@ -31,6 +37,8 @@ namespace lypant
 	void Renderer::BeginRendering()
 	{
 		s_Cmd->BeginCommands();
+
+		//std::shared_ptr<Image> cubemap = util::CreateCubemapFromEquirectangularImage("textures/skybox/example1.hdr");
 	}
 
 	void Renderer::EndRendering()

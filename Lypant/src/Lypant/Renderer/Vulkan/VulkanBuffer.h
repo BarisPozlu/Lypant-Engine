@@ -24,13 +24,31 @@ namespace lypant
 	public:
 		VulkanIndexBuffer(void* data, uint32_t count);
 		virtual ~VulkanIndexBuffer();
-		inline virtual uint32_t GetIndexCount() const override { return m_IndexCount; }
-		inline VkBuffer Get() const { return m_Buffer; }
+		inline uint32_t GetIndexCount() const { return m_IndexCount; }
+		inline VkBuffer GetVkBuffer() const { return m_Buffer; }
 	private:
 		VkBuffer m_Buffer;
 		VmaAllocation m_Allocation;
 		VmaAllocationInfo m_AllocationInfo;
 		uint32_t m_IndexCount;
+	};
+
+	// NOTE: The size is multiplied by the number of frames in flight. Uniform buffers are divided into sub-buffers that correspond to different frames in flight.
+	class VulkanUniformBuffer : public UniformBuffer
+	{
+	public:
+		VulkanUniformBuffer(uint32_t size, const void* data, bool isDynamic = false);
+		virtual ~VulkanUniformBuffer();
+		virtual void UploadData(const void* data, uint32_t size, uint32_t offset) override;
+		inline VkBuffer GetVkBuffer() const { return m_Buffer; }
+		inline uint32_t GetSize() const { return m_Size; }
+		inline bool IsDynamic() const { return m_IsDynamic; }
+	private:
+		VkBuffer m_Buffer;
+		VmaAllocation m_Allocation;
+		VmaAllocationInfo m_AllocationInfo;
+		uint32_t m_Size;
+		bool m_IsDynamic;
 	};
 
 	class VulkanStagingBuffer

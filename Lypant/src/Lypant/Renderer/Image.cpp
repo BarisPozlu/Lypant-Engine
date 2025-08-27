@@ -57,7 +57,7 @@ namespace lypant
 		spec.Channels = channels;
 		spec.Params = params;
 		spec.Depth = 1;
-		spec.Layers = 1;
+		spec.Layers = 6;
 		spec.Samples = 1;
 		spec.UsageFlags = ImageUsageFlagsSample | ImageUsageFlagsColorAttachment;
 

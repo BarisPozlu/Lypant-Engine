@@ -9,7 +9,7 @@ namespace lypant
 {
 	static constexpr std::array<const char*, 1> s_RequiredLayers = { "VK_LAYER_KHRONOS_validation" };
 	//TODO: dynamic rendering is not extension in vk 1.3, enable it in the 1.3 features
-	static constexpr std::array<const char*, 2> s_RequiredDeviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME };
+	static constexpr std::array<const char*, 3> s_RequiredDeviceExtensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME, "VK_EXT_shader_viewport_index_layer" };
 
 	VulkanGraphicsContext::VulkanGraphicsContext(GLFWwindow* windowHandle)
 	{
@@ -190,7 +190,9 @@ namespace lypant
 		VkPhysicalDeviceVulkan12Features enabledvk12Features{};
 		enabledvk12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
 		enabledvk12Features.bufferDeviceAddress = VK_TRUE;
-		enabledvk12Features.descriptorIndexing = VK_TRUE;
+		//enabledvk12Features.descriptorIndexing = VK_TRUE;
+		enabledvk12Features.shaderOutputViewportIndex = VK_TRUE;
+		enabledvk12Features.shaderOutputLayer = VK_TRUE;
 		enabledvk12Features.pNext = &dynamicRenderingFeatures;
 
 		VkPhysicalDeviceFeatures2 enabledFeatures{};
@@ -217,11 +219,9 @@ namespace lypant
 
 	bool VulkanGraphicsContext::IsDeviceSuitable(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceProperties2& properties, const VkPhysicalDeviceFeatures2& features, const VkPhysicalDeviceVulkan12Features& vk12Features)
 	{
-		// Geometry shader and anisotropy filtering check
 		if (!features.features.geometryShader || !features.features.samplerAnisotropy) return false;
 
-		// Buffer device address check
-		if (!vk12Features.bufferDeviceAddress) return false;
+		if (!vk12Features.bufferDeviceAddress || !vk12Features.shaderOutputViewportIndex || !vk12Features.shaderOutputLayer) return false;
 
 		// Extension checks
 		uint32_t extensionCount;

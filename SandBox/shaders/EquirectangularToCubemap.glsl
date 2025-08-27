@@ -1,15 +1,39 @@
+#version 460
+
 #ifdef VERTEX_SHADER
 
-layout (location = 0) in vec3 a_Position;
+#extension GL_EXT_buffer_reference : require
+#extension GL_ARB_shader_viewport_layer_array : require
 
-out vec3 v_DirectionVector;
+layout (location = 0) out vec3 v_DirectionVector;
 
-uniform mat4 u_ViewMatrix;
+struct Vertex
+{
+	vec3 Position;
+};
+
+layout (buffer_reference) readonly buffer VertexBuffer
+{
+	Vertex vertices[];
+};
+
+layout (push_constant) uniform PushConstant
+{
+	VertexBuffer vertexBuffer;
+} PushConstants;
+
+layout (set = 0, binding = 1) uniform ViewMatrices
+{
+	mat4 u_ViewMatrix[6];
+};
 
 void main()
 {
-	v_DirectionVector = vec3(a_Position.xy, -a_Position.z);
-	gl_Position = u_ViewMatrix * vec4(a_Position, 1.0); // already in ndc no need for a projection matrix
+	gl_Layer = gl_InstanceIndex;
+	Vertex vertex = PushConstants.vertexBuffer.vertices[gl_VertexIndex];
+
+	v_DirectionVector = vec3(vertex.Position.xy, -vertex.Position.z);
+	gl_Position = u_ViewMatrix[gl_InstanceIndex] * vec4(vertex.Position, 1.0); // already in ndc no need for a projection matrix
 }
 
 #endif
@@ -18,9 +42,9 @@ void main()
 
 layout (location = 0) out vec4 o_Color;
 
-in vec3 v_DirectionVector;
+layout (location = 0) in vec3 v_DirectionVector;
 
-uniform sampler2D u_EquirectangularTexture;
+layout (set = 0, binding = 0) uniform sampler2D u_EquirectangularTexture;
 
 vec2 CubemapDirectionToEquirectangularCoords(vec3 directionVector)
 {

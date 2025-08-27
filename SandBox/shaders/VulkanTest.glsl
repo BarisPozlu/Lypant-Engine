@@ -39,9 +39,14 @@ layout (location = 0) in vec2 v_TexCoord;
 
 layout (set = 0, binding = 0) uniform sampler2D u_Texture;
 
+layout (set = 0, binding = 1) uniform TestBuffer
+{
+	vec3 u_Color;
+};
+
 void main()
 {
-	o_Color = texture(u_Texture, v_TexCoord);
+	o_Color = vec4(texture(u_Texture, v_TexCoord).rgb * u_Color, 1.0);
 }
 
 #endif

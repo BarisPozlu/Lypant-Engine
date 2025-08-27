@@ -2,6 +2,7 @@
 #include "VulkanDescriptorSet.h"
 #include "VulkanGraphicsContext.h"
 #include "VulkanImage.h"
+#include "VulkanBuffer.h"
 
 namespace lypant
 {
@@ -47,15 +48,19 @@ namespace lypant
 
 	void VulkanDescriptorSetAllocator::CreatePool(VkDevice device)
 	{
-		VkDescriptorPoolSize poolSize{};
-		poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSize.descriptorCount = 1024 * 4;
+		std::array<VkDescriptorPoolSize, 3> poolSizes{};
+		poolSizes[0].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		poolSizes[0].descriptorCount = 1024 * 4;
+		poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		poolSizes[1].descriptorCount = 1024 * 4;
+		poolSizes[2].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+		poolSizes[2].descriptorCount = 1024 * 4;
 
 		VkDescriptorPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 		poolInfo.maxSets = 1024;
-		poolInfo.poolSizeCount = 1;
-		poolInfo.pPoolSizes = &poolSize;
+		poolInfo.poolSizeCount = poolSizes.size();
+		poolInfo.pPoolSizes = poolSizes.data();
 
 		VkDescriptorPool pool;
 
@@ -79,9 +84,12 @@ namespace lypant
 
 	}
 
-	void VulkanDescriptorSet::Update(const std::vector<DataBinding>& dataBindings)
+	void VulkanDescriptorSet::Update(const std::vector<DataBinding>& dataBindings, const std::shared_ptr<UniformBuffer>& buffer)
 	{
-		std::vector<VkWriteDescriptorSet> setWrites(dataBindings.size());
+		const auto& vkBuffer = reinterpret_cast<const std::shared_ptr<VulkanUniformBuffer>&>(buffer);
+
+		int bindingCount = buffer ? dataBindings.size() + 1 : dataBindings.size();
+		std::vector<VkWriteDescriptorSet> setWrites(bindingCount);
 
 		std::vector<VkDescriptorImageInfo> imageInfos;
 
@@ -109,7 +117,34 @@ namespace lypant
 				setWrite.dstArrayElement = 0;
 				setWrite.pImageInfo = &imageInfos.back();
 			}
+		}
 
+		VkDescriptorBufferInfo bufferInfo{};
+
+		if (buffer)
+		{
+			bufferInfo.buffer = vkBuffer->GetVkBuffer();
+			bufferInfo.offset = 0;
+			bufferInfo.range = vkBuffer->GetSize();
+
+			VkWriteDescriptorSet& setWrite = setWrites.back();
+			setWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			//TODO: Change
+			if (vkBuffer->IsDynamic())
+			{
+				setWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+			}
+
+			else
+			{
+				setWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+			}
+			
+			setWrite.descriptorCount = 1;
+			setWrite.dstSet = m_DescriptorSet;
+			setWrite.dstBinding = dataBindings.size();
+			setWrite.dstArrayElement = 0;
+			setWrite.pBufferInfo = &bufferInfo;
 		}
 
 		vkUpdateDescriptorSets(VulkanGraphicsContext::Get().GetDevice(), setWrites.size(), setWrites.data(), 0, nullptr);

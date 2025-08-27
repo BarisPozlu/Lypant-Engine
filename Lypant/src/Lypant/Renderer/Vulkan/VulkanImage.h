@@ -48,6 +48,7 @@ namespace lypant
 		}
 		inline VkExtent2D GetImageExtent() const { return m_Extent; }
 		inline VkSampler GetSampler() const { return m_Sampler->GetVkSampler(); }
+		inline VkFormat GetFormat() const { return m_Format; }
 
 		//TODO: Aspect is always color change that
 		void TransitionLayout(VkCommandBuffer commandBuffer, const TransitionSpecification& spec);

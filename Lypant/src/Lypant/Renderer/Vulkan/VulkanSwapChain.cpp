@@ -2,6 +2,7 @@
 #include "VulkanSwapChain.h"
 #include "VulkanGraphicsContext.h"
 #include "Lypant/Core/Application.h"
+#include "VulkanRenderTarget.h"
 
 namespace lypant
 {
@@ -70,7 +71,6 @@ namespace lypant
 		std::vector<VkImage> images(imageCount);
 		vkGetSwapchainImagesKHR(device, m_SwapChain, &imageCount, images.data());
 
-		//m_Images.reserve(imageCount);
 		m_Images.resize(imageCount);
 
 		for (int i = 0; i < imageCount; i++)
@@ -90,9 +90,15 @@ namespace lypant
 
 			vkCreateImageView(device, &imageViewInfo, nullptr, &imageView);
 
-			//m_Images.emplace_back(images[i], imageView, m_ImageExtent, selectedFormat.format);
 			m_Images[i] = std::make_shared<VulkanImage>(images[i], imageView, m_ImageExtent, selectedFormat.format);
 		}
+
+		m_RenderTarget = std::make_shared<VulkanRenderTarget>();
+
+		// NOTE: Attached image is not valid since it is not acquired from the swap chain yet.
+		// This does not cause problems, since before rendering to this render target, OnFrameBegin gets called and its color buffer is updated.
+		// The reason why this is done is so that passes that might use this render target can get its color buffer's format for graphics pipeline creation.
+		m_RenderTarget->AttachColorBuffer(m_Images[m_ImageIndex]);
 	}
 
 	VulkanSwapChain::~VulkanSwapChain()
@@ -101,16 +107,21 @@ namespace lypant
 		vkDestroySwapchainKHR(graphicsContext.GetDevice(), m_SwapChain, nullptr);
 	}
 
-	const std::shared_ptr<VulkanImage>& VulkanSwapChain::GetNextImage(VkSemaphore signalSemaphore)
+	void VulkanSwapChain::OnFrameBegin(VkSemaphore imageReceivedSemaphore)
 	{
 		const auto& graphicsContext = VulkanGraphicsContext::Get();
 
-		vkAcquireNextImageKHR(graphicsContext.GetDevice(), m_SwapChain, UINT64_MAX, signalSemaphore, VK_NULL_HANDLE, &m_ImageIndex);
+		vkAcquireNextImageKHR(graphicsContext.GetDevice(), m_SwapChain, UINT64_MAX, imageReceivedSemaphore, VK_NULL_HANDLE, &m_ImageIndex);
 
 		const auto& image = m_Images[m_ImageIndex];
 
 		image->m_CurrentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 
-		return image;
+		m_RenderTarget->AttachColorBuffer(image);
+	}
+
+	void VulkanSwapChain::OnFrameEnd(VkCommandBuffer commandBuffer)
+	{
+		m_Images[m_ImageIndex]->TransitionLayout(commandBuffer, { VK_IMAGE_LAYOUT_PRESENT_SRC_KHR });
 	}
 }

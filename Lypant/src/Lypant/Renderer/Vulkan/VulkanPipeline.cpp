@@ -4,9 +4,10 @@
 
 namespace lypant
 {
-	VulkanGraphicsPipeline::VulkanGraphicsPipeline(const GraphicsPipelineSpecification& spec, const std::shared_ptr<Shader>& shader)
+	VulkanGraphicsPipeline::VulkanGraphicsPipeline(const GraphicsPipelineSpecification& spec, const std::shared_ptr<Shader>& shader, const std::shared_ptr<RenderTarget>& renderTarget)
 	{
 		const auto& vulkanShader = reinterpret_cast<const std::shared_ptr<VulkanShader>&>(shader);
+		const auto& vulkanRenderTarget = reinterpret_cast<const std::shared_ptr<VulkanRenderTarget>&>(renderTarget);
 
 		VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
 		vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -58,7 +59,7 @@ namespace lypant
 		VkPipelineRenderingCreateInfoKHR renderingInfo{};
 		renderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
 		renderingInfo.colorAttachmentCount = 1;
-		VkFormat format = VK_FORMAT_B8G8R8A8_UNORM;
+		VkFormat format = vulkanRenderTarget->GetColorBuffer()->GetFormat();
 		renderingInfo.pColorAttachmentFormats = &format;
 
 		VkGraphicsPipelineCreateInfo graphicsPipelineInfo{};

@@ -29,4 +29,15 @@ namespace lypant
 		return nullptr;
 	}
 
+	std::shared_ptr<UniformBuffer> UniformBuffer::Create(uint32_t size, const void* data, bool isDynamic)
+	{
+		switch (GraphicsContext::GetGraphicsAPI())
+		{
+			case GraphicsAPI::None: LY_CORE_ASSERT(false, "None graphics api is not supported."); break;
+			case GraphicsAPI::Vulkan: return std::make_shared<VulkanUniformBuffer>(size, data, isDynamic); break;
+		}
+
+		LY_CORE_ASSERT(false, "Unknown Graphics API");
+		return nullptr;
+	}
 }

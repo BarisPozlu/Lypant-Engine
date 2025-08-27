@@ -16,9 +16,11 @@ namespace lypant
 		virtual void EndCommands() override;
 		virtual void BeginSubpass(const Subpass& subpass) override;
 		virtual void EndSubpass(const Subpass& subpass) override;
-		virtual void DrawMesh(const Mesh& mesh, const std::shared_ptr<Shader>& shader) override;
+		virtual void DrawMesh(const Mesh& mesh, const std::shared_ptr<Shader>& shader, uint32_t instanceCount = 1) override;
 
 		inline VkCommandBuffer GetCommandBuffer() { return GetCurrentFrame().CommandBuffer; }
+		inline constexpr uint32_t GetMaxFramesInFlight() const { return s_MaxFramesInFlight; }
+		inline uint32_t GetCurrentFrameIndex() const { return m_CurrentFrameIndex; }
 	private:
 		struct FrameData
 		{
@@ -27,7 +29,7 @@ namespace lypant
 			VkSemaphore ImageReceivedSemaphore;
 			VkFence FrameFinishedFence;
 		};
-		inline FrameData& GetCurrentFrame() { return m_FrameData[m_CurrentFrame]; }
+		inline FrameData& GetCurrentFrame() { return m_FrameData[m_CurrentFrameIndex]; }
 		void CreateCommandResources();
 		void CreateSyncResources();
 		void DestroyCommandResources();
@@ -37,9 +39,6 @@ namespace lypant
 	private:
 		std::array<FrameData, s_MaxFramesInFlight> m_FrameData;
 		std::vector<VkSemaphore> m_RenderFinishedSemaphores;
-		uint32_t m_CurrentFrame = 0;
-	private:
-		// NOTE: Default render target needs to acquire the image from the swap chain and has to signal a semaphore that is stored in this class
-		friend class VulkanDefaultRenderTarget;
+		uint32_t m_CurrentFrameIndex = 0;
 	};
 }

@@ -19,7 +19,8 @@ namespace lypant
 	{
 	public:
 		virtual ~Subpass() = default;
-		static std::unique_ptr<Subpass> Create(const std::shared_ptr<RenderTarget>& renderTarget, const std::shared_ptr<Shader>& shader, const std::vector<DataBinding>& dataBindings);
+		static std::unique_ptr<Subpass> Create(const std::shared_ptr<RenderTarget>& renderTarget, const std::shared_ptr<Shader>& shader, const std::vector<DataBinding>& dataBindings, uint32_t uniformBufferSize, const void* data, bool isDynamic = false);
+		virtual void UploadData(const void* data, uint32_t size, uint32_t offset) = 0;
 	};
 
 	class RenderPass

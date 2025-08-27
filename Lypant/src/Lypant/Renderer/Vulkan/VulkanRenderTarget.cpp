@@ -1,8 +1,5 @@
 #include <lypch.h>
 #include "VulkanRenderTarget.h"
-#include "VulkanGraphicsContext.h"
-#include "VulkanSwapChain.h"
-#include "VulkanRenderCommandBuffer.h"
 
 namespace lypant
 {
@@ -30,25 +27,9 @@ namespace lypant
 		// TODO:
 	}
 
-	const VkRenderingInfo& VulkanRenderTarget::PrepareForRendering(VulkanRenderCommandBuffer& renderCommandBuffer)
+	const VkRenderingInfo& VulkanRenderTarget::PrepareForRendering(VkCommandBuffer commandBuffer)
 	{
-		m_ColorBuffer->TransitionLayout(renderCommandBuffer.GetCommandBuffer(), { VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
-
-		return m_RenderingInfo;
-	}
-
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-	const VkRenderingInfo& VulkanDefaultRenderTarget::PrepareForRendering(VulkanRenderCommandBuffer& renderCommandBuffer)
-	{
-		auto& graphicsContext = VulkanGraphicsContext::Get();
-		auto& image = graphicsContext.GetSwapChain().GetNextImage(renderCommandBuffer.GetCurrentFrame().ImageReceivedSemaphore);
-
-		AttachColorBuffer(image);
-
-		m_ColorBuffer->TransitionLayout(renderCommandBuffer.GetCurrentFrame().CommandBuffer, { VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
+		m_ColorBuffer->TransitionLayout(commandBuffer, { VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL });
 
 		return m_RenderingInfo;
 	}

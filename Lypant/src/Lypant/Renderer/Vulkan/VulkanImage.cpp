@@ -75,7 +75,7 @@ namespace lypant
 		return flags;
 	}
 
-	static VkFormat GetFormat(const ImageParams& spec, int channels)
+	static VkFormat GetFormatFromParams(const ImageParams& spec, int channels)
 	{
 		switch (channels)
 		{
@@ -212,10 +212,11 @@ namespace lypant
 		int height;
 		int channels;
 		void* buffer;
-
+		// TODO: CHANGED FOR TESTING, REMOVE
 		if (spec.Params.FloatingImage)
 		{
-			buffer = stbi_loadf(path.c_str(), &width, &height, &channels, 0);
+			buffer = stbi_loadf(path.c_str(), &width, &height, &channels, 4);
+			channels = 4;
 		}
 
 		else
@@ -227,7 +228,7 @@ namespace lypant
 
 		m_Extent.width = width;
 		m_Extent.height = height;
-		m_Format = GetFormat(spec.Params, channels);
+		m_Format = GetFormatFromParams(spec.Params, channels);
 
 		CreateImage(spec);
 		UploadData(buffer);
@@ -248,7 +249,7 @@ namespace lypant
 
 		m_Extent.width = spec.Width;
 		m_Extent.height = spec.Height;
-		m_Format = GetFormat(spec.Params, spec.Channels);
+		m_Format = GetFormatFromParams(spec.Params, spec.Channels);
 
 		CreateImage(spec);
 
@@ -258,6 +259,8 @@ namespace lypant
 		}
 
 		m_Sampler = std::make_unique<VulkanSampler>(spec.Params.SamplerSpec);
+
+		CreateImageViews(spec);
 
 		//TODO: Generate Mip map if needed here
 	}

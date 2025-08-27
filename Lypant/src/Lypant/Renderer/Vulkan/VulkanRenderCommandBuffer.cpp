@@ -25,6 +25,8 @@ namespace lypant
 	{
 		vkWaitForFences(VulkanGraphicsContext::Get().GetDevice(), 1, &GetCurrentFrame().FrameFinishedFence, false, UINT64_MAX);
 
+		VulkanGraphicsContext::Get().GetSwapChain().OnFrameBegin(GetCurrentFrame().ImageReceivedSemaphore);
+
 		vkResetCommandBuffer(GetCurrentFrame().CommandBuffer, 0);
 
 		VkCommandBufferBeginInfo commandBufferBeginInfo{};
@@ -38,7 +40,7 @@ namespace lypant
 		auto& graphicsContext = VulkanGraphicsContext::Get();
 		auto& swapChain = graphicsContext.GetSwapChain();
 
-		swapChain.GetCurrentImage()->TransitionLayout(GetCurrentFrame().CommandBuffer, { VK_IMAGE_LAYOUT_PRESENT_SRC_KHR });
+		swapChain.OnFrameEnd(GetCurrentFrame().CommandBuffer);
 
 		vkEndCommandBuffer(GetCurrentFrame().CommandBuffer);
 
@@ -69,7 +71,7 @@ namespace lypant
 
 		vkQueuePresentKHR(graphicsContext.GetGraphicsQueue(), &presentInfo);
 
-		m_CurrentFrame = (m_CurrentFrame + 1) % s_MaxFramesInFlight;
+		m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % s_MaxFramesInFlight;
 	}
 
 	void VulkanRenderCommandBuffer::BeginSubpass(const Subpass& subpass)
@@ -80,16 +82,26 @@ namespace lypant
 		const auto& shader = vulkanSubpass.GetShader();
 		const auto& descriptorSet = vulkanSubpass.GetDescriptorSet();
 		const auto& renderTarget = vulkanSubpass.GetRenderTarget();
+		const auto& uniformBuffer = vulkanSubpass.GetUniformBuffer();
 
 		vkCmdBindPipeline(GetCurrentFrame().CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
 		if (descriptorSet)
 		{
 			VkDescriptorSet vkDescriptorSet = descriptorSet->GetVkDescriptorSet();
-			vkCmdBindDescriptorSets(GetCurrentFrame().CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipelineLayout(), 0, 1, &vkDescriptorSet, 0, nullptr);
+			if (uniformBuffer->IsDynamic())
+			{
+				uint32_t dynamicOffset = vulkanSubpass.GetUniformBuffer()->GetSize() * m_CurrentFrameIndex;
+				vkCmdBindDescriptorSets(GetCurrentFrame().CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipelineLayout(), 0, 1, &vkDescriptorSet, 1, &dynamicOffset);
+			}
+			
+			else
+			{
+				vkCmdBindDescriptorSets(GetCurrentFrame().CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipelineLayout(), 0, 1, &vkDescriptorSet, 0, nullptr);
+			}
 		}
 
-		const VkRenderingInfo& renderingInfo = renderTarget->PrepareForRendering(*this);
+		const VkRenderingInfo& renderingInfo = renderTarget->PrepareForRendering(GetCurrentFrame().CommandBuffer);
 
 		vkCmdBeginRendering(GetCurrentFrame().CommandBuffer, &renderingInfo);
 
@@ -100,8 +112,8 @@ namespace lypant
 		viewport.height = renderingInfo.renderArea.extent.height;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
-		vkCmdSetViewport(GetCurrentFrame().CommandBuffer, 0, 1, &viewport);
 
+		vkCmdSetViewport(GetCurrentFrame().CommandBuffer, 0, 1, &viewport);
 		vkCmdSetScissor(GetCurrentFrame().CommandBuffer, 0, 1, &renderingInfo.renderArea);
 	}
 
@@ -110,7 +122,7 @@ namespace lypant
 		vkCmdEndRendering(GetCurrentFrame().CommandBuffer);
 	}
 
-	void VulkanRenderCommandBuffer::DrawMesh(const Mesh& mesh, const std::shared_ptr<Shader>& shader)
+	void VulkanRenderCommandBuffer::DrawMesh(const Mesh& mesh, const std::shared_ptr<Shader>& shader, uint32_t instanceCount)
 	{
 		const auto& vkVertexBuffer = reinterpret_cast<const std::shared_ptr<VulkanVertexBuffer>&>(mesh.GetVertexBuffer());
 		const auto& vkIndexBuffer = reinterpret_cast<const std::shared_ptr<VulkanIndexBuffer>&>(mesh.GetIndexBuffer());
@@ -118,9 +130,9 @@ namespace lypant
 		VkDeviceAddress vertexBufferAddress = vkVertexBuffer->GetDeviceAddress();
 
 		vkCmdPushConstants(GetCurrentFrame().CommandBuffer, vkShader->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(VkDeviceAddress), &vertexBufferAddress);
-		vkCmdBindIndexBuffer(GetCurrentFrame().CommandBuffer, vkIndexBuffer->Get(), 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindIndexBuffer(GetCurrentFrame().CommandBuffer, vkIndexBuffer->GetVkBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-		vkCmdDrawIndexed(GetCurrentFrame().CommandBuffer, vkIndexBuffer->GetIndexCount(), 1, 0, 0, 0);
+		vkCmdDrawIndexed(GetCurrentFrame().CommandBuffer, vkIndexBuffer->GetIndexCount(), instanceCount, 0, 0, 0);
 	}
 
 	void VulkanRenderCommandBuffer::CreateCommandResources()

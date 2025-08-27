@@ -14,8 +14,8 @@ namespace lypant
 
 	struct SamplerSpecification
 	{
-		ImageWrappingOption WrappingOption;
-		ImageFilteringOption FilteringOption;
+		ImageWrappingOption WrappingOption = ImageWrappingOption::Repeat;
+		ImageFilteringOption FilteringOption = ImageFilteringOption::Linear;
 	};
 
 }
