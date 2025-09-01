@@ -277,17 +277,26 @@ namespace lypant
 
 	VulkanImage::~VulkanImage()
 	{
-		const auto& graphicsContext = VulkanGraphicsContext::Get();
+		auto& graphicsContext = VulkanGraphicsContext::Get();
 
-		for (VkImageView view : m_ImageViews)
-		{
-			vkDestroyImageView(graphicsContext.GetDevice(), view, nullptr);
-		}
+		auto& views = m_ImageViews;
+		VmaAllocation allocation = m_Allocation;
+		VkImage image = m_Image;
 
-		if (m_Allocation)
-		{
-			vmaDestroyImage(graphicsContext.GetAllocator(), m_Image, m_Allocation);
-		}
+		graphicsContext.GetDeletionQueue().PushFunction([views, allocation, image]()
+			{
+				const auto& graphicsContext = VulkanGraphicsContext::Get();
+
+				for (VkImageView view : views)
+				{
+					vkDestroyImageView(graphicsContext.GetDevice(), view, nullptr);
+				}
+
+				if (allocation)
+				{
+					vmaDestroyImage(graphicsContext.GetAllocator(), image, allocation);
+				}
+			});
 	}
 
 	void VulkanImage::TransitionLayout(VkCommandBuffer commandBuffer, const TransitionSpecification& spec)
@@ -351,24 +360,26 @@ namespace lypant
 		VulkanStagingBuffer stagingBuffer(size);
 
 		memcpy(stagingBuffer.GetMappedMemory(), buffer, size);
+		
+		VulkanImmediateCommandBuffer commandBuffer;
 
-		{
-			VkBufferImageCopy region{};
-			region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			region.imageSubresource.mipLevel = 0;
-			region.imageSubresource.baseArrayLayer = 0;
-			region.imageSubresource.layerCount = 1;
-			region.imageExtent = { m_Extent.width, m_Extent.height, 1 };
+		VkBufferImageCopy region{};
+		region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		region.imageSubresource.mipLevel = 0;
+		region.imageSubresource.baseArrayLayer = 0;
+		region.imageSubresource.layerCount = 1;
+		region.imageExtent = { m_Extent.width, m_Extent.height, 1 };
 
-			VulkanImmediateCommandScope scope;
+		commandBuffer.BeginCommands();
 
-			TransitionLayout(scope.GetCommandBuffer(), { VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL });
+		TransitionLayout(commandBuffer.GetVkCommandBuffer(), {VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL});
 
-			vkCmdCopyBufferToImage(scope.GetCommandBuffer(), stagingBuffer.GetBuffer(), m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+		vkCmdCopyBufferToImage(commandBuffer.GetVkCommandBuffer(), stagingBuffer.GetBuffer(), m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
-			//TODO: I don't know if I should do this
-			TransitionLayout(scope.GetCommandBuffer(), { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL });
-		}
+		//TODO: I don't know if I should do this
+		TransitionLayout(commandBuffer.GetVkCommandBuffer(), { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL });
+
+		commandBuffer.EndCommands();
 	}
 
 	void VulkanImage::CreateImageViews(const ImageSpecification& spec)

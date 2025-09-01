@@ -25,16 +25,21 @@ namespace lypant
 		allocatorInfo.device = m_Device;
 		allocatorInfo.flags = VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
 		vmaCreateAllocator(&allocatorInfo, &m_VmaAllocator);
-		VulkanImmediateCommandScope::Init(m_Device, m_GraphicsQueueFamilyIndex);	
+		VulkanImmediateCommandBuffer::Init(m_Device, m_GraphicsQueueFamilyIndex);
 		VulkanDescriptorSetAllocator::Init(m_Device);
 	}
 
 	VulkanGraphicsContext::~VulkanGraphicsContext()
 	{
+		//vkQueueWaitIdle(m_GraphicsQueue);
 		VulkanDescriptorSetAllocator::Shutdown();
-		VulkanImmediateCommandScope::Shutdown();
-		vmaDestroyAllocator(m_VmaAllocator);
+		VulkanImmediateCommandBuffer::Shutdown();
 		delete m_SwapChain;
+		for (auto& deletionQueue : m_DeletionQueues)
+		{
+			deletionQueue.Flush();
+		}
+		vmaDestroyAllocator(m_VmaAllocator);
 		vkDestroyDevice(m_Device, nullptr);
 		vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
 		#ifdef LYPANT_DEBUG

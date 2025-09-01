@@ -17,7 +17,6 @@ namespace lypant
 		static void BeginScene();
 		static void EndScene();
 		static void SubmitMesh(const Mesh& mesh, const std::shared_ptr<Shader>& shader);
-		// TODO: Remove
 		static RenderCommandBuffer& GetRenderCommandBuffer();
 	private:
 		struct RendererData
@@ -25,7 +24,6 @@ namespace lypant
 			std::unique_ptr<Subpass> TestPass;
 			std::shared_ptr<Shader> TestShader;
 			std::shared_ptr<Image> TestImage;
-			
 		};
 		static RendererData* s_Data;
 		static RenderCommandBuffer* s_Cmd;

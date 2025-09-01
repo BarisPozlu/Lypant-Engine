@@ -10,6 +10,8 @@ namespace lypant
 
 	void Renderer::Init()
 	{
+		util::MeshFactory::Create();
+
 		s_Data = new RendererData();
 
 		s_Cmd = RenderCommandBuffer::Create();
@@ -26,19 +28,20 @@ namespace lypant
 		};
 
 		s_Data->TestPass = Subpass::Create(renderTarget, s_Data->TestShader, { { s_Data->TestImage, 0 } }, 12, testArray, false);
+
+		std::shared_ptr<Image> cubemap = util::CreateCubemapFromEquirectangularImage("textures/skybox/example1.hdr");
 	}
 
 	void Renderer::Shutdown()
 	{
 		delete s_Cmd;
 		delete s_Data;
+		util::MeshFactory::Destroy();
 	}
 
 	void Renderer::BeginRendering()
 	{
-		s_Cmd->BeginCommands();
-
-		//std::shared_ptr<Image> cubemap = util::CreateCubemapFromEquirectangularImage("textures/skybox/example1.hdr");
+		s_Cmd->BeginCommands();		
 	}
 
 	void Renderer::EndRendering()

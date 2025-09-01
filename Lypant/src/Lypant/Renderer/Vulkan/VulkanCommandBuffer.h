@@ -4,20 +4,23 @@
 
 namespace lypant
 {
-	// will block the cpu until its commands are done for now
-	class VulkanImmediateCommandScope
+	// Will block the cpu until its commands are done.
+	class VulkanImmediateCommandBuffer
 	{
 	public:
-		VulkanImmediateCommandScope();
-		~VulkanImmediateCommandScope();
-		inline VkCommandBuffer GetCommandBuffer() { return s_CommandBuffer; }
+		VulkanImmediateCommandBuffer();
+		~VulkanImmediateCommandBuffer();
+		void BeginCommands();
+		void EndCommands();
+		inline VkCommandBuffer GetVkCommandBuffer() { return m_CommandBuffer; }
 	private:
 		static void Init(VkDevice device, uint32_t graphicsQueueFamilyIndex);
 		static void Shutdown();
 	private:
 		inline static VkCommandPool s_CommandPool = VK_NULL_HANDLE;
-		inline static VkCommandBuffer s_CommandBuffer = VK_NULL_HANDLE;
-		inline static VkFence s_Fence = VK_NULL_HANDLE;
+	private:
+		VkCommandBuffer m_CommandBuffer = VK_NULL_HANDLE;
+		VkFence m_Fence = VK_NULL_HANDLE;
 	private:
 		friend class VulkanGraphicsContext;
 	};

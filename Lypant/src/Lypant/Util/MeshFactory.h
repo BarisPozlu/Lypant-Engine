@@ -18,7 +18,7 @@ namespace lypant
 			inline static std::shared_ptr<Mesh> s_CubemapCube;
 			inline static std::shared_ptr<Mesh> s_Quad;
 		private:
-			friend class Application;
+			friend class Renderer;
 		};
 	}
 }

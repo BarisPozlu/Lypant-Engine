@@ -32,16 +32,20 @@ namespace lypant
 				glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, -1.0f,  0.0f))
 			};
 
-			std::unique_ptr<Subpass> subpass = Subpass::Create(renderTarget, Shader::Create("shaders/EquirectangularToCubemap.glsl"),
+			std::unique_ptr<Subpass> subpass = Subpass::Create(renderTarget, shader,
 				{ { image, 0 } }, sizeof(viewMatrices), viewMatrices);
 
 			auto& cmd = Renderer::GetRenderCommandBuffer();
 
-			cmd.BeginSubpass(*subpass);
-			
-			cmd.DrawMesh(*MeshFactory::GetCubemapCube(), shader, 6);
+			cmd.BeginImmediateCommands();
 
-			cmd.EndSubpass(*subpass);
+			cmd.BeginSubpass(*subpass, true);
+			
+			cmd.DrawMesh(*MeshFactory::GetCubemapCube(), shader, 6, true);
+
+			cmd.EndSubpass(*subpass, true);
+
+			cmd.EndImmediateCommands();
 
 			return cubemap;
 		}

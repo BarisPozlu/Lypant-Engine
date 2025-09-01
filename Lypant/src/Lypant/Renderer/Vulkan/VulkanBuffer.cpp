@@ -2,9 +2,6 @@
 #include "VulkanBuffer.h"
 #include "VulkanGraphicsContext.h"
 #include "VulkanCommandBuffer.h"
-// NOTE: this is required to get the current frame index and frames in flight for uniform buffers
-#include <Lypant/Renderer/Renderer.h>
-#include "VulkanRenderCommandBuffer.h"
 
 namespace lypant
 {
@@ -26,14 +23,16 @@ namespace lypant
 
 		memcpy(stagingBuffer.GetMappedMemory(), data, size);
 
-		{
-			VkBufferCopy copy{};
-			copy.size = size;
+		VulkanImmediateCommandBuffer commandBuffer;
+		
+		VkBufferCopy copy{};
+		copy.size = size;
 
-			VulkanImmediateCommandScope scope;
+		commandBuffer.BeginCommands();
 
-			vkCmdCopyBuffer(scope.GetCommandBuffer(), stagingBuffer.GetBuffer(), m_Buffer, 1, &copy);
-		}
+		vkCmdCopyBuffer(commandBuffer.GetVkCommandBuffer(), stagingBuffer.GetBuffer(), m_Buffer, 1, &copy);
+		
+		commandBuffer.EndCommands();
 
 		VkBufferDeviceAddressInfo addressInfo{};
 		addressInfo.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
@@ -46,7 +45,15 @@ namespace lypant
 	{
 		auto& graphicsContext = VulkanGraphicsContext::Get();
 
-		vmaDestroyBuffer(graphicsContext.GetAllocator(), m_Buffer, m_Allocation);
+		VkBuffer buffer = m_Buffer;
+		VmaAllocation allocation = m_Allocation;
+
+		graphicsContext.GetDeletionQueue().PushFunction([buffer, allocation]()
+			{
+				auto& graphicsContext = VulkanGraphicsContext::Get();
+
+				vmaDestroyBuffer(graphicsContext.GetAllocator(), buffer, allocation);
+			});
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -70,23 +77,32 @@ namespace lypant
 		VulkanStagingBuffer stagingBuffer(bufferInfo.size);
 
 		memcpy(stagingBuffer.GetMappedMemory(), data, bufferInfo.size);
+		
+		VulkanImmediateCommandBuffer commandBuffer;
 
-		{
-			VkBufferCopy copy{};
-			copy.size = bufferInfo.size;
+		VkBufferCopy copy{};
+		copy.size = bufferInfo.size;
 
-			VulkanImmediateCommandScope scope;
+		commandBuffer.BeginCommands();
 
-			vkCmdCopyBuffer(scope.GetCommandBuffer(), stagingBuffer.GetBuffer(), m_Buffer, 1, &copy);
-		}
+		vkCmdCopyBuffer(commandBuffer.GetVkCommandBuffer(), stagingBuffer.GetBuffer(), m_Buffer, 1, &copy);
 
+		commandBuffer.EndCommands();
 	}
 
 	VulkanIndexBuffer::~VulkanIndexBuffer()
 	{
 		auto& graphicsContext = VulkanGraphicsContext::Get();
 
-		vmaDestroyBuffer(graphicsContext.GetAllocator(), m_Buffer, m_Allocation);
+		VkBuffer buffer = m_Buffer;
+		VmaAllocation allocation = m_Allocation;
+
+		graphicsContext.GetDeletionQueue().PushFunction([buffer, allocation]()
+			{
+				auto& graphicsContext = VulkanGraphicsContext::Get();
+
+				vmaDestroyBuffer(graphicsContext.GetAllocator(), buffer, allocation);
+			});
 	}
 
 	//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -98,7 +114,6 @@ namespace lypant
 		LY_CORE_ASSERT(!isDynamic | (isDynamic && size % 64 == 0), "Dynamic buffer sizes need to be aligned to 64");
 
 		auto& graphicsContext = VulkanGraphicsContext::Get();
-		auto& renderCommandBuffer = reinterpret_cast<VulkanRenderCommandBuffer&>(Renderer::GetRenderCommandBuffer());
 
 		VkBufferCreateInfo bufferInfo{};
 		bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -111,7 +126,7 @@ namespace lypant
 		{
 			allocationInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
 			allocationInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
-			bufferInfo.size *= renderCommandBuffer.GetMaxFramesInFlight();
+			bufferInfo.size *= VulkanGraphicsContext::s_MaxFramesInFlight;
 		}
 		
 		else
@@ -128,14 +143,16 @@ namespace lypant
 
 			memcpy(stagingBuffer.GetMappedMemory(), data, size);
 
-			{
-				VkBufferCopy copy{};
-				copy.size = size;
+			VulkanImmediateCommandBuffer commandBuffer;
+			
+			VkBufferCopy copy{};
+			copy.size = size;
 
-				VulkanImmediateCommandScope scope;
+			commandBuffer.BeginCommands();
 
-				vkCmdCopyBuffer(scope.GetCommandBuffer(), stagingBuffer.GetBuffer(), m_Buffer, 1, &copy);
-			}
+			vkCmdCopyBuffer(commandBuffer.GetVkCommandBuffer(), stagingBuffer.GetBuffer(), m_Buffer, 1, &copy);
+			
+			commandBuffer.EndCommands();
 		}
 
 	}
@@ -144,15 +161,22 @@ namespace lypant
 	{
 		auto& graphicsContext = VulkanGraphicsContext::Get();
 
-		vmaDestroyBuffer(graphicsContext.GetAllocator(), m_Buffer, m_Allocation);
+		VkBuffer buffer = m_Buffer;
+		VmaAllocation allocation = m_Allocation;
+
+		graphicsContext.GetDeletionQueue().PushFunction([buffer, allocation]()
+			{
+				auto& graphicsContext = VulkanGraphicsContext::Get();
+
+				vmaDestroyBuffer(graphicsContext.GetAllocator(), buffer, allocation);
+			});
 	}
 
 	void VulkanUniformBuffer::UploadData(const void* data, uint32_t size, uint32_t offset)
 	{
 		auto& graphicsContext = VulkanGraphicsContext::Get();
-		auto& renderCommandBuffer = reinterpret_cast<VulkanRenderCommandBuffer&>(Renderer::GetRenderCommandBuffer());
 
-		uint32_t bufferOffset = m_Size * renderCommandBuffer.GetCurrentFrameIndex() + offset;
+		uint32_t bufferOffset = m_Size * graphicsContext.GetCurrentFrameIndex() + offset;
 
 		char* dst = static_cast<char*>(m_AllocationInfo.pMappedData) + bufferOffset;
 

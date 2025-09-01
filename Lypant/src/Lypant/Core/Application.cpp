@@ -28,7 +28,6 @@ namespace lypant
 
 		//util::VertexArrays::Create();
 		//util::Textures::Create();
-		util::MeshFactory::Create();
 
 		Renderer::Init();
 
@@ -42,7 +41,6 @@ namespace lypant
 	{
 		Input::Shutdown();
 		Renderer::Shutdown();
-		util::MeshFactory::Destroy();
 		//util::Textures::Destroy();
 		//util::VertexArrays::Destroy();
 	}

@@ -81,6 +81,13 @@ namespace lypant
 
 	VulkanGraphicsPipeline::~VulkanGraphicsPipeline()
 	{
-		vkDestroyPipeline(VulkanGraphicsContext::Get().GetDevice(), m_GraphicsPipeline, nullptr);
+		auto& graphicsContext = VulkanGraphicsContext::Get();
+
+		VkPipeline pipeline = m_GraphicsPipeline;
+
+		graphicsContext.GetDeletionQueue().PushFunction([pipeline]()
+			{
+				vkDestroyPipeline(VulkanGraphicsContext::Get().GetDevice(), pipeline, nullptr);
+			});
 	}
 }

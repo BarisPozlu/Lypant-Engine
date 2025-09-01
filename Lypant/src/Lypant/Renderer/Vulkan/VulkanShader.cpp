@@ -32,7 +32,7 @@ namespace lypant
         shaderc::Compiler compiler;
         shaderc::CompileOptions options;
 
-        //NOTE: this is needed so that names are also in the spirv binary
+        // NOTE: this is needed so that names are also in the spirv binary
         options.SetGenerateDebugInfo();
 
         options.SetOptimizationLevel(shaderc_optimization_level_performance);
@@ -156,17 +156,32 @@ namespace lypant
 	{
         auto& graphicsContext = VulkanGraphicsContext::Get();
 
-        vkDestroyPipelineLayout(graphicsContext.GetDevice(), m_PipelineLayout, nullptr);
+        VkPipelineLayout pipelineLayout = m_PipelineLayout;
+        auto& shaderModules = m_ShaderModules;
 
-        for (auto [key, value] : m_DescriptorSetLayouts)
+        std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
+        descriptorSetLayouts.reserve(m_DescriptorSetLayouts.size());
+        for (auto& [key, value] : m_DescriptorSetLayouts)
         {
-            vkDestroyDescriptorSetLayout(graphicsContext.GetDevice(), value, nullptr);
+            descriptorSetLayouts.push_back(value);
         }
 
-        for (VkShaderModule shaderModule : m_ShaderModules)
-        {
-            vkDestroyShaderModule(graphicsContext.GetDevice(), shaderModule, nullptr);
-        }
+        graphicsContext.GetDeletionQueue().PushFunction([pipelineLayout, descriptorSetLayouts, shaderModules]()
+            {
+                auto& graphicsContext = VulkanGraphicsContext::Get();
+
+                vkDestroyPipelineLayout(graphicsContext.GetDevice(), pipelineLayout, nullptr);
+
+                for (auto layout : descriptorSetLayouts)
+                {
+                    vkDestroyDescriptorSetLayout(graphicsContext.GetDevice(), layout, nullptr);
+                }
+
+                for (VkShaderModule shaderModule : shaderModules)
+                {
+                    vkDestroyShaderModule(graphicsContext.GetDevice(), shaderModule, nullptr);
+                }
+            });
 	}
 
     void VulkanShader::Reflect(const std::vector<uint32_t>& shaderCode)
@@ -180,39 +195,6 @@ namespace lypant
 
         std::vector<SpvReflectDescriptorSet*> reflSets(count);
         spvReflectEnumerateDescriptorSets(&reflModule, &count, reflSets.data());
-
-        //m_DescriptorSetLayouts.resize(count);
-        //std::vector<VkDescriptorSetLayoutBinding> bindings;
-
-        //for (int i = 0; i < reflSets.size(); i++)
-        //{
-        //    const SpvReflectDescriptorSet& reflSet = *reflSets[i];
-
-        //    bindings.resize(reflSet.binding_count);
-
-        //    for (int j = 0; j < reflSet.binding_count; j++)
-        //    {
-        //        const SpvReflectDescriptorBinding& reflBinding = *reflSet.bindings[j];
-        //        VkDescriptorSetLayoutBinding& binding = bindings[j];
-
-        //        binding.binding = reflBinding.binding;
-        //        binding.stageFlags = static_cast<VkShaderStageFlagBits>(reflModule.shader_stage);
-        //        binding.descriptorType = GetDescriptorTypeFromReflBinding(reflBinding);
-
-        //        binding.descriptorCount = 1;
-        //        for (uint32_t dimension = 0; dimension < reflBinding.array.dims_count; dimension++)
-        //        {
-        //            binding.descriptorCount *= reflBinding.array.dims[dimension];
-        //        }
-        //    }
-
-        //    VkDescriptorSetLayoutCreateInfo createInfo{};
-        //    createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-        //    createInfo.bindingCount = bindings.size();
-        //    createInfo.pBindings = bindings.data();
-
-        //    vkCreateDescriptorSetLayout(VulkanGraphicsContext::Get().GetDevice(), &createInfo, nullptr, &m_DescriptorSetLayouts[i]);
-        //}
 
         for (int i = 0; i < reflSets.size(); i++)
         {

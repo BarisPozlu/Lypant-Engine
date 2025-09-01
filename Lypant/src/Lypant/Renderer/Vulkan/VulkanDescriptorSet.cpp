@@ -81,7 +81,7 @@ namespace lypant
 
 	VulkanDescriptorSet::~VulkanDescriptorSet()
 	{
-
+		// For now the descriptor sets are only freed when their pool is destroyed
 	}
 
 	void VulkanDescriptorSet::Update(const std::vector<DataBinding>& dataBindings, const std::shared_ptr<UniformBuffer>& buffer)

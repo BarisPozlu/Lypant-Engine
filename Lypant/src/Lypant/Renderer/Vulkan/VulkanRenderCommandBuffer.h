@@ -4,6 +4,8 @@
 #include <memory>
 #include <Lypant/Renderer/RenderCommandBuffer.h>
 #include <Lypant/Renderer/RenderPass.h>
+#include "VulkanGraphicsContext.h"
+#include "VulkanCommandBuffer.h"
 
 namespace lypant
 {
@@ -14,13 +16,13 @@ namespace lypant
 		virtual ~VulkanRenderCommandBuffer();
 		virtual void BeginCommands() override;
 		virtual void EndCommands() override;
-		virtual void BeginSubpass(const Subpass& subpass) override;
-		virtual void EndSubpass(const Subpass& subpass) override;
-		virtual void DrawMesh(const Mesh& mesh, const std::shared_ptr<Shader>& shader, uint32_t instanceCount = 1) override;
+		inline virtual void BeginImmediateCommands() override { m_ImmediateCommandBuffer.BeginCommands(); }
+		inline virtual void EndImmediateCommands() override { m_ImmediateCommandBuffer.EndCommands(); }
+		virtual void BeginSubpass(const Subpass& subpass, bool IsImmediate = false) override;
+		virtual void EndSubpass(const Subpass& subpass, bool IsImmediate = false) override;
+		virtual void DrawMesh(const Mesh& mesh, const std::shared_ptr<Shader>& shader, uint32_t instanceCount = 1, bool IsImmediate = false) override;
 
 		inline VkCommandBuffer GetCommandBuffer() { return GetCurrentFrame().CommandBuffer; }
-		inline constexpr uint32_t GetMaxFramesInFlight() const { return s_MaxFramesInFlight; }
-		inline uint32_t GetCurrentFrameIndex() const { return m_CurrentFrameIndex; }
 	private:
 		struct FrameData
 		{
@@ -29,16 +31,12 @@ namespace lypant
 			VkSemaphore ImageReceivedSemaphore;
 			VkFence FrameFinishedFence;
 		};
-		inline FrameData& GetCurrentFrame() { return m_FrameData[m_CurrentFrameIndex]; }
+		inline FrameData& GetCurrentFrame() { return m_FrameData[VulkanGraphicsContext::Get().GetCurrentFrameIndex()]; }
 		void CreateCommandResources();
-		void CreateSyncResources();
 		void DestroyCommandResources();
-		void DestroySyncResources();
 	private:
-		inline static constexpr uint32_t s_MaxFramesInFlight = 2;
-	private:
-		std::array<FrameData, s_MaxFramesInFlight> m_FrameData;
+		std::array<FrameData, VulkanGraphicsContext::s_MaxFramesInFlight> m_FrameData;
 		std::vector<VkSemaphore> m_RenderFinishedSemaphores;
-		uint32_t m_CurrentFrameIndex = 0;
+		VulkanImmediateCommandBuffer m_ImmediateCommandBuffer;
 	};
 }

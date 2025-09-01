@@ -11,21 +11,22 @@ namespace lypant
 	VulkanRenderCommandBuffer::VulkanRenderCommandBuffer()
 	{
 		CreateCommandResources();
-		CreateSyncResources();
 	}
 
 	VulkanRenderCommandBuffer::~VulkanRenderCommandBuffer()
 	{
-		vkQueueWaitIdle(VulkanGraphicsContext::Get().GetGraphicsQueue());
 		DestroyCommandResources();
-		DestroySyncResources();
 	}
 
 	void VulkanRenderCommandBuffer::BeginCommands()
 	{
-		vkWaitForFences(VulkanGraphicsContext::Get().GetDevice(), 1, &GetCurrentFrame().FrameFinishedFence, false, UINT64_MAX);
+		auto& graphicsContext = VulkanGraphicsContext::Get();
 
-		VulkanGraphicsContext::Get().GetSwapChain().OnFrameBegin(GetCurrentFrame().ImageReceivedSemaphore);
+		vkWaitForFences(graphicsContext.GetDevice(), 1, &GetCurrentFrame().FrameFinishedFence, false, UINT64_MAX);
+
+		graphicsContext.GetDeletionQueue().Flush();
+
+		graphicsContext.GetSwapChain().OnFrameBegin(GetCurrentFrame().ImageReceivedSemaphore);
 
 		vkResetCommandBuffer(GetCurrentFrame().CommandBuffer, 0);
 
@@ -71,11 +72,15 @@ namespace lypant
 
 		vkQueuePresentKHR(graphicsContext.GetGraphicsQueue(), &presentInfo);
 
-		m_CurrentFrameIndex = (m_CurrentFrameIndex + 1) % s_MaxFramesInFlight;
+		graphicsContext.m_CurrentFrameIndex = (graphicsContext.m_CurrentFrameIndex + 1) % VulkanGraphicsContext::s_MaxFramesInFlight;
 	}
 
-	void VulkanRenderCommandBuffer::BeginSubpass(const Subpass& subpass)
+	void VulkanRenderCommandBuffer::BeginSubpass(const Subpass& subpass, bool IsImmediate)
 	{
+		VkCommandBuffer commandBuffer = IsImmediate ? m_ImmediateCommandBuffer.GetVkCommandBuffer() : GetCurrentFrame().CommandBuffer;
+
+		const auto& graphicsContext = VulkanGraphicsContext::Get();
+
 		const VulkanSubpass& vulkanSubpass = reinterpret_cast<const VulkanSubpass&>(subpass);
 
 		VkPipeline pipeline = vulkanSubpass.GetGraphicsPipeline()->GetVkPipeline();
@@ -84,26 +89,26 @@ namespace lypant
 		const auto& renderTarget = vulkanSubpass.GetRenderTarget();
 		const auto& uniformBuffer = vulkanSubpass.GetUniformBuffer();
 
-		vkCmdBindPipeline(GetCurrentFrame().CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
 		if (descriptorSet)
 		{
 			VkDescriptorSet vkDescriptorSet = descriptorSet->GetVkDescriptorSet();
 			if (uniformBuffer->IsDynamic())
 			{
-				uint32_t dynamicOffset = vulkanSubpass.GetUniformBuffer()->GetSize() * m_CurrentFrameIndex;
-				vkCmdBindDescriptorSets(GetCurrentFrame().CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipelineLayout(), 0, 1, &vkDescriptorSet, 1, &dynamicOffset);
+				uint32_t dynamicOffset = vulkanSubpass.GetUniformBuffer()->GetSize() * graphicsContext.GetCurrentFrameIndex();
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipelineLayout(), 0, 1, &vkDescriptorSet, 1, &dynamicOffset);
 			}
 			
 			else
 			{
-				vkCmdBindDescriptorSets(GetCurrentFrame().CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipelineLayout(), 0, 1, &vkDescriptorSet, 0, nullptr);
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipelineLayout(), 0, 1, &vkDescriptorSet, 0, nullptr);
 			}
 		}
 
-		const VkRenderingInfo& renderingInfo = renderTarget->PrepareForRendering(GetCurrentFrame().CommandBuffer);
+		const VkRenderingInfo& renderingInfo = renderTarget->PrepareForRendering(commandBuffer);
 
-		vkCmdBeginRendering(GetCurrentFrame().CommandBuffer, &renderingInfo);
+		vkCmdBeginRendering(commandBuffer, &renderingInfo);
 
 		VkViewport viewport{};
 		viewport.x = renderingInfo.renderArea.offset.x;
@@ -113,26 +118,30 @@ namespace lypant
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 
-		vkCmdSetViewport(GetCurrentFrame().CommandBuffer, 0, 1, &viewport);
-		vkCmdSetScissor(GetCurrentFrame().CommandBuffer, 0, 1, &renderingInfo.renderArea);
+		vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+		vkCmdSetScissor(commandBuffer, 0, 1, &renderingInfo.renderArea);
 	}
 
-	void VulkanRenderCommandBuffer::EndSubpass(const Subpass& subpass)
+	void VulkanRenderCommandBuffer::EndSubpass(const Subpass& subpass, bool IsImmediate)
 	{
-		vkCmdEndRendering(GetCurrentFrame().CommandBuffer);
+		VkCommandBuffer commandBuffer = IsImmediate ? m_ImmediateCommandBuffer.GetVkCommandBuffer() : GetCurrentFrame().CommandBuffer;
+
+		vkCmdEndRendering(commandBuffer);
 	}
 
-	void VulkanRenderCommandBuffer::DrawMesh(const Mesh& mesh, const std::shared_ptr<Shader>& shader, uint32_t instanceCount)
+	void VulkanRenderCommandBuffer::DrawMesh(const Mesh& mesh, const std::shared_ptr<Shader>& shader, uint32_t instanceCount, bool IsImmediate)
 	{
+		VkCommandBuffer commandBuffer = IsImmediate ? m_ImmediateCommandBuffer.GetVkCommandBuffer() : GetCurrentFrame().CommandBuffer;
+
 		const auto& vkVertexBuffer = reinterpret_cast<const std::shared_ptr<VulkanVertexBuffer>&>(mesh.GetVertexBuffer());
 		const auto& vkIndexBuffer = reinterpret_cast<const std::shared_ptr<VulkanIndexBuffer>&>(mesh.GetIndexBuffer());
 		const auto& vkShader = reinterpret_cast<const std::shared_ptr<VulkanShader>&>(shader);
 		VkDeviceAddress vertexBufferAddress = vkVertexBuffer->GetDeviceAddress();
 
-		vkCmdPushConstants(GetCurrentFrame().CommandBuffer, vkShader->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(VkDeviceAddress), &vertexBufferAddress);
-		vkCmdBindIndexBuffer(GetCurrentFrame().CommandBuffer, vkIndexBuffer->GetVkBuffer(), 0, VK_INDEX_TYPE_UINT32);
+		vkCmdPushConstants(commandBuffer, vkShader->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(VkDeviceAddress), &vertexBufferAddress);
+		vkCmdBindIndexBuffer(commandBuffer, vkIndexBuffer->GetVkBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-		vkCmdDrawIndexed(GetCurrentFrame().CommandBuffer, vkIndexBuffer->GetIndexCount(), instanceCount, 0, 0, 0);
+		vkCmdDrawIndexed(commandBuffer, vkIndexBuffer->GetIndexCount(), instanceCount, 0, 0, 0);
 	}
 
 	void VulkanRenderCommandBuffer::CreateCommandResources()
@@ -149,20 +158,6 @@ namespace lypant
 		commandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		commandBufferInfo.commandBufferCount = 1;
 
-		for (int i = 0; i < s_MaxFramesInFlight; i++)
-		{
-			vkCreateCommandPool(graphicsContext.GetDevice(), &commandPoolInfo, nullptr, &m_FrameData[i].CommandPool);
-			commandBufferInfo.commandPool = m_FrameData[i].CommandPool;
-			vkAllocateCommandBuffers(graphicsContext.GetDevice(), &commandBufferInfo, &m_FrameData[i].CommandBuffer);
-		}
-	}
-
-	void VulkanRenderCommandBuffer::CreateSyncResources()
-	{
-		auto& graphicsContext = VulkanGraphicsContext::Get();
-
-		m_RenderFinishedSemaphores.resize(graphicsContext.GetSwapChain().GetImageCount());
-
 		VkSemaphoreCreateInfo semaphoreInfo{};
 		semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
@@ -170,42 +165,45 @@ namespace lypant
 		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
 		fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
+		for (int i = 0; i < VulkanGraphicsContext::s_MaxFramesInFlight; i++)
+		{
+			vkCreateCommandPool(graphicsContext.GetDevice(), &commandPoolInfo, nullptr, &m_FrameData[i].CommandPool);
+			commandBufferInfo.commandPool = m_FrameData[i].CommandPool;
+			vkAllocateCommandBuffers(graphicsContext.GetDevice(), &commandBufferInfo, &m_FrameData[i].CommandBuffer);
+
+			vkCreateSemaphore(graphicsContext.GetDevice(), &semaphoreInfo, nullptr, &m_FrameData[i].ImageReceivedSemaphore);
+			vkCreateFence(graphicsContext.GetDevice(), &fenceInfo, nullptr, &m_FrameData[i].FrameFinishedFence);
+		}
+
+		m_RenderFinishedSemaphores.resize(graphicsContext.GetSwapChain().GetImageCount());
+
 		for (auto& semaphore : m_RenderFinishedSemaphores)
 		{
 			vkCreateSemaphore(graphicsContext.GetDevice(), &semaphoreInfo, nullptr, &semaphore);
-		}
-
-		for (int i = 0; i < s_MaxFramesInFlight; i++)
-		{
-			vkCreateSemaphore(graphicsContext.GetDevice(), &semaphoreInfo, nullptr, &m_FrameData[i].ImageReceivedSemaphore);
-			vkCreateFence(graphicsContext.GetDevice(), &fenceInfo, nullptr, &m_FrameData[i].FrameFinishedFence);
 		}
 	}
 
 	void VulkanRenderCommandBuffer::DestroyCommandResources()
 	{
 		auto& graphicsContext = VulkanGraphicsContext::Get();
+		auto& frameData = m_FrameData;
+		auto& renderFinishedSemaphores = m_RenderFinishedSemaphores;
 
-		for (int i = 0; i < s_MaxFramesInFlight; i++)
-		{
-			vkDestroyCommandPool(graphicsContext.GetDevice(), m_FrameData[i].CommandPool, nullptr);
-		}
+		graphicsContext.GetDeletionQueue().PushFunction([frameData, renderFinishedSemaphores]()
+			{
+				auto& graphicsContext = VulkanGraphicsContext::Get();
+
+				for (int i = 0; i < VulkanGraphicsContext::s_MaxFramesInFlight; i++)
+				{
+					vkDestroyCommandPool(graphicsContext.GetDevice(), frameData[i].CommandPool, nullptr);
+					vkDestroyFence(graphicsContext.GetDevice(), frameData[i].FrameFinishedFence, nullptr);
+					vkDestroySemaphore(graphicsContext.GetDevice(), frameData[i].ImageReceivedSemaphore, nullptr);
+				}
+
+				for (auto& semaphore : renderFinishedSemaphores)
+				{
+					vkDestroySemaphore(graphicsContext.GetDevice(), semaphore, nullptr);
+				}
+			});
 	}
-
-	void VulkanRenderCommandBuffer::DestroySyncResources()
-	{
-		auto& graphicsContext = VulkanGraphicsContext::Get();
-
-		for (auto& semaphore : m_RenderFinishedSemaphores)
-		{
-			vkDestroySemaphore(graphicsContext.GetDevice(), semaphore, nullptr);
-		}
-
-		for (int i = 0; i < s_MaxFramesInFlight; i++)
-		{			
-			vkDestroyFence(graphicsContext.GetDevice(), m_FrameData[i].FrameFinishedFence, nullptr);
-			vkDestroySemaphore(graphicsContext.GetDevice(), m_FrameData[i].ImageReceivedSemaphore, nullptr);
-		}
-	}
-
 }

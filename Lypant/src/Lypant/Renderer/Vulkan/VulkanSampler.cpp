@@ -46,7 +46,14 @@ namespace lypant
 
 	VulkanSampler::~VulkanSampler()
 	{
-		vkDestroySampler(VulkanGraphicsContext::Get().GetDevice(), m_Sampler, nullptr);
-	}
+		auto& graphicsContext = VulkanGraphicsContext::Get();
 
+		VkSampler sampler = m_Sampler;
+
+		graphicsContext.GetDeletionQueue().PushFunction([sampler]()
+			{
+				vkDestroySampler(VulkanGraphicsContext::Get().GetDevice(), sampler, nullptr);
+			});
+		
+	}
 }

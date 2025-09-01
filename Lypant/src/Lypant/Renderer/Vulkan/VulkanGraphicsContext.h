@@ -2,6 +2,7 @@
 
 #include "Lypant/Renderer/GraphicsContext.h"
 #include "Lypant/Core/Application.h"
+#include <Lypant/Renderer/DeletionQueue.h>
 #include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
 
@@ -18,6 +19,10 @@ namespace lypant
 		std::vector<VkPresentModeKHR> Modes;
 	};
 
+	// Vulkan graphics context acts as a way to create all the necessary data for a vulkan application and holds some additional data such as deletion queues.
+	// Vulkan graphics context is not responsible for anything else other than creating and storing this data.
+	// Because of this design, some classes, most importantly render command buffer, has to get some private data and update it from the outside.
+	// Such as the current frame index.
 	class VulkanGraphicsContext : public GraphicsContext
 	{
 	public:
@@ -39,6 +44,10 @@ namespace lypant
 		inline VulkanSwapChain& GetSwapChain() { return *m_SwapChain; }
 		inline VmaAllocator GetAllocator() const { return m_VmaAllocator; }
 		inline float GetMaxSamplerAnisotropy() const { return m_MaxSamplerAnisotropy; }
+		inline DeletionQueue& GetDeletionQueue() { return m_DeletionQueues[m_CurrentFrameIndex]; }
+		inline uint32_t GetCurrentFrameIndex() const { return m_CurrentFrameIndex; }
+	public:
+		inline static constexpr uint32_t s_MaxFramesInFlight = 2;
 	private:
 		void CreateInstance();
 		void CreateSurface(GLFWwindow* windowHandle);
@@ -57,6 +66,10 @@ namespace lypant
 		VkQueue m_GraphicsQueue = VK_NULL_HANDLE;
 		VulkanSwapChain* m_SwapChain = nullptr;
 		VmaAllocator m_VmaAllocator = nullptr;
+		std::array<DeletionQueue, s_MaxFramesInFlight> m_DeletionQueues;
+		uint32_t m_CurrentFrameIndex = 0;
 		float m_MaxSamplerAnisotropy = 1;
+	private:
+		friend class VulkanRenderCommandBuffer;
 	};
 }

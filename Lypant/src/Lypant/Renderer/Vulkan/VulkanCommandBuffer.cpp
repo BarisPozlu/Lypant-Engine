@@ -4,32 +4,58 @@
 
 namespace lypant
 {
-	VulkanImmediateCommandScope::VulkanImmediateCommandScope()
+	VulkanImmediateCommandBuffer::VulkanImmediateCommandBuffer()
 	{
-		vkResetCommandBuffer(s_CommandBuffer, 0);
-		vkResetFences(VulkanGraphicsContext::Get().GetDevice(), 1, &s_Fence);
+		auto& graphicsContext = VulkanGraphicsContext::Get();
+
+		VkCommandBufferAllocateInfo commandBufferInfo{};
+		commandBufferInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		commandBufferInfo.commandPool = s_CommandPool;
+		commandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		commandBufferInfo.commandBufferCount = 1;
+		
+		vkAllocateCommandBuffers(graphicsContext.GetDevice(), &commandBufferInfo, &m_CommandBuffer);
+		
+		VkFenceCreateInfo fenceInfo{};
+		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+		
+		vkCreateFence(graphicsContext.GetDevice(), &fenceInfo, nullptr, &m_Fence);
+	}
+
+	VulkanImmediateCommandBuffer::~VulkanImmediateCommandBuffer()
+	{
+		auto& graphicsContext = VulkanGraphicsContext::Get();
+
+		vkDestroyFence(graphicsContext.GetDevice(), m_Fence, nullptr);
+		vkFreeCommandBuffers(graphicsContext.GetDevice(), s_CommandPool, 1, &m_CommandBuffer);
+	}
+
+	void VulkanImmediateCommandBuffer::BeginCommands()
+	{
+		vkResetCommandBuffer(m_CommandBuffer, 0);
+		vkResetFences(VulkanGraphicsContext::Get().GetDevice(), 1, &m_Fence);
 
 		VkCommandBufferBeginInfo beginInfo{};
 		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-		vkBeginCommandBuffer(s_CommandBuffer, &beginInfo);
+		vkBeginCommandBuffer(m_CommandBuffer, &beginInfo);
 	}
 
-	VulkanImmediateCommandScope::~VulkanImmediateCommandScope()
+	void VulkanImmediateCommandBuffer::EndCommands()
 	{
-		vkEndCommandBuffer(s_CommandBuffer);
+		vkEndCommandBuffer(m_CommandBuffer);
 
 		VkSubmitInfo submitInfo{};
 		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		submitInfo.commandBufferCount = 1;
-		submitInfo.pCommandBuffers = &s_CommandBuffer;
+		submitInfo.pCommandBuffers = &m_CommandBuffer;
 
-		vkQueueSubmit(VulkanGraphicsContext::Get().GetGraphicsQueue(), 1, &submitInfo, s_Fence);
+		vkQueueSubmit(VulkanGraphicsContext::Get().GetGraphicsQueue(), 1, &submitInfo, m_Fence);
 
-		vkWaitForFences(VulkanGraphicsContext::Get().GetDevice(), 1, &s_Fence, false, UINT64_MAX);
+		vkWaitForFences(VulkanGraphicsContext::Get().GetDevice(), 1, &m_Fence, false, UINT64_MAX);
 	}
 
-	void VulkanImmediateCommandScope::Init(VkDevice device, uint32_t graphicsQueueFamilyIndex)
+	void VulkanImmediateCommandBuffer::Init(VkDevice device, uint32_t graphicsQueueFamilyIndex)
 	{
 		VkCommandPoolCreateInfo commandPoolInfo{};
 		commandPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -37,24 +63,10 @@ namespace lypant
 		commandPoolInfo.queueFamilyIndex = graphicsQueueFamilyIndex;
 
 		vkCreateCommandPool(device, &commandPoolInfo, nullptr, &s_CommandPool);
-
-		VkCommandBufferAllocateInfo commandBufferInfo{};
-		commandBufferInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		commandBufferInfo.commandPool = s_CommandPool;
-		commandBufferInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		commandBufferInfo.commandBufferCount = 1;
-
-		vkAllocateCommandBuffers(device, &commandBufferInfo, &s_CommandBuffer);
-
-		VkFenceCreateInfo fenceInfo{};
-		fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-
-		vkCreateFence(device, &fenceInfo, nullptr, &s_Fence);
 	}
 
-	void VulkanImmediateCommandScope::Shutdown()
+	void VulkanImmediateCommandBuffer::Shutdown()
 	{
-		vkDestroyFence(VulkanGraphicsContext::Get().GetDevice(), s_Fence, nullptr);
 		vkDestroyCommandPool(VulkanGraphicsContext::Get().GetDevice(), s_CommandPool, nullptr);
 	}
 }

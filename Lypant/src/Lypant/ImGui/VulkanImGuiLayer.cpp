@@ -64,6 +64,13 @@ namespace lypant
 
 	void VulkanImGuiLayer::OnDetach()
 	{
+		// NOTE: All vulkan objects that are alive while application exits and are created by the engine
+		// is in a deletion queue and they are not deleted until the graphics context is destroyed.
+		// Since this layer is deleted before the graphics context, it should be pushing the objects to the queue instead of deleting them right away
+		// Instead of changing the ImGui code we just wait for queue idle in here.
+		auto& graphicsContext = VulkanGraphicsContext::Get();
+		vkQueueWaitIdle(graphicsContext.GetGraphicsQueue());
+
 		ImGui_ImplVulkan_Shutdown();
 		ImGui_ImplGlfw_Shutdown();
 		ImGui::DestroyContext();
