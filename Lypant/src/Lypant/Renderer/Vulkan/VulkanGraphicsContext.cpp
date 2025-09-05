@@ -27,11 +27,27 @@ namespace lypant
 		vmaCreateAllocator(&allocatorInfo, &m_VmaAllocator);
 		VulkanImmediateCommandBuffer::Init(m_Device, m_GraphicsQueueFamilyIndex);
 		VulkanDescriptorSetAllocator::Init(m_Device);
+
+		// NOTE: This descriptor set layout is created here so that it lives for the duration of the context and shaders can simply get the layout from here and add it
+		// to their pipeline layout, this also enables the render command buffer to simply get the layout and create the descriptor set upon init.
+		VkDescriptorSetLayoutBinding layoutBinding{};
+		layoutBinding.binding = 0;
+		layoutBinding.descriptorCount = 1;
+		layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+		layoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		VkDescriptorSetLayoutCreateInfo layoutInfo{};
+		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		layoutInfo.bindingCount = 1;
+		layoutInfo.pBindings = &layoutBinding;
+
+		vkCreateDescriptorSetLayout(m_Device, &layoutInfo, nullptr, &m_GlobalDescriptorSetLayout);
 	}
 
 	VulkanGraphicsContext::~VulkanGraphicsContext()
 	{
 		//vkQueueWaitIdle(m_GraphicsQueue);
+		vkDestroyDescriptorSetLayout(m_Device, m_GlobalDescriptorSetLayout, nullptr);
 		VulkanDescriptorSetAllocator::Shutdown();
 		VulkanImmediateCommandBuffer::Shutdown();
 		delete m_SwapChain;

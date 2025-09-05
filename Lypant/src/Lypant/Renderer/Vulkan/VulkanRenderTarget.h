@@ -13,7 +13,7 @@ namespace lypant
 		virtual ~VulkanRenderTarget() = default;
 		virtual void AttachColorBuffer(const std::shared_ptr<Image>& image) override;
 		virtual void AttachDepthStencilBuffer(const std::shared_ptr<Image>& image) override;
-		const VkRenderingInfo& PrepareForRendering(VkCommandBuffer commandBuffer);
+		const VkRenderingInfo& PrepareForRendering(VkCommandBuffer commandBuffer, bool shouldClear);
 		inline const std::shared_ptr<VulkanImage>& GetColorBuffer() const { return m_ColorBuffer; }
 		inline const std::shared_ptr<VulkanImage>& GetDepthStencilBuffer() const { return m_DepthStencilBuffer; }
 	protected:

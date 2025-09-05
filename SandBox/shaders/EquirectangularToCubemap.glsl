@@ -9,7 +9,7 @@ layout (location = 0) out vec3 v_DirectionVector;
 
 struct Vertex
 {
-	vec3 Position;
+	vec4 Position;
 };
 
 layout (buffer_reference) readonly buffer VertexBuffer
@@ -22,7 +22,7 @@ layout (push_constant) uniform PushConstant
 	VertexBuffer vertexBuffer;
 } PushConstants;
 
-layout (set = 0, binding = 1) uniform ViewMatrices
+layout (set = 1, binding = 1) uniform ViewMatrices
 {
 	mat4 u_ViewMatrix[6];
 };
@@ -32,8 +32,8 @@ void main()
 	gl_Layer = gl_InstanceIndex;
 	Vertex vertex = PushConstants.vertexBuffer.vertices[gl_VertexIndex];
 
-	v_DirectionVector = vec3(vertex.Position.xy, -vertex.Position.z);
-	gl_Position = u_ViewMatrix[gl_InstanceIndex] * vec4(vertex.Position, 1.0); // already in ndc no need for a projection matrix
+	v_DirectionVector = vec3(vertex.Position.x, -vertex.Position.y, vertex.Position.z);
+	gl_Position = u_ViewMatrix[gl_InstanceIndex] * vertex.Position; // already in ndc no need for a projection matrix
 }
 
 #endif
@@ -44,7 +44,7 @@ layout (location = 0) out vec4 o_Color;
 
 layout (location = 0) in vec3 v_DirectionVector;
 
-layout (set = 0, binding = 0) uniform sampler2D u_EquirectangularTexture;
+layout (set = 1, binding = 0) uniform sampler2D u_EquirectangularTexture;
 
 vec2 CubemapDirectionToEquirectangularCoords(vec3 directionVector)
 {

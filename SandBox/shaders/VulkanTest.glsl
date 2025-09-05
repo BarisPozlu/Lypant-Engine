@@ -37,16 +37,17 @@ layout (location = 0) out vec4 o_Color;
 
 layout (location = 0) in vec2 v_TexCoord;
 
-layout (set = 0, binding = 0) uniform sampler2D u_Texture;
+layout (set = 1, binding = 0) uniform sampler2D u_Texture;
 
-layout (set = 0, binding = 1) uniform TestBuffer
-{
-	vec3 u_Color;
-};
+//layout (set = 1, binding = 1) uniform TestBuffer
+//{
+//	vec3 u_Color;
+//};
 
 void main()
 {
-	o_Color = vec4(texture(u_Texture, v_TexCoord).rgb * u_Color, 1.0);
+	o_Color = vec4(texture(u_Texture, v_TexCoord).rgb, 1.0);
+	//o_Color = vec4(texture(u_Texture, v_TexCoord).rgb * u_Color, 1.0);
 }
 
 #endif

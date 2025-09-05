@@ -137,7 +137,7 @@ namespace lypant
 				return VK_FORMAT_MAX_ENUM;
 			}
 
-			return VK_FORMAT_R16G16B16A16_SFLOAT;
+			return VK_FORMAT_R32G32B32A32_SFLOAT;
 		}
 
 		LY_CORE_ASSERT(false, "Number of channels is not supported");
@@ -163,7 +163,7 @@ namespace lypant
 
 			case VK_FORMAT_R8G8B8A8_UNORM:		return 4;
 			case VK_FORMAT_R8G8B8A8_SRGB:		return 4;
-			case VK_FORMAT_R16G16B16A16_SFLOAT: return 8;
+			case VK_FORMAT_R32G32B32A32_SFLOAT: return 16;
 		}
 
 		LY_CORE_ASSERT(false, "Unknown format");
@@ -207,6 +207,7 @@ namespace lypant
 		auto& graphicsContext = VulkanGraphicsContext::Get();
 
 		m_ImageType = spec.Type;
+		m_LayerCount = spec.Layers;
 
 		int width;
 		int height;
@@ -215,6 +216,7 @@ namespace lypant
 		// TODO: CHANGED FOR TESTING, REMOVE
 		if (spec.Params.FloatingImage)
 		{
+			//buffer = stbi_loadf(path.c_str(), &width, &height, &channels, 0);
 			buffer = stbi_loadf(path.c_str(), &width, &height, &channels, 4);
 			channels = 4;
 		}
@@ -246,6 +248,7 @@ namespace lypant
 		auto& graphicsContext = VulkanGraphicsContext::Get();
 
 		m_ImageType = spec.Type;
+		m_LayerCount = spec.Layers;
 
 		m_Extent.width = spec.Width;
 		m_Extent.height = spec.Height;
@@ -273,6 +276,7 @@ namespace lypant
 		m_Extent = imageExtent;
 		m_Format = imageFormat;
 		m_ImageType = ImageType::Image2D;
+		m_LayerCount = 1;
 	}
 
 	VulkanImage::~VulkanImage()
@@ -372,12 +376,9 @@ namespace lypant
 
 		commandBuffer.BeginCommands();
 
-		TransitionLayout(commandBuffer.GetVkCommandBuffer(), {VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL});
+		TransitionLayout(commandBuffer.GetVkCommandBuffer(), { VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL });
 
 		vkCmdCopyBufferToImage(commandBuffer.GetVkCommandBuffer(), stagingBuffer.GetBuffer(), m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
-		//TODO: I don't know if I should do this
-		TransitionLayout(commandBuffer.GetVkCommandBuffer(), { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL });
 
 		commandBuffer.EndCommands();
 	}

@@ -5,6 +5,7 @@
 #include "VulkanImage.h"
 #include "VulkanRenderPass.h"
 #include "VulkanBuffer.h"
+#include "VulkanDescriptorSet.h"
 
 namespace lypant
 {
@@ -89,24 +90,37 @@ namespace lypant
 		const auto& renderTarget = vulkanSubpass.GetRenderTarget();
 		const auto& uniformBuffer = vulkanSubpass.GetUniformBuffer();
 
+		if (m_EnvironmentBufferSize)
+		{
+			uint32_t dynamicOffset = m_EnvironmentBufferSize * graphicsContext.GetCurrentFrameIndex();
+			VkDescriptorSet environmentSet = m_EnvironmentDescriptorSet->GetVkDescriptorSet();
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipelineLayout(), 0, 1, &environmentSet, 1, &dynamicOffset);
+		}
+
+		for (const auto& dataBinding : vulkanSubpass.GetDataBindings())
+		{
+			const auto& vkImage = reinterpret_cast<const std::shared_ptr<VulkanImage>&>(dataBinding.Image);
+			vkImage->TransitionLayout(commandBuffer, { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL });
+		}
+
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
 		if (descriptorSet)
 		{
 			VkDescriptorSet vkDescriptorSet = descriptorSet->GetVkDescriptorSet();
-			if (uniformBuffer->IsDynamic())
+			if (uniformBuffer && uniformBuffer->IsDynamic())
 			{
 				uint32_t dynamicOffset = vulkanSubpass.GetUniformBuffer()->GetSize() * graphicsContext.GetCurrentFrameIndex();
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipelineLayout(), 0, 1, &vkDescriptorSet, 1, &dynamicOffset);
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipelineLayout(), 1, 1, &vkDescriptorSet, 1, &dynamicOffset);
 			}
 			
 			else
 			{
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipelineLayout(), 0, 1, &vkDescriptorSet, 0, nullptr);
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipelineLayout(), 1, 1, &vkDescriptorSet, 0, nullptr);
 			}
 		}
 
-		const VkRenderingInfo& renderingInfo = renderTarget->PrepareForRendering(commandBuffer);
+		const VkRenderingInfo& renderingInfo = renderTarget->PrepareForRendering(commandBuffer, vulkanSubpass.ShouldClearTarget());
 
 		vkCmdBeginRendering(commandBuffer, &renderingInfo);
 
@@ -142,6 +156,12 @@ namespace lypant
 		vkCmdBindIndexBuffer(commandBuffer, vkIndexBuffer->GetVkBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
 		vkCmdDrawIndexed(commandBuffer, vkIndexBuffer->GetIndexCount(), instanceCount, 0, 0, 0);
+	}
+
+	void VulkanRenderCommandBuffer::BindEnvironmentBuffer(const std::shared_ptr<UniformBuffer>& buffer)
+	{
+		m_EnvironmentDescriptorSet->Update(std::vector<DataBinding>(), buffer);
+		m_EnvironmentBufferSize = reinterpret_cast<const std::shared_ptr<VulkanUniformBuffer>&>(buffer)->GetSize();
 	}
 
 	void VulkanRenderCommandBuffer::CreateCommandResources()
@@ -181,6 +201,8 @@ namespace lypant
 		{
 			vkCreateSemaphore(graphicsContext.GetDevice(), &semaphoreInfo, nullptr, &semaphore);
 		}
+
+		m_EnvironmentDescriptorSet = std::make_unique<VulkanDescriptorSet>(graphicsContext.GetGlobalDescriptorSetLayout());
 	}
 
 	void VulkanRenderCommandBuffer::DestroyCommandResources()

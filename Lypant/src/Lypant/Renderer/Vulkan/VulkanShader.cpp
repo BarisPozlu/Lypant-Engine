@@ -32,7 +32,7 @@ namespace lypant
         shaderc::Compiler compiler;
         shaderc::CompileOptions options;
 
-        // NOTE: this is needed so that names are also in the spirv binary
+        // NOTE: This is needed so that names are also in the spirv binary
         options.SetGenerateDebugInfo();
 
         options.SetOptimizationLevel(shaderc_optimization_level_performance);
@@ -111,7 +111,8 @@ namespace lypant
         Reflect(vertexShaderCode);
         Reflect(fragmentShaderCode);
 
-        m_DescriptorSetLayouts.reserve(s_DescriptorSetMap.size());
+        m_DescriptorSetLayouts.reserve(s_DescriptorSetMap.size() + 1);
+        m_DescriptorSetLayouts[0] = graphicsContext.GetGlobalDescriptorSetLayout();
 
         for (auto& [key, value] : s_DescriptorSetMap)
         {
@@ -159,10 +160,12 @@ namespace lypant
         VkPipelineLayout pipelineLayout = m_PipelineLayout;
         auto& shaderModules = m_ShaderModules;
 
+        // NOTE: Set 0 layout is not owned by the shader, it can't destroy it.
         std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
-        descriptorSetLayouts.reserve(m_DescriptorSetLayouts.size());
+        descriptorSetLayouts.reserve(m_DescriptorSetLayouts.size() - 1);
         for (auto& [key, value] : m_DescriptorSetLayouts)
         {
+            if (key == 0) continue;
             descriptorSetLayouts.push_back(value);
         }
 
@@ -199,7 +202,10 @@ namespace lypant
         for (int i = 0; i < reflSets.size(); i++)
         {
             const SpvReflectDescriptorSet& reflSet = *reflSets[i];
-
+            
+            // NOTE: Set 0 is global and added to every single pipeline layout no need to reflect here.
+            if (reflSet.set == 0) continue;
+                 
             for (int j = 0; j < reflSet.binding_count; j++)
             {
                 const SpvReflectDescriptorBinding& reflBinding = *reflSet.bindings[j];

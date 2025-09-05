@@ -34,7 +34,8 @@ namespace lypant
 		rasterizerInfo.rasterizerDiscardEnable = VK_FALSE;
 		rasterizerInfo.polygonMode = VK_POLYGON_MODE_FILL;
 		rasterizerInfo.lineWidth = 1.0f;
-		rasterizerInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+		//rasterizerInfo.cullMode = VK_CULL_MODE_BACK_BIT;
+		rasterizerInfo.cullMode = VK_CULL_MODE_NONE;
 		rasterizerInfo.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
 		rasterizerInfo.depthBiasEnable = VK_FALSE;
 

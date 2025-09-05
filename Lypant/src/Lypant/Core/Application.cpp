@@ -56,7 +56,7 @@ namespace lypant
 			Renderer::BeginRendering();
 
 			// TODO: Move
-			Renderer::BeginScene();
+			Renderer::BeginScene(deltaTime);
 
 			if (!m_Minimized)
 			{

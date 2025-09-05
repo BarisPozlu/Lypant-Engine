@@ -5,12 +5,12 @@
 
 namespace lypant
 {
-	std::unique_ptr<Subpass> Subpass::Create(const std::shared_ptr<RenderTarget>& renderTarget, const std::shared_ptr<Shader>& shader, const std::vector<DataBinding>& dataBindings, uint32_t uniformBufferSize, const void* data, bool isDynamic)
+	std::unique_ptr<Subpass> Subpass::Create(const std::shared_ptr<RenderTarget>& renderTarget, bool shouldClear, const std::shared_ptr<Shader>& shader, const std::vector<DataBinding>& dataBindings, uint32_t uniformBufferSize, const void* data, bool isDynamic)
 	{
 		switch (GraphicsContext::GetGraphicsAPI())
 		{
 			case GraphicsAPI::None: LY_CORE_ASSERT(false, "None graphics api is not supported."); break;
-			case GraphicsAPI::Vulkan: return std::make_unique<VulkanSubpass>(renderTarget, shader, dataBindings, uniformBufferSize, data, isDynamic); break;
+			case GraphicsAPI::Vulkan: return std::make_unique<VulkanSubpass>(renderTarget, shouldClear, shader, dataBindings, uniformBufferSize, data, isDynamic); break;
 		}
 
 		LY_CORE_ASSERT(false, "Unknown Graphics API");

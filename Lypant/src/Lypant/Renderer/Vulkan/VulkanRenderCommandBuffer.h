@@ -21,6 +21,7 @@ namespace lypant
 		virtual void BeginSubpass(const Subpass& subpass, bool IsImmediate = false) override;
 		virtual void EndSubpass(const Subpass& subpass, bool IsImmediate = false) override;
 		virtual void DrawMesh(const Mesh& mesh, const std::shared_ptr<Shader>& shader, uint32_t instanceCount = 1, bool IsImmediate = false) override;
+		virtual void BindEnvironmentBuffer(const std::shared_ptr<UniformBuffer>& buffer) override;
 
 		inline VkCommandBuffer GetCommandBuffer() { return GetCurrentFrame().CommandBuffer; }
 	private:
@@ -38,5 +39,7 @@ namespace lypant
 		std::array<FrameData, VulkanGraphicsContext::s_MaxFramesInFlight> m_FrameData;
 		std::vector<VkSemaphore> m_RenderFinishedSemaphores;
 		VulkanImmediateCommandBuffer m_ImmediateCommandBuffer;
+		std::unique_ptr<class VulkanDescriptorSet> m_EnvironmentDescriptorSet;
+		uint32_t m_EnvironmentBufferSize = 0;
 	};
 }
