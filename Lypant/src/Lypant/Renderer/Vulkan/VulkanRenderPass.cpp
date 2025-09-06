@@ -13,7 +13,7 @@ namespace lypant
 		// TODO: Update
 		if (uniformBufferSize)
 		{
-			m_UniformBuffer = reinterpret_cast<const std::shared_ptr<VulkanUniformBuffer>&>(UniformBuffer::Create(uniformBufferSize, data, isDynamic));
+			m_UniformBuffer = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(UniformBuffer::Create(uniformBufferSize, data, isDynamic));
 
 			//if (data)
 			//{

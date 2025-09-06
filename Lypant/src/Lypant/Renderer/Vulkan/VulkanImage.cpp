@@ -361,9 +361,9 @@ namespace lypant
 	void VulkanImage::UploadData(const void* buffer)
 	{
 		uint32_t size = m_Extent.width * m_Extent.height * GetSizeFromFormat(m_Format);
-		VulkanStagingBuffer stagingBuffer(size);
+		auto& stagingBuffer = reinterpret_cast<std::shared_ptr<VulkanBuffer>&>(StagingBuffer::Create(size));
 
-		memcpy(stagingBuffer.GetMappedMemory(), buffer, size);
+		memcpy(stagingBuffer->GetMappedMemory(), buffer, size);
 		
 		VulkanImmediateCommandBuffer commandBuffer;
 
@@ -378,7 +378,7 @@ namespace lypant
 
 		TransitionLayout(commandBuffer.GetVkCommandBuffer(), { VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL });
 
-		vkCmdCopyBufferToImage(commandBuffer.GetVkCommandBuffer(), stagingBuffer.GetBuffer(), m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+		vkCmdCopyBufferToImage(commandBuffer.GetVkCommandBuffer(), stagingBuffer->GetVkBuffer(), m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
 		commandBuffer.EndCommands();
 	}

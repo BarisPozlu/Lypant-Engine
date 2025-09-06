@@ -27,7 +27,7 @@ namespace lypant
 		VulkanDescriptorSet(VkDescriptorSetLayout layout);
 		~VulkanDescriptorSet();
 		VkDescriptorSet GetVkDescriptorSet() const { return m_DescriptorSet; }
-		void Update(const std::vector<DataBinding>& dataBindings, const std::shared_ptr<class UniformBuffer>& buffer = nullptr);
+		void Update(const std::vector<DataBinding>& dataBindings, const std::shared_ptr<class Buffer>& buffer = nullptr) const;
 	private:
 		VkDescriptorSet m_DescriptorSet;
 	};

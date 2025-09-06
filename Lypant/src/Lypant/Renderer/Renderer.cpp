@@ -33,8 +33,8 @@ namespace lypant
 		s_Data->QuadPass = Subpass::Create(defaultRenderTarget, false, s_Data->QuadShader, { { quadImage, 0 } }, 0, nullptr);
 
 		s_Data->Camera = std::make_unique<EditorPerspectiveCamera>(glm::vec3(0.0f, 0.0f, 0.0f), glm::radians(45.0f), 1280.0f / 720.0f, 0.1f, 100.0f);
-		s_Data->UniformBuffer = UniformBuffer::Create(sizeof(glm::mat4) + 64, nullptr, true);
-		s_Cmd->BindEnvironmentBuffer(s_Data->UniformBuffer);
+		s_Data->EnvironmentBuffer = StorageBuffer::Create(sizeof(glm::mat4) + 64, nullptr, true);
+		s_Cmd->BindEnvironmentBuffer(s_Data->EnvironmentBuffer);
 		
 		// NOTE: Update this shader to vulkan
 		s_Data->CubemapShader = Shader::Create("shaders/Skybox.glsl");
@@ -63,8 +63,8 @@ namespace lypant
 	void Renderer::BeginScene(float deltaTime)
 	{
 		s_Data->Camera->Tick(deltaTime);
-		s_Data->UniformBuffer->UploadData(&s_Data->Camera->GetViewProjectionMatrix(), sizeof(glm::mat4), 0);
-		s_Data->UniformBuffer->UploadData(&s_Data->Camera->GetPosition(), sizeof(glm::vec3), sizeof(glm::mat4));
+		s_Data->EnvironmentBuffer->UploadData(&s_Data->Camera->GetViewProjectionMatrix(), sizeof(glm::mat4), 0);
+		s_Data->EnvironmentBuffer->UploadData(&s_Data->Camera->GetPosition(), sizeof(glm::vec3), sizeof(glm::mat4));
 
 		s_Cmd->BeginSubpass(*s_Data->CubemapPass);
 

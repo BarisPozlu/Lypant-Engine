@@ -28,7 +28,7 @@ namespace lypant
 			std::shared_ptr<Shader> CubemapShader;
 
 			std::unique_ptr<class EditorPerspectiveCamera> Camera;
-			std::shared_ptr<class UniformBuffer> UniformBuffer;
+			std::shared_ptr<class Buffer> EnvironmentBuffer;
 		};
 		static RendererData* s_Data;
 		static RenderCommandBuffer* s_Cmd;

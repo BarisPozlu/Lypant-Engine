@@ -21,7 +21,7 @@ layout (push_constant) uniform PushConstant
 	VertexBuffer vertexBuffer;
 } PushConstants;
 
-layout (set = 0, binding = 0) uniform Camera
+layout (set = 0, binding = 0) readonly buffer Camera
 {
 	mat4 u_VP;
 	//mat4 u_ViewMatrix;

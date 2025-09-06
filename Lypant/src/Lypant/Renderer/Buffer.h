@@ -4,30 +4,77 @@
 
 namespace lypant
 {
+	enum class BufferType
+	{
+		Unknown, VertexBuffer, IndexBuffer, UniformBuffer, StorageBuffer, StagingBuffer
+	};
+
+	enum BufferUsageFlags
+	{
+		BufferUsageFlagsNone = 0,
+		BufferUsageFlagsTransferSrc = 1,
+		BufferUsageFlagsTransferDst = 2,
+		BufferUsageFlagsVertexBuffer = 4,
+		BufferUsageFlagsIndexBuffer = 8,
+		BufferUsageFlagsUniformBuffer = 16,
+		BufferUsageFlagsStorageBuffer = 32,
+		BufferUsageFlagsDeviceAddress = 64
+	};
+
+	enum BufferMemoryFlags
+	{
+		BufferMemoryFlagsNone = 0,
+		BufferMemoryFlagsGPULocal = 1,
+		BufferMemoryFlagsHostVisible = 2
+	};
+
+	// Each buffer type will populate this and pass it to the graphics API implementation.
+	struct BufferSpecification
+	{
+		BufferType Type = BufferType::Unknown;
+		uint32_t Size = 0;
+		int UsageFlags = BufferUsageFlagsNone;
+		int MemoryFlags = BufferMemoryFlagsNone;
+		bool IsDynamic = false;
+	};
+
+	// Base class for graphics API specific buffers.
+	// Each buffer type when created, returns a buffer handle.
+	class Buffer
+	{
+	public:
+		Buffer() = default;
+		virtual ~Buffer() = default;
+		virtual void UploadData(const void* data, uint32_t size, uint32_t offset) = 0;
+	};
+
 	class VertexBuffer
 	{
 	public:
-		static std::shared_ptr<VertexBuffer> Create(void* data, uint32_t size);
-		virtual ~VertexBuffer() = default;
+		static std::shared_ptr<Buffer> Create(void* data, uint32_t size);
 	};
 
 	class IndexBuffer
 	{
 	public:
-		static std::shared_ptr<IndexBuffer> Create(void* data, uint32_t count);
-		virtual ~IndexBuffer() = default;
+		static std::shared_ptr<Buffer> Create(void* data, uint32_t count);
 	};
-
-	// maybe just have one uniform buffer per pass which is divided into sub buffers that correspond to a different frame in flight
-	// when the size is given etc you just double it, when you want to upload data or whatever get the current frame and do some pointer math
-	// the desciptor for unfiorm buffers is going to created within the passes that might use it or materials
-	// we will also be using dynamic uniform buffers for offsets that update the uniform buffer every frame
 
 	class UniformBuffer
 	{
 	public:
-		static std::shared_ptr<UniformBuffer> Create(uint32_t size, const void* data, bool dynamic = false);
-		virtual ~UniformBuffer() = default;
-		virtual void UploadData(const void* data, uint32_t size, uint32_t offset) = 0;
+		static std::shared_ptr<Buffer> Create(uint32_t size, const void* data, bool dynamic = false);
+	};
+
+	class StorageBuffer
+	{
+	public:
+		static std::shared_ptr<Buffer> Create(uint32_t size, const void* data, bool dynamic = false);
+	};
+
+	class StagingBuffer
+	{
+	public:
+		static std::shared_ptr<Buffer> Create(uint32_t size);
 	};
 }

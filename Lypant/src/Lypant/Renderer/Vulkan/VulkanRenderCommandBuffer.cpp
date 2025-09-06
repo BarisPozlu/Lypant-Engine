@@ -147,21 +147,22 @@ namespace lypant
 	{
 		VkCommandBuffer commandBuffer = IsImmediate ? m_ImmediateCommandBuffer.GetVkCommandBuffer() : GetCurrentFrame().CommandBuffer;
 
-		const auto& vkVertexBuffer = reinterpret_cast<const std::shared_ptr<VulkanVertexBuffer>&>(mesh.GetVertexBuffer());
-		const auto& vkIndexBuffer = reinterpret_cast<const std::shared_ptr<VulkanIndexBuffer>&>(mesh.GetIndexBuffer());
+		const auto& vkVertexBuffer = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(mesh.GetVertexBuffer());
+		const auto& vkIndexBuffer = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(mesh.GetIndexBuffer());
 		const auto& vkShader = reinterpret_cast<const std::shared_ptr<VulkanShader>&>(shader);
 		VkDeviceAddress vertexBufferAddress = vkVertexBuffer->GetDeviceAddress();
 
 		vkCmdPushConstants(commandBuffer, vkShader->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(VkDeviceAddress), &vertexBufferAddress);
 		vkCmdBindIndexBuffer(commandBuffer, vkIndexBuffer->GetVkBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-		vkCmdDrawIndexed(commandBuffer, vkIndexBuffer->GetIndexCount(), instanceCount, 0, 0, 0);
+		// TODO: Change the way we get index count
+		vkCmdDrawIndexed(commandBuffer, vkIndexBuffer->GetSize() / sizeof(uint32_t), instanceCount, 0, 0, 0);
 	}
 
-	void VulkanRenderCommandBuffer::BindEnvironmentBuffer(const std::shared_ptr<UniformBuffer>& buffer)
+	void VulkanRenderCommandBuffer::BindEnvironmentBuffer(const std::shared_ptr<Buffer>& buffer)
 	{
 		m_EnvironmentDescriptorSet->Update(std::vector<DataBinding>(), buffer);
-		m_EnvironmentBufferSize = reinterpret_cast<const std::shared_ptr<VulkanUniformBuffer>&>(buffer)->GetSize();
+		m_EnvironmentBufferSize = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(buffer)->GetSize();
 	}
 
 	void VulkanRenderCommandBuffer::CreateCommandResources()

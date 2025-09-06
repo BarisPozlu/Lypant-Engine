@@ -9,6 +9,17 @@ namespace lypant
 	std::vector<VkDescriptorPool> VulkanDescriptorSetAllocator::s_DescriptorPools;
 	int VulkanDescriptorSetAllocator::s_PoolIndex = -1;
 
+	static VkDescriptorType GetDescriptorTypeFromBuffer(const std::shared_ptr<VulkanBuffer>& buffer)
+	{
+		switch (buffer->GetBufferType())
+		{
+			case BufferType::UniformBuffer: if (buffer->IsDynamic()) return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC; return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER; break;
+			case BufferType::StorageBuffer: if (buffer->IsDynamic()) return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC; return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER; break;
+		}
+
+		LY_CORE_ASSERT(false, "Unknown buffer type or a buffer type that should not be in a descriptor.");
+	}
+
 	VkDescriptorSet VulkanDescriptorSetAllocator::Allocate(VkDescriptorSetLayout layout)
 	{
 		auto& graphicsContext = VulkanGraphicsContext::Get();
@@ -84,9 +95,9 @@ namespace lypant
 		// For now the descriptor sets are only freed when their pool is destroyed
 	}
 
-	void VulkanDescriptorSet::Update(const std::vector<DataBinding>& dataBindings, const std::shared_ptr<UniformBuffer>& buffer)
+	void VulkanDescriptorSet::Update(const std::vector<DataBinding>& dataBindings, const std::shared_ptr<Buffer>& buffer) const
 	{
-		const auto& vkBuffer = reinterpret_cast<const std::shared_ptr<VulkanUniformBuffer>&>(buffer);
+		const auto& vkBuffer = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(buffer);
 
 		int bindingCount = buffer ? dataBindings.size() + 1 : dataBindings.size();
 		std::vector<VkWriteDescriptorSet> setWrites(bindingCount);
@@ -97,26 +108,23 @@ namespace lypant
 		{
 			const DataBinding& dataBinding = dataBindings[i];
 			VkWriteDescriptorSet& setWrite = setWrites[i];
+			
+			const auto& vulkanImage = reinterpret_cast<const std::shared_ptr<VulkanImage>&>(dataBinding.Image);
 
-			if (dataBinding.Image)
-			{
-				const auto& vulkanImage = reinterpret_cast<const std::shared_ptr<VulkanImage>&>(dataBinding.Image);
+			VkDescriptorImageInfo imageInfo{};
+			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			imageInfo.imageView = vulkanImage->GetImageView();
+			imageInfo.sampler = vulkanImage->GetSampler();
 
-				VkDescriptorImageInfo imageInfo{};
-				imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-				imageInfo.imageView = vulkanImage->GetImageView();
-				imageInfo.sampler = vulkanImage->GetSampler();
+			imageInfos.push_back(imageInfo);
 
-				imageInfos.push_back(imageInfo);
-
-				setWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-				setWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-				setWrite.descriptorCount = 1;
-				setWrite.dstSet = m_DescriptorSet;
-				setWrite.dstBinding = dataBinding.Binding;
-				setWrite.dstArrayElement = 0;
-				setWrite.pImageInfo = &imageInfos.back();
-			}
+			setWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			setWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			setWrite.descriptorCount = 1;
+			setWrite.dstSet = m_DescriptorSet;
+			setWrite.dstBinding = dataBinding.Binding;
+			setWrite.dstArrayElement = 0;
+			setWrite.pImageInfo = &imageInfos.back();
 		}
 
 		VkDescriptorBufferInfo bufferInfo{};
@@ -128,19 +136,10 @@ namespace lypant
 			bufferInfo.range = vkBuffer->GetSize();
 
 			VkWriteDescriptorSet& setWrite = setWrites.back();
-			setWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			//TODO: Change
-			if (vkBuffer->IsDynamic())
-			{
-				setWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-			}
 
-			else
-			{
-				setWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-			}
-			
+			setWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			setWrite.descriptorCount = 1;
+			setWrite.descriptorType = GetDescriptorTypeFromBuffer(vkBuffer);
 			setWrite.dstSet = m_DescriptorSet;
 			setWrite.dstBinding = dataBindings.size();
 			setWrite.dstArrayElement = 0;

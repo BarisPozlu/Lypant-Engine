@@ -52,7 +52,7 @@ namespace lypant
 				-1.0f, -1.0f, -1.0f, 1.0f,
 			};
 
-			std::shared_ptr<VertexBuffer> vertexBuffer = VertexBuffer::Create(vertexData, sizeof(vertexData));
+			std::shared_ptr<Buffer> vertexBuffer = VertexBuffer::Create(vertexData, sizeof(vertexData));
 
 			constexpr int indexCount = 36;
 
@@ -62,7 +62,7 @@ namespace lypant
 				indexData[i] = i;
 			}
 
-			std::shared_ptr<IndexBuffer> indexBuffer = IndexBuffer::Create(indexData, indexCount);
+			std::shared_ptr<Buffer> indexBuffer = IndexBuffer::Create(indexData, indexCount);
 
 			return std::make_shared<Mesh>(vertexBuffer, indexBuffer, nullptr);
 		}
@@ -82,9 +82,9 @@ namespace lypant
 				0, 1, 2, 2, 3, 0
 			};
 
-			std::shared_ptr<VertexBuffer> vertexBuffer = VertexBuffer::Create(vertexData, sizeof(vertexData));
+			std::shared_ptr<Buffer> vertexBuffer = VertexBuffer::Create(vertexData, sizeof(vertexData));
 
-			std::shared_ptr<IndexBuffer> indexBuffer = IndexBuffer::Create(indexData, 6);
+			std::shared_ptr<Buffer> indexBuffer = IndexBuffer::Create(indexData, 6);
 
 			return std::make_shared<Mesh>(vertexBuffer, indexBuffer, nullptr);
 		}

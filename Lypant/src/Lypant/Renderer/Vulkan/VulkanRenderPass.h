@@ -23,7 +23,7 @@ namespace lypant
 		inline const std::shared_ptr<VulkanShader>& GetShader() const { return m_Shader; }
 		inline const std::vector<DataBinding>& GetDataBindings() const { return m_DataBindings; }
 		inline const std::shared_ptr<VulkanGraphicsPipeline>& GetGraphicsPipeline() const { return m_GraphicsPipeline; }
-		inline const std::shared_ptr<VulkanUniformBuffer>& GetUniformBuffer() const { return m_UniformBuffer; }
+		inline const std::shared_ptr<VulkanBuffer>& GetUniformBuffer() const { return m_UniformBuffer; }
 		inline const std::shared_ptr<VulkanDescriptorSet>& GetDescriptorSet() const { return m_DescriptorSet; }
 		inline bool ShouldClearTarget() const { return m_ShouldClearTarget; }
 	private:
@@ -31,7 +31,7 @@ namespace lypant
 		std::shared_ptr<VulkanShader> m_Shader;
 		std::vector<DataBinding> m_DataBindings;
 		std::shared_ptr<VulkanGraphicsPipeline> m_GraphicsPipeline;
-		std::shared_ptr<VulkanUniformBuffer> m_UniformBuffer;
+		std::shared_ptr<VulkanBuffer> m_UniformBuffer;
 		std::shared_ptr<VulkanDescriptorSet> m_DescriptorSet;
 		bool m_ShouldClearTarget;
 	};

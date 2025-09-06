@@ -21,7 +21,7 @@ namespace lypant
 		virtual void BeginSubpass(const Subpass& subpass, bool IsImmediate = false) override;
 		virtual void EndSubpass(const Subpass& subpass, bool IsImmediate = false) override;
 		virtual void DrawMesh(const Mesh& mesh, const std::shared_ptr<Shader>& shader, uint32_t instanceCount = 1, bool IsImmediate = false) override;
-		virtual void BindEnvironmentBuffer(const std::shared_ptr<UniformBuffer>& buffer) override;
+		virtual void BindEnvironmentBuffer(const std::shared_ptr<Buffer>& buffer) override;
 
 		inline VkCommandBuffer GetCommandBuffer() { return GetCurrentFrame().CommandBuffer; }
 	private:
