@@ -9,6 +9,28 @@ namespace lypant
     static std::unordered_map<uint32_t, VkPushConstantRange> s_PushConstantMap;
     static std::unordered_map<uint32_t, std::vector<VkDescriptorSetLayoutBinding>> s_DescriptorSetMap;
 
+    VkShaderStageFlags GetVkShaderStageFlags(int shaderStageFlags)
+    {
+        VkShaderStageFlags flags = 0;
+
+        if (shaderStageFlags & ShaderStageFlagsVertex)
+        {
+            flags |= VK_SHADER_STAGE_VERTEX_BIT;
+        }
+
+        if (shaderStageFlags & ShaderStageFlagsGeometry)
+        {
+            flags |= VK_SHADER_STAGE_GEOMETRY_BIT;
+        }
+
+        if (shaderStageFlags & ShaderStageFlagsFragment)
+        {
+            flags |= VK_SHADER_STAGE_FRAGMENT_BIT;
+        }
+
+        return flags;
+    }
+
     static std::string ReadFile(const std::string& path)
     {
         std::string source;
@@ -251,7 +273,6 @@ namespace lypant
             {
                 it->second.stageFlags |= reflModule.shader_stage;
             }
-
         }
     }
 }

@@ -1,14 +1,15 @@
 #include <lypch.h>
 #include "VulkanRenderTarget.h"
+#include <glm/glm.hpp>
 
 namespace lypant
 {
-	void VulkanRenderTarget::AttachColorBuffer(const std::shared_ptr<Image>& image)
+	void VulkanRenderTarget::AttachColorBuffer(const std::shared_ptr<Image>& image, int mipLevel)
 	{
 		m_ColorBuffer = reinterpret_cast<const std::shared_ptr<VulkanImage>&>(image);
 
 		m_ColorBufferAttachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
-		m_ColorBufferAttachmentInfo.imageView = m_ColorBuffer->GetImageView(ImageViewType::Attachment);
+		m_ColorBufferAttachmentInfo.imageView = m_ColorBuffer->GetImageView(ImageViewType::Attachment, mipLevel);
 		m_ColorBufferAttachmentInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 		m_ColorBufferAttachmentInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		m_ColorBufferAttachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -16,7 +17,8 @@ namespace lypant
 		
 		m_RenderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR;
 		m_RenderingInfo.renderArea.offset = { 0, 0 };
-		m_RenderingInfo.renderArea.extent = m_ColorBuffer->GetImageExtent();
+		m_RenderingInfo.renderArea.extent.width = m_ColorBuffer->GetImageExtent().width * glm::pow(0.5, mipLevel);
+		m_RenderingInfo.renderArea.extent.height = m_ColorBuffer->GetImageExtent().height * glm::pow(0.5, mipLevel);
 		m_RenderingInfo.layerCount = m_ColorBuffer->GetLayerCount();
 		m_RenderingInfo.colorAttachmentCount = 1;
 		m_RenderingInfo.pColorAttachments = &m_ColorBufferAttachmentInfo;

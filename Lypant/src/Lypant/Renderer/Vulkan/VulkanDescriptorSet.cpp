@@ -59,13 +59,17 @@ namespace lypant
 
 	void VulkanDescriptorSetAllocator::CreatePool(VkDevice device)
 	{
-		std::array<VkDescriptorPoolSize, 3> poolSizes{};
+		std::array<VkDescriptorPoolSize, 5> poolSizes{};
 		poolSizes[0].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 		poolSizes[0].descriptorCount = 1024 * 4;
 		poolSizes[1].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		poolSizes[1].descriptorCount = 1024 * 4;
 		poolSizes[2].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 		poolSizes[2].descriptorCount = 1024 * 4;
+		poolSizes[3].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		poolSizes[3].descriptorCount = 1024 * 4;
+		poolSizes[4].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+		poolSizes[4].descriptorCount = 1024 * 4;
 
 		VkDescriptorPoolCreateInfo poolInfo{};
 		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;

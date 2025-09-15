@@ -13,14 +13,14 @@ namespace lypant
 		// TODO: Update
 		if (uniformBufferSize)
 		{
-			m_UniformBuffer = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(UniformBuffer::Create(uniformBufferSize, data, isDynamic));
+			m_UniformBuffer = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(Buffer::CreateUniformBuffer(uniformBufferSize, data, isDynamic));
 
 			//if (data)
 			//{
 			//	m_UniformBuffer->UploadData(data, uniformBufferSize, 0);
 			//}
 		}
-		if (m_Shader->GetDescriptorSetLayouts().size())
+		if (m_Shader->GetDescriptorSetLayouts().size() > 1)
 		{
 			m_DescriptorSet = std::make_shared<VulkanDescriptorSet>(m_Shader->GetDescriptorSetLayout(1));
 			m_DescriptorSet->Update(dataBindings, m_UniformBuffer);

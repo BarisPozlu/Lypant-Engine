@@ -4,6 +4,8 @@
 #include "VulkanBuffer.h"
 #include "VulkanCommandBuffer.h"
 #include <stb_image.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/integer.hpp>
 
 namespace lypant
 {
@@ -38,6 +40,12 @@ namespace lypant
 			flags.SrcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 		}
 
+		else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+		{
+			flags.SrcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
+			flags.SrcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+		}
+
 		else
 		{
 			LY_CORE_ASSERT(false, "transition flags could not be determined");
@@ -59,6 +67,12 @@ namespace lypant
 		{
 			flags.DstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
 			flags.DstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+		}
+
+		else if (spec.NewLayout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL)
+		{
+			flags.DstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT;
+			flags.DstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 		}
 
 		else if (spec.NewLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
@@ -209,6 +223,8 @@ namespace lypant
 		m_ImageType = spec.Type;
 		m_LayerCount = spec.Layers;
 
+		stbi_set_flip_vertically_on_load(true);
+
 		int width;
 		int height;
 		int channels;
@@ -240,7 +256,11 @@ namespace lypant
 
 		CreateImageViews(spec);
 
-		//TODO: Generate Mip map if needed here
+		// NOTE: Engine will only generate mip maps for 2D images, for other types it will simply allocate memory.
+		if (spec.Params.GenerateMipMap && m_ImageType == ImageType::Image2D)
+		{
+			GenerateMipMaps();
+		}
 	}
 
 	VulkanImage::VulkanImage(const void* data, const ImageSpecification& spec)
@@ -265,7 +285,11 @@ namespace lypant
 
 		CreateImageViews(spec);
 
-		//TODO: Generate Mip map if needed here
+		// NOTE: Engine will only generate mip maps for 2D images, for other types it will simply allocate memory.
+		if (spec.Params.GenerateMipMap && m_ImageType == ImageType::Image2D)
+		{
+			GenerateMipMaps();
+		}
 	}
 
 	VulkanImage::VulkanImage(VkImage image, VkImageView imageView, VkExtent2D imageExtent, VkFormat imageFormat)
@@ -277,6 +301,7 @@ namespace lypant
 		m_Format = imageFormat;
 		m_ImageType = ImageType::Image2D;
 		m_LayerCount = 1;
+		m_MipCount = 1;
 	}
 
 	VulkanImage::~VulkanImage()
@@ -325,7 +350,7 @@ namespace lypant
 	
 		vkCmdPipelineBarrier(commandBuffer, flags.SrcStageMask, flags.DstStageMask, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
 
-		m_CurrentLayout = spec.NewLayout;
+		if (spec.BaseMip == 0 && spec.MipCount == VK_REMAINING_MIP_LEVELS) m_CurrentLayout = spec.NewLayout;
 	}
 
 	void VulkanImage::CreateImage(const ImageSpecification& spec)
@@ -338,7 +363,15 @@ namespace lypant
 		imageInfo.extent.width = m_Extent.width;
 		imageInfo.extent.height = m_Extent.height;
 		imageInfo.extent.depth = spec.Depth;
-		imageInfo.mipLevels = 1; // TODO:
+		if (spec.Params.GenerateMipMap)
+		{
+			m_MipCount = glm::floor(glm::log2(glm::max(m_Extent.width, m_Extent.height))) + 1;
+		}
+		else
+		{
+			m_MipCount = 1;
+		}
+		imageInfo.mipLevels = m_MipCount;
 		imageInfo.arrayLayers = spec.Layers;
 		imageInfo.format = m_Format;
 		imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
@@ -361,7 +394,7 @@ namespace lypant
 	void VulkanImage::UploadData(const void* buffer)
 	{
 		uint32_t size = m_Extent.width * m_Extent.height * GetSizeFromFormat(m_Format);
-		auto& stagingBuffer = reinterpret_cast<std::shared_ptr<VulkanBuffer>&>(StagingBuffer::Create(size));
+		auto& stagingBuffer = reinterpret_cast<std::shared_ptr<VulkanBuffer>&>(Buffer::CreateStagingBuffer(size));
 
 		memcpy(stagingBuffer->GetMappedMemory(), buffer, size);
 		
@@ -392,8 +425,8 @@ namespace lypant
 		viewInfo.image = m_Image;
 		viewInfo.format = m_Format;
 		viewInfo.subresourceRange.aspectMask = spec.UsageFlags & ImageUsageFlagsDepthAttachment ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
-		viewInfo.subresourceRange.baseMipLevel = 0; // TODO
-		viewInfo.subresourceRange.levelCount = 1; // TODO
+		viewInfo.subresourceRange.baseMipLevel = 0;
+		viewInfo.subresourceRange.levelCount = m_MipCount;
 		viewInfo.subresourceRange.baseArrayLayer = 0;
 		viewInfo.subresourceRange.layerCount = spec.Layers;
 
@@ -417,16 +450,27 @@ namespace lypant
 
 				if (spec.UsageFlags & (ImageUsageFlagsColorAttachment | ImageUsageFlagsDepthAttachment))
 				{
-					m_ImageViews.resize(2);
+					spec.Params.CreateViewsPerMipMap ?  m_ImageViews.resize(2 + m_MipCount - 1) : m_ImageViews.resize(2);
 					viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY;
 					vkCreateImageView(graphicsContext.GetDevice(), &viewInfo, nullptr, &m_ImageViews[1]);
+
+					viewInfo.subresourceRange.levelCount = 1;
+
+					for (int i = 2; i < m_ImageViews.size(); i++)
+					{
+						viewInfo.subresourceRange.baseMipLevel = i - 1;
+						vkCreateImageView(graphicsContext.GetDevice(), &viewInfo, nullptr, &m_ImageViews[i]);
+					}
 				}
 
 				else
 				{
+					LY_CORE_ASSERT(spec.Params.CreateViewsPerMipMap, "Views per mip map is only supported for images that are used as attachments");
 					m_ImageViews.resize(1);
 				}
 				
+				viewInfo.subresourceRange.baseMipLevel = 0;
+				viewInfo.subresourceRange.levelCount = m_MipCount;
 				viewInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;
 				vkCreateImageView(graphicsContext.GetDevice(), &viewInfo, nullptr, &m_ImageViews[0]);
 
@@ -452,5 +496,63 @@ namespace lypant
 
 			default: LY_CORE_ASSERT(false, "Invalid image type");
 		}
+	}
+
+	void VulkanImage::GenerateMipMaps()
+	{
+		VulkanImmediateCommandBuffer cmd;
+
+		cmd.BeginCommands();
+
+		VkImageSubresourceLayers subresource{};
+		subresource.baseArrayLayer = 0;
+		subresource.layerCount = 1;
+		subresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+
+		int mipWidth = m_Extent.width;
+		int mipHeight = m_Extent.height;
+
+		for (uint32_t i = 0; i < m_MipCount - 1; i++)
+		{
+			TransitionLayout(cmd.GetVkCommandBuffer(), { VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, i, 1 });
+
+			VkImageBlit blit{};
+			blit.srcOffsets[0] = { 0, 0, 0 };
+			blit.srcOffsets[1] = { mipWidth, mipHeight, 1 };
+
+			mipWidth = mipWidth > 1 ? mipWidth / 2 : 1;
+			mipHeight = mipHeight > 1 ? mipHeight / 2 : 1;
+
+			blit.dstOffsets[0] = { 0, 0, 0 };
+			blit.dstOffsets[1] = { mipWidth, mipHeight, 1 };
+
+			subresource.mipLevel = i;
+			blit.srcSubresource = subresource;
+			
+			subresource.mipLevel = i + 1;
+			blit.dstSubresource = subresource;
+
+			vkCmdBlitImage(cmd.GetVkCommandBuffer(), m_Image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &blit, VK_FILTER_LINEAR);
+		}
+
+		TransitionLayout(cmd.GetVkCommandBuffer(), { VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, m_MipCount - 1, 1 });
+		m_CurrentLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+
+		cmd.EndCommands();
+	}
+
+	VkImageView VulkanImage::GetImageView(ImageViewType type, int mipLevel) const
+	{
+		LY_CORE_ASSERT(!(type == ImageViewType::Sample && mipLevel != 0), "mipLevel should only be specifed for attachment views");
+
+		if (type == ImageViewType::Attachment)
+		{
+			if (m_ImageType == ImageType::Cubemap || m_ImageType == ImageType::CubemapArray)
+			{
+				return m_ImageViews[static_cast<int>(ImageViewType::Attachment) + mipLevel];
+			}
+		}
+
+		return m_ImageViews[static_cast<int>(ImageViewType::Sample)];
 	}
 }

@@ -5,7 +5,7 @@
 
 namespace lypant
 {
-	std::shared_ptr<Buffer> VertexBuffer::Create(void* data, uint32_t size)
+	std::shared_ptr<Buffer> Buffer::CreateVertexBuffer(void* data, uint32_t size)
 	{
 		BufferSpecification spec;
 		spec.Type = BufferType::VertexBuffer;
@@ -24,7 +24,7 @@ namespace lypant
 		return nullptr;
 	}
 
-	std::shared_ptr<Buffer> IndexBuffer::Create(void* data, uint32_t count)
+	std::shared_ptr<Buffer> Buffer::CreateIndexBuffer(void* data, uint32_t count)
 	{
 		BufferSpecification spec;
 		spec.Type = BufferType::IndexBuffer;
@@ -43,7 +43,7 @@ namespace lypant
 		return nullptr;
 	}
 
-	std::shared_ptr<Buffer> UniformBuffer::Create(uint32_t size, const void* data, bool isDynamic)
+	std::shared_ptr<Buffer> Buffer::CreateUniformBuffer(uint32_t size, const void* data, bool isDynamic)
 	{
 		BufferSpecification spec;
 		spec.Type = BufferType::UniformBuffer;
@@ -72,7 +72,7 @@ namespace lypant
 		return nullptr;
 	}
 
-	std::shared_ptr<Buffer> StorageBuffer::Create(uint32_t size, const void* data, bool isDynamic)
+	std::shared_ptr<Buffer> Buffer::CreateStorageBuffer(uint32_t size, const void* data, bool isDynamic)
 	{
 		BufferSpecification spec;
 		spec.Type = BufferType::StorageBuffer;
@@ -101,7 +101,7 @@ namespace lypant
 		return nullptr;
 	}
 
-	std::shared_ptr<Buffer> StagingBuffer::Create(uint32_t size)
+	std::shared_ptr<Buffer> Buffer::CreateStagingBuffer(uint32_t size)
 	{
 		BufferSpecification spec;
 		spec.Type = BufferType::StagingBuffer;

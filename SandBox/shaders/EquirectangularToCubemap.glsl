@@ -31,8 +31,7 @@ void main()
 {
 	gl_Layer = gl_InstanceIndex;
 	Vertex vertex = PushConstants.vertexBuffer.vertices[gl_VertexIndex];
-
-	v_DirectionVector = vec3(vertex.Position.x, -vertex.Position.y, vertex.Position.z);
+	v_DirectionVector = vertex.Position.xyz;
 	gl_Position = u_ViewMatrix[gl_InstanceIndex] * vertex.Position; // already in ndc no need for a projection matrix
 }
 

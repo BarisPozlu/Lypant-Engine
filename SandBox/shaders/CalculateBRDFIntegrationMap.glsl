@@ -1,14 +1,32 @@
+#version 460
+
 #ifdef VERTEX_SHADER
 
-layout (location = 0) in vec4 a_Position;
-layout (location = 1) in vec2 a_TexCoord;
+#extension GL_EXT_buffer_reference : require
 
-out vec2 v_TexCoord;
+layout (location = 0) out vec2 v_TexCoord;
+
+struct Vertex
+{
+	vec2 Position;
+    vec2 TexCoord;
+};
+
+layout (buffer_reference) readonly buffer VertexBuffer
+{
+	Vertex vertices[];
+};
+
+layout (push_constant) uniform PushConstant
+{
+	VertexBuffer vertexBuffer;
+} PushConstants;
 
 void main()
 {
-	v_TexCoord = a_TexCoord;
-	gl_Position = a_Position;
+    Vertex vertex = PushConstants.vertexBuffer.vertices[gl_VertexIndex];
+	v_TexCoord = vertex.TexCoord;
+	gl_Position = vec4(vertex.Position, 0, 1);
 }
 
 #endif
@@ -17,7 +35,7 @@ void main()
 
 layout (location = 0) out vec2 o_Color;
 
-in vec2 v_TexCoord;
+layout (location = 0) in vec2 v_TexCoord;
 
 vec2 IntegrateBRDF(float NdotV, float roughness);
 float GeometrySchlickGGX(float NdotV, float roughness);

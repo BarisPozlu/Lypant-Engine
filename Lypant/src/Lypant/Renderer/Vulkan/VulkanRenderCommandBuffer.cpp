@@ -126,9 +126,9 @@ namespace lypant
 
 		VkViewport viewport{};
 		viewport.x = renderingInfo.renderArea.offset.x;
-		viewport.y = renderingInfo.renderArea.offset.y;
+		viewport.y = renderingInfo.renderArea.extent.height - renderingInfo.renderArea.offset.y;
 		viewport.width = renderingInfo.renderArea.extent.width;
-		viewport.height = renderingInfo.renderArea.extent.height;
+		viewport.height = -1 * static_cast<float>(renderingInfo.renderArea.extent.height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 
@@ -157,6 +157,14 @@ namespace lypant
 
 		// TODO: Change the way we get index count
 		vkCmdDrawIndexed(commandBuffer, vkIndexBuffer->GetSize() / sizeof(uint32_t), instanceCount, 0, 0, 0);
+	}
+
+	void VulkanRenderCommandBuffer::PushData(const void* data, uint32_t size, const std::shared_ptr<Shader>& shader, int shaderStageFlags, bool IsImmediate)
+	{
+		VkCommandBuffer commandBuffer = IsImmediate ? m_ImmediateCommandBuffer.GetVkCommandBuffer() : GetCurrentFrame().CommandBuffer;
+		const auto& vkShader = reinterpret_cast<const std::shared_ptr<VulkanShader>&>(shader);
+
+		vkCmdPushConstants(commandBuffer, vkShader->GetPipelineLayout(), GetVkShaderStageFlags(shaderStageFlags), sizeof(VkDeviceAddress), size, data);
 	}
 
 	void VulkanRenderCommandBuffer::BindEnvironmentBuffer(const std::shared_ptr<Buffer>& buffer)

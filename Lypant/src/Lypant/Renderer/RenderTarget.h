@@ -11,7 +11,7 @@ namespace lypant
 		static std::shared_ptr<RenderTarget> Create();
 		static std::shared_ptr<RenderTarget> GetDefault();
 		virtual ~RenderTarget() = default;
-		virtual void AttachColorBuffer(const std::shared_ptr<Image>& image) = 0;
+		virtual void AttachColorBuffer(const std::shared_ptr<Image>& image, int mipLevel = 0) = 0;
 		virtual void AttachDepthStencilBuffer(const std::shared_ptr<Image>& image) = 0;
 	};
 }

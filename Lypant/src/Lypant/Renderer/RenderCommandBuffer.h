@@ -19,6 +19,7 @@ namespace lypant
 		virtual void BeginSubpass(const Subpass& subpass, bool IsImmediate = false) = 0;
 		virtual void EndSubpass(const Subpass& subpass, bool IsImmediate = false) = 0;
 		virtual void DrawMesh(const Mesh& mesh, const std::shared_ptr<Shader>& shader, uint32_t instanceCount = 1, bool IsImmediate = false) = 0;
+		virtual void PushData(const void* data, uint32_t size, const std::shared_ptr<Shader>& shader, int shaderStageFlags, bool IsImmediate = false) = 0;
 		virtual void BindEnvironmentBuffer(const std::shared_ptr<Buffer>& buffer) = 0;
 	};
 }

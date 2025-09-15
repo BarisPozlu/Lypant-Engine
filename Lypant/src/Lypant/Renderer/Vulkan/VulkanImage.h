@@ -34,18 +34,7 @@ namespace lypant
 		virtual ~VulkanImage();
 
 		inline VkImage GetImage() const { return m_Image; }
-		inline VkImageView GetImageView(ImageViewType type = ImageViewType::Sample) const
-		{
-			if (type == ImageViewType::Attachment)
-			{
-				if (m_ImageType == ImageType::Cubemap || m_ImageType == ImageType::CubemapArray)
-				{
-					return m_ImageViews[static_cast<int>(ImageViewType::Attachment)];
-				}
-			}
-
-			return m_ImageViews[static_cast<int>(ImageViewType::Sample)];
-		}
+		VkImageView GetImageView(ImageViewType type = ImageViewType::Sample, int mipLevel = 0) const;
 		inline VkExtent2D GetImageExtent() const { return m_Extent; }
 		inline VkSampler GetSampler() const { return m_Sampler->GetVkSampler(); }
 		inline VkFormat GetFormat() const { return m_Format; }
@@ -57,6 +46,7 @@ namespace lypant
 		void CreateImage(const ImageSpecification& spec);
 		void UploadData(const void* buffer);
 		void CreateImageViews(const ImageSpecification& spec);
+		void GenerateMipMaps();
 	private:
 		VkImage m_Image;
 		std::vector<VkImageView> m_ImageViews;
@@ -64,9 +54,9 @@ namespace lypant
 		VkExtent2D m_Extent;
 		VkFormat m_Format;
 		ImageType m_ImageType;
-		// NOTE: In the future when multiple inital layouts are supported should change this
 		VkImageLayout m_CurrentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		uint32_t m_LayerCount;
+		uint32_t m_MipCount;
 		// TODO: Samplers should not be created per image. Write the code so that we get the sampler we want from somewhere else
 		std::unique_ptr<VulkanSampler> m_Sampler;
 	private:

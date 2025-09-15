@@ -5,6 +5,8 @@
 
 namespace lypant
 {
+	VkShaderStageFlags GetVkShaderStageFlags(int shaderStageFlags);
+
 	class VulkanShader : public Shader
 	{
 	public:

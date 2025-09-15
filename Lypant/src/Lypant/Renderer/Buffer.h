@@ -46,35 +46,10 @@ namespace lypant
 		Buffer() = default;
 		virtual ~Buffer() = default;
 		virtual void UploadData(const void* data, uint32_t size, uint32_t offset) = 0;
-	};
-
-	class VertexBuffer
-	{
-	public:
-		static std::shared_ptr<Buffer> Create(void* data, uint32_t size);
-	};
-
-	class IndexBuffer
-	{
-	public:
-		static std::shared_ptr<Buffer> Create(void* data, uint32_t count);
-	};
-
-	class UniformBuffer
-	{
-	public:
-		static std::shared_ptr<Buffer> Create(uint32_t size, const void* data, bool dynamic = false);
-	};
-
-	class StorageBuffer
-	{
-	public:
-		static std::shared_ptr<Buffer> Create(uint32_t size, const void* data, bool dynamic = false);
-	};
-
-	class StagingBuffer
-	{
-	public:
-		static std::shared_ptr<Buffer> Create(uint32_t size);
+		static std::shared_ptr<Buffer> CreateVertexBuffer(void* data, uint32_t size);
+		static std::shared_ptr<Buffer> CreateIndexBuffer(void* data, uint32_t count);
+		static std::shared_ptr<Buffer> CreateUniformBuffer(uint32_t size, const void* data, bool dynamic = false);
+		static std::shared_ptr<Buffer> CreateStorageBuffer(uint32_t size, const void* data, bool dynamic = false);
+		static std::shared_ptr<Buffer> CreateStagingBuffer(uint32_t size);
 	};
 }

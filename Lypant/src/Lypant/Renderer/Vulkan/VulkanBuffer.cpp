@@ -78,7 +78,7 @@ namespace lypant
 
 			else
 			{
-				auto& stagingBuffer = reinterpret_cast<std::shared_ptr<VulkanBuffer>&>(StagingBuffer::Create(m_InputSize));
+				auto& stagingBuffer = reinterpret_cast<std::shared_ptr<VulkanBuffer>&>(Buffer::CreateStagingBuffer(m_InputSize));
 
 				memcpy(stagingBuffer->GetMappedMemory(), data, m_InputSize);
 
