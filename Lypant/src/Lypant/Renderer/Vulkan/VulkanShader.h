@@ -23,5 +23,6 @@ namespace lypant
 		std::array<VkPipelineShaderStageCreateInfo, 2> m_ShaderStageInfos{};
 		std::unordered_map<uint32_t, VkDescriptorSetLayout> m_DescriptorSetLayouts;
 		VkPipelineLayout m_PipelineLayout;
+		std::string m_Path;
 	};
 }

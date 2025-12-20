@@ -4,7 +4,7 @@
 
 namespace lypant
 {
-	VulkanSubpass::VulkanSubpass(const std::shared_ptr<RenderTarget>& renderTarget, bool shouldClear, const std::shared_ptr<Shader>& shader, const std::vector<DataBinding>& dataBindings, uint32_t uniformBufferSize, const void* data, bool isDynamic)
+	VulkanSubpass::VulkanSubpass(const std::shared_ptr<RenderTarget>& renderTarget, const RenderTargetOperation& op, const std::shared_ptr<Shader>& shader, const std::vector<ImageBinding>& dataBindings, uint32_t uniformBufferSize, const void* data, bool isDynamic, int subpassFlags)
 	{
 		m_RenderTarget = reinterpret_cast<const std::shared_ptr<VulkanRenderTarget>&>(renderTarget);
 		m_Shader = reinterpret_cast<const std::shared_ptr<VulkanShader>&>(shader);
@@ -23,11 +23,20 @@ namespace lypant
 		if (m_Shader->GetDescriptorSetLayouts().size() > 1)
 		{
 			m_DescriptorSet = std::make_shared<VulkanDescriptorSet>(m_Shader->GetDescriptorSetLayout(1));
-			m_DescriptorSet->Update(dataBindings, m_UniformBuffer);
+
+			if (uniformBufferSize)
+			{
+				m_DescriptorSet->Update(dataBindings, { { m_UniformBuffer, static_cast<uint32_t>(dataBindings.size()), 0, m_UniformBuffer->GetSize()}});
+			}
+			else
+			{
+				m_DescriptorSet->Update(dataBindings, { });
+			}
 		}
 
 		m_GraphicsPipeline = reinterpret_cast<const std::shared_ptr<VulkanGraphicsPipeline>&>(GraphicsPipeline::Create(GraphicsPipelineSpecification(), m_Shader, renderTarget));
-		m_ShouldClearTarget = shouldClear;
+		m_SubpassFlags = subpassFlags;
+		m_RenderTargetOperation = op;
 	}
 
 	void VulkanSubpass::UploadData(const void* data, uint32_t size, uint32_t offset)

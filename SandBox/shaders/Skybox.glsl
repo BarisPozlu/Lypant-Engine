@@ -24,7 +24,7 @@ layout (push_constant) uniform PushConstant
 layout (set = 0, binding = 0) readonly buffer Camera
 {
 	mat4 u_VP;
-	//mat4 u_ViewMatrix;
+	mat4 u_ViewMatrix;
 	vec3 u_ViewPosition;
 };
 

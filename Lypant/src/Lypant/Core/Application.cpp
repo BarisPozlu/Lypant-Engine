@@ -6,8 +6,6 @@
 #include "Lypant/Renderer/Renderer.h"
 #include <GLFW/glfw3.h> // temp
 #include "Lypant/Input/Input.h" // temp
-//#include "Lypant/Util/VertexArrays.h"
-//#include "Lypant/Util/Textures.h"
 #include <Lypant/Util/MeshFactory.h>
 
 namespace lypant
@@ -26,9 +24,6 @@ namespace lypant
 		m_Window = std::make_unique<Window>();
 		m_Window->SetEventCallback(std::bind(&Application::OnEvent, this, std::placeholders::_1));
 
-		//util::VertexArrays::Create();
-		//util::Textures::Create();
-
 		Renderer::Init();
 
 		m_ImGuiLayer = ImGuiLayer::Create();
@@ -41,8 +36,6 @@ namespace lypant
 	{
 		Input::Shutdown();
 		Renderer::Shutdown();
-		//util::Textures::Destroy();
-		//util::VertexArrays::Destroy();
 	}
 
 	void Application::Run()
@@ -55,9 +48,6 @@ namespace lypant
 
 			Renderer::BeginRendering();
 
-			// TODO: Move
-			Renderer::BeginScene(deltaTime);
-
 			if (!m_Minimized)
 			{
 				Input::Tick(deltaTime);
@@ -67,9 +57,6 @@ namespace lypant
 					layer->Tick(deltaTime);
 				}
 			}
-
-			// TODO: Move
-			Renderer::EndScene();
 
 			m_ImGuiLayer->Begin();
 

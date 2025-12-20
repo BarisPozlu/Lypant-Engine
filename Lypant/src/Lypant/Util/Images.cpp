@@ -35,17 +35,17 @@ namespace lypant
 
 			std::shared_ptr<Shader> shader = Shader::Create("shaders/CalculateBRDFIntegrationMap.glsl");
 
-			std::unique_ptr<Subpass> subpass = Subpass::Create(renderTarget, false, shader, {}, 0, nullptr);
+			RenderTargetOperation op;
+			op.ColorBufferStoreOp = AttachmentStoreOperation::Store;
+
+			std::unique_ptr<Subpass> subpass = Subpass::Create(renderTarget, op, shader, {}, 0, nullptr);
+			subpass->Submit(*MeshFactory::GetQuad(), glm::mat4(1.0f));
 			
 			auto& cmd = Renderer::GetRenderCommandBuffer();
 
 			cmd.BeginImmediateCommands();
 
-			cmd.BeginSubpass(*subpass, true);
-
-			cmd.DrawMesh(*MeshFactory::GetQuad(), shader, 1, true);
-
-			cmd.EndSubpass(*subpass, true);
+			cmd.ExecuteSubpass(*subpass, true);
 
 			cmd.EndImmediateCommands();
 

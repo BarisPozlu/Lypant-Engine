@@ -58,10 +58,14 @@ namespace lypant
 		static std::shared_ptr<Image> CreateImage2D(uint32_t width, uint32_t height, uint32_t channels, const void* data, const ImageParams& params);
 
 		static std::shared_ptr<Image> CreateImage2DRenderTarget(uint32_t width, uint32_t height, uint32_t channels, const ImageParams& params, bool sampled);
+		static std::shared_ptr<Image> CreateDepthImage2D(uint32_t width, uint32_t height, const ImageParams& params, bool sampled);
 
 		// Cubemaps are only loaded from equirectangular images.
 		// Usages are set to be sampled and color attachment. Since they have to be rendered to using equirectangular images.
 		// Creates and allocates memory for the cubemap without any data
 		static std::shared_ptr<Image> CreateCubemap(uint32_t width, uint32_t height, uint32_t channels, const ImageParams& params);
+	protected:
+		// NOTE: Engine does not have a good asset system for now. In order not to load the same images when they are already in memory, weak ptr is saved.
+		inline static std::unordered_map<std::string, std::weak_ptr<Image>> s_Cache;
 	};
 }

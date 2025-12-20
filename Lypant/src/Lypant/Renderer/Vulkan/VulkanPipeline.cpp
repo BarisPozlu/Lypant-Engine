@@ -60,8 +60,22 @@ namespace lypant
 		VkPipelineRenderingCreateInfoKHR renderingInfo{};
 		renderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
 		renderingInfo.colorAttachmentCount = 1;
-		VkFormat format = vulkanRenderTarget->GetColorBuffer()->GetFormat();
-		renderingInfo.pColorAttachmentFormats = &format;
+		VkFormat colorFormat = vulkanRenderTarget->GetColorBuffer()->GetFormat();
+		renderingInfo.pColorAttachmentFormats = &colorFormat;
+		if (vulkanRenderTarget->GetDepthStencilBuffer())
+		{
+			renderingInfo.depthAttachmentFormat = vulkanRenderTarget->GetDepthStencilBuffer()->GetFormat();
+		}
+
+		VkPipelineDepthStencilStateCreateInfo depthStencilInfo{};
+		if (vulkanRenderTarget->GetDepthStencilBuffer())
+		{
+			depthStencilInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+			depthStencilInfo.depthTestEnable = VK_TRUE;
+			depthStencilInfo.depthWriteEnable = VK_TRUE;
+			depthStencilInfo.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+		}
+		
 
 		VkGraphicsPipelineCreateInfo graphicsPipelineInfo{};
 		graphicsPipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -76,6 +90,7 @@ namespace lypant
 		graphicsPipelineInfo.pColorBlendState = &colorBlendInfo;
 		graphicsPipelineInfo.pDynamicState = &dynamicStateInfo;
 		graphicsPipelineInfo.layout = vulkanShader->GetPipelineLayout();
+		graphicsPipelineInfo.pDepthStencilState = &depthStencilInfo;
 
 		vkCreateGraphicsPipelines(VulkanGraphicsContext::Get().GetDevice(), VK_NULL_HANDLE, 1, &graphicsPipelineInfo, nullptr, &m_GraphicsPipeline);
 	}

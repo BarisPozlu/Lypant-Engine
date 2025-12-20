@@ -57,7 +57,8 @@ namespace lypant
         // NOTE: This is needed so that names are also in the spirv binary
         options.SetGenerateDebugInfo();
 
-        options.SetOptimizationLevel(shaderc_optimization_level_performance);
+        //TODO: options.SetOptimizationLevel(shaderc_optimization_level_performance);
+        options.SetOptimizationLevel(shaderc_optimization_level_zero);
 
         switch (type)
         {
@@ -101,7 +102,7 @@ namespace lypant
         return static_cast<VkDescriptorType>(reflBinding.descriptor_type);
     }
 
-	VulkanShader::VulkanShader(const std::string& path)
+	VulkanShader::VulkanShader(const std::string& path) : m_Path(path)
 	{
         auto& graphicsContext = VulkanGraphicsContext::Get();
 
@@ -177,6 +178,8 @@ namespace lypant
 
 	VulkanShader::~VulkanShader()
 	{
+        s_Cache.erase(m_Path);
+
         auto& graphicsContext = VulkanGraphicsContext::Get();
 
         VkPipelineLayout pipelineLayout = m_PipelineLayout;
@@ -233,6 +236,20 @@ namespace lypant
                 const SpvReflectDescriptorBinding& reflBinding = *reflSet.bindings[j];
 
                 auto& bindings = s_DescriptorSetMap[reflSet.set];
+
+                // NOTE: We might have the same binding already in the bindings if that's the case we simply add this shader stage to the flags and continue
+                bool bindingFound = false;
+                for (auto& binding : bindings)
+                {
+                    if (binding.binding == reflBinding.binding)
+                    {
+                        binding.stageFlags |= static_cast<VkShaderStageFlagBits>(reflModule.shader_stage);
+                        bindingFound = true;
+                        break;
+                    }
+                }
+                if (bindingFound) continue;
+
                 bindings.resize(bindings.size() + 1);
 
                 VkDescriptorSetLayoutBinding& binding = bindings.back();

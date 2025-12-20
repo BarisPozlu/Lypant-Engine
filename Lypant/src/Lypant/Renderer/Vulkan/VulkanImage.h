@@ -59,6 +59,7 @@ namespace lypant
 		uint32_t m_MipCount;
 		// TODO: Samplers should not be created per image. Write the code so that we get the sampler we want from somewhere else
 		std::unique_ptr<VulkanSampler> m_Sampler;
+		std::string m_Path;
 	private:
 		friend class VulkanSwapChain;
 	};

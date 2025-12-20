@@ -22,9 +22,10 @@ layout (push_constant) uniform PushConstant
 	VertexBuffer vertexBuffer;
 } PushConstants;
 
-layout (set = 1, binding = 1) uniform ViewMatrices
+layout (set = 1, binding = 1) uniform DynamicPassData
 {
 	mat4 u_ViewMatrix[6];
+    float u_Roughness;
 };
 
 void main()
@@ -45,9 +46,10 @@ layout (location = 0) in vec3 v_DirectionVector;
 
 layout (set = 1, binding = 0) uniform samplerCube u_EnvironmentMap;
 
-layout (push_constant) uniform Roughness
+layout (set = 1, binding = 1) uniform DynamicPassData
 {
-	layout (offset = 8) float u_Roughness;
+	mat4 u_ViewMatrix[6];
+    float u_Roughness;
 };
 
 float RadicalInverse_VdC(uint bits);

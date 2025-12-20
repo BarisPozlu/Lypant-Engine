@@ -43,18 +43,24 @@ namespace lypant
 				glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, 1.0f,  0.0f)),
 			};
 
-			std::unique_ptr<Subpass> subpass = Subpass::Create(renderTarget, false, shader,
+			RenderTargetOperation op;
+			op.ColorBufferStoreOp = AttachmentStoreOperation::Store;
+
+			std::unique_ptr<Subpass> subpass = Subpass::Create(renderTarget, op, shader,
 				{ { image, 0 } }, sizeof(viewMatrices), viewMatrices);
+			subpass->Submit(*MeshFactory::GetCubemapCube(), glm::mat4(1.0f), 6);
 
 			auto& cmd = Renderer::GetRenderCommandBuffer();
 
 			cmd.BeginImmediateCommands();
 
-			cmd.BeginSubpass(*subpass, true);
-			
-			cmd.DrawMesh(*MeshFactory::GetCubemapCube(), shader, 6, true);
+			//cmd.BeginSubpass(*subpass, true);
+			//
+			//cmd.DrawMesh(*MeshFactory::GetCubemapCube(), shader, glm::mat4(1.0f), 6, true);
 
-			cmd.EndSubpass(*subpass, true);
+			//cmd.EndSubpass(*subpass, true);
+
+			cmd.ExecuteSubpass(*subpass, true);
 
 			cmd.EndImmediateCommands();
 
@@ -83,18 +89,24 @@ namespace lypant
 				glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, 1.0f,  0.0f)),
 			};
 
-			std::unique_ptr<Subpass> subpass = Subpass::Create(renderTarget, false, shader,
+			RenderTargetOperation op;
+			op.ColorBufferStoreOp = AttachmentStoreOperation::Store;
+
+			std::unique_ptr<Subpass> subpass = Subpass::Create(renderTarget, op, shader,
 				{ { source, 0 } }, sizeof(viewMatrices), viewMatrices);
+			subpass->Submit(*MeshFactory::GetCubemapCube(), glm::mat4(1.0f), 6);
 
 			auto& cmd = Renderer::GetRenderCommandBuffer();
 
 			cmd.BeginImmediateCommands();
 
-			cmd.BeginSubpass(*subpass, true);
+			/*cmd.BeginSubpass(*subpass, true);
 
 			cmd.DrawMesh(*MeshFactory::GetCubemapCube(), shader, 6, true);
 
-			cmd.EndSubpass(*subpass, true);
+			cmd.EndSubpass(*subpass, true);*/
+
+			cmd.ExecuteSubpass(*subpass, true);
 
 			cmd.EndImmediateCommands();
 
@@ -115,7 +127,13 @@ namespace lypant
 
 			const auto& shader = Shader::Create("shaders/CalculatePreFilteredMap.glsl");
 
-			glm::mat4 viewMatrices[]
+			struct alignas(64) PassData
+			{
+				glm::mat4 ViewMatrices[6];
+				float Roughness = 0.0f;
+			};
+
+			PassData passData
 			{
 				glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(-1.0f, 0.0f,  0.0f), glm::vec3(0.0f, 1.0f,  0.0f)),
 				glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f,  0.0f,  0.0f), glm::vec3(0.0f, 1.0f,  0.0f)),
@@ -123,35 +141,38 @@ namespace lypant
 				glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  1.0f,  0.0f), glm::vec3(0.0f, 0.0f,  1.0f)),
 				glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f, -1.0f), glm::vec3(0.0f, 1.0f,  0.0f)),
 				glm::lookAt(glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f,  0.0f,  1.0f), glm::vec3(0.0f, 1.0f,  0.0f)),
+				0.0f
 			};
 
-			std::unique_ptr<Subpass> subpass = Subpass::Create(renderTarget, false, shader,
-				{ { source, 0 } }, sizeof(viewMatrices), viewMatrices);
+			RenderTargetOperation op;
+			op.ColorBufferStoreOp = AttachmentStoreOperation::Store;
+
+			std::unique_ptr<Subpass> subpass = Subpass::Create(renderTarget, op, shader,
+				{ { source, 0 } }, sizeof(passData), &passData, true);
+
+			subpass->Submit(*util::MeshFactory::GetCubemapCube(), glm::mat4(1.0f), 6);
 
 			auto& cmd = Renderer::GetRenderCommandBuffer();
 
-			cmd.BeginImmediateCommands();
+			//cmd.BeginImmediateCommands();
 
 			constexpr int mipmapLevels = 5;
 
 			for (int level = 0; level < mipmapLevels; level++)
 			{
-				int mipWidth = 128 * glm::pow(0.5, level);
-				int mipHeight = 128 * glm::pow(0.5, level);
-
 				renderTarget->AttachColorBuffer(cubemap, level);
 
-				cmd.BeginSubpass(*subpass, true);
-
 				float roughness = static_cast<float>(level) / (mipmapLevels - 1);
-				cmd.PushData(&roughness, sizeof(roughness), shader, ShaderStageFlagsFragment, true);
+				subpass->UploadData(&roughness, sizeof(roughness), offsetof(PassData, Roughness));
 
-				cmd.DrawMesh(*util::MeshFactory::GetCubemapCube(), shader, 6, true);
+				cmd.BeginImmediateCommands();
 
-				cmd.EndSubpass(*subpass, true);
+				cmd.ExecuteSubpass(*subpass, true);
+
+				cmd.EndImmediateCommands();
 			}
 
-			cmd.EndImmediateCommands();
+			//cmd.EndImmediateCommands();
 
 			return cubemap;
 		}

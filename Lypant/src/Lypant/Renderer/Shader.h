@@ -18,5 +18,8 @@ namespace lypant
 	public:
 		static std::shared_ptr<Shader> Create(const std::string& path);
 		virtual ~Shader() = default;
+	protected:
+		// NOTE: Engine does not have a good asset system for now. In order not to load the same shaders when they are already in memory, weak ptr is saved.
+		inline static std::unordered_map<std::string, std::weak_ptr<Shader>> s_Cache;
 	};
 }

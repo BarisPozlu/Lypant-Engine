@@ -46,6 +46,12 @@ namespace lypant
 			flags.SrcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
 		}
 
+		else if (oldLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+		{
+			flags.SrcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+			flags.SrcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		}
+
 		else
 		{
 			LY_CORE_ASSERT(false, "transition flags could not be determined");
@@ -81,6 +87,12 @@ namespace lypant
 			flags.DstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 		}
 
+		else if (spec.NewLayout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL)
+		{
+			flags.DstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+			flags.DstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		}
+
 		else
 		{
 			LY_CORE_ASSERT(false, "transition flags could not be determined");
@@ -89,18 +101,25 @@ namespace lypant
 		return flags;
 	}
 
-	static VkFormat GetFormatFromParams(const ImageParams& spec, int channels)
+	static VkFormat GetFormatFromSpec(const ImageSpecification& spec, int channels)
 	{
+		const ImageParams& params = spec.Params;
+
+		if (spec.UsageFlags & ImageUsageFlagsDepthAttachment)
+		{
+			return params.FloatingImage ? VK_FORMAT_D32_SFLOAT : VK_FORMAT_D16_UNORM;
+		}
+
 		switch (channels)
 		{
 		case 1:
 
-			if (!spec.FloatingImage)
+			if (!params.FloatingImage)
 			{
-				return spec.LinearSpace ?  VK_FORMAT_R8_UNORM : VK_FORMAT_R8_SRGB;
+				return params.LinearSpace ?  VK_FORMAT_R8_UNORM : VK_FORMAT_R8_SRGB;
 			}
 
-			if (!spec.LinearSpace)
+			if (!params.LinearSpace)
 			{
 				LY_CORE_ASSERT(false, "floating images have to be in linear space");
 				return VK_FORMAT_MAX_ENUM;
@@ -110,12 +129,12 @@ namespace lypant
 
 		case 2:
 
-			if (!spec.FloatingImage)
+			if (!params.FloatingImage)
 			{
-				return spec.LinearSpace ? VK_FORMAT_R8G8_UNORM : VK_FORMAT_R8G8_SRGB;
+				return params.LinearSpace ? VK_FORMAT_R8G8_UNORM : VK_FORMAT_R8G8_SRGB;
 			}
 
-			if (!spec.LinearSpace)
+			if (!params.LinearSpace)
 			{
 				LY_CORE_ASSERT(false, "floating images have to be in linear space");
 				return VK_FORMAT_MAX_ENUM;
@@ -125,12 +144,12 @@ namespace lypant
 
 		case 3:
 
-			if (!spec.FloatingImage)
+			if (!params.FloatingImage)
 			{
-				return spec.LinearSpace ? VK_FORMAT_R8G8B8_UNORM : VK_FORMAT_R8G8B8_SRGB;
+				return params.LinearSpace ? VK_FORMAT_R8G8B8_UNORM : VK_FORMAT_R8G8B8_SRGB;
 			}
 
-			if (!spec.LinearSpace)
+			if (!params.LinearSpace)
 			{
 				LY_CORE_ASSERT(false, "floating images have to be in linear space");
 				return VK_FORMAT_MAX_ENUM;
@@ -140,12 +159,12 @@ namespace lypant
 
 		case 4:
 
-			if (!spec.FloatingImage)
+			if (!params.FloatingImage)
 			{
-				return spec.LinearSpace ? VK_FORMAT_R8G8B8A8_UNORM : VK_FORMAT_R8G8B8A8_SRGB;
+				return params.LinearSpace ? VK_FORMAT_R8G8B8A8_UNORM : VK_FORMAT_R8G8B8A8_SRGB;
 			}
 
-			if (!spec.LinearSpace)
+			if (!params.LinearSpace)
 			{
 				LY_CORE_ASSERT(false, "floating images have to be in linear space");
 				return VK_FORMAT_MAX_ENUM;
@@ -222,8 +241,7 @@ namespace lypant
 
 		m_ImageType = spec.Type;
 		m_LayerCount = spec.Layers;
-
-		stbi_set_flip_vertically_on_load(true);
+		m_Path = path;
 
 		int width;
 		int height;
@@ -246,7 +264,7 @@ namespace lypant
 
 		m_Extent.width = width;
 		m_Extent.height = height;
-		m_Format = GetFormatFromParams(spec.Params, channels);
+		m_Format = GetFormatFromSpec(spec, channels);
 
 		CreateImage(spec);
 		UploadData(buffer);
@@ -272,7 +290,7 @@ namespace lypant
 
 		m_Extent.width = spec.Width;
 		m_Extent.height = spec.Height;
-		m_Format = GetFormatFromParams(spec.Params, spec.Channels);
+		m_Format = GetFormatFromSpec(spec, spec.Channels);
 
 		CreateImage(spec);
 
@@ -306,6 +324,11 @@ namespace lypant
 
 	VulkanImage::~VulkanImage()
 	{
+		if (m_Path.size())
+		{
+			s_Cache.erase(m_Path);
+		}
+
 		auto& graphicsContext = VulkanGraphicsContext::Get();
 
 		auto& views = m_ImageViews;
@@ -337,7 +360,8 @@ namespace lypant
 		imageMemoryBarrier.oldLayout = m_CurrentLayout;
 		imageMemoryBarrier.newLayout = spec.NewLayout;
 		imageMemoryBarrier.image = m_Image;
-		imageMemoryBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+		// TODO: Aspect mask is not set properly
+		imageMemoryBarrier.subresourceRange.aspectMask = m_Format == VK_FORMAT_D16_UNORM ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
 		imageMemoryBarrier.subresourceRange.baseMipLevel = spec.BaseMip;
 		imageMemoryBarrier.subresourceRange.levelCount = spec.MipCount;
 		imageMemoryBarrier.subresourceRange.baseArrayLayer = 0;
@@ -412,6 +436,8 @@ namespace lypant
 		TransitionLayout(commandBuffer.GetVkCommandBuffer(), { VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL });
 
 		vkCmdCopyBufferToImage(commandBuffer.GetVkCommandBuffer(), stagingBuffer->GetVkBuffer(), m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+
+		TransitionLayout(commandBuffer.GetVkCommandBuffer(), { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL });
 
 		commandBuffer.EndCommands();
 	}

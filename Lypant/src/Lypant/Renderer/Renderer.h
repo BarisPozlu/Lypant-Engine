@@ -4,6 +4,7 @@
 #include "RenderCommandBuffer.h"
 #include "RenderPass.h"
 #include "Mesh.h"
+#include "Lypant/Scene/Scene.h"
 
 namespace lypant
 {
@@ -14,20 +15,17 @@ namespace lypant
 		static void Shutdown();
 		static void BeginRendering();
 		static void EndRendering();
-		// TODO: delta time is there for testing, remove
-		static void BeginScene(float deltaTime);
+		static void BeginScene(const Scene::SceneData& sceneData);
 		static void EndScene();
-		static void SubmitMesh(const Mesh& mesh, const std::shared_ptr<Shader>& shader);
+		static void SubmitMesh(const Mesh& mesh, const glm::mat4& modelMatrix);
 		static RenderCommandBuffer& GetRenderCommandBuffer();
 	private:
 		struct RendererData
 		{
-			std::unique_ptr<Subpass> QuadPass;
-			std::shared_ptr<Shader> QuadShader;
+			std::unique_ptr<Subpass> LightingPass;
 			std::unique_ptr<Subpass> CubemapPass;
-			std::shared_ptr<Shader> CubemapShader;
+			std::unique_ptr<Subpass> PostProcessPass;
 
-			std::unique_ptr<class EditorPerspectiveCamera> Camera;
 			std::shared_ptr<class Buffer> EnvironmentBuffer;
 		};
 		static RendererData* s_Data;

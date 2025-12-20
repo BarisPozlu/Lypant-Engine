@@ -5,12 +5,12 @@
 
 namespace lypant
 {
-	std::shared_ptr<Material> Material::Create(const std::shared_ptr<Shader>& shader, const std::shared_ptr<Image>& albedo)
+	std::shared_ptr<Material> Material::Create(const MaterialData& data)
 	{
 		switch (GraphicsContext::GetGraphicsAPI())
 		{
 			case GraphicsAPI::None: LY_CORE_ASSERT(false, "None graphics api is not supported."); break;
-			case GraphicsAPI::Vulkan: return std::make_shared<VulkanMaterial>(shader, albedo); break;
+			case GraphicsAPI::Vulkan: return std::make_shared<VulkanMaterial>(data); break;
 		}
 
 		LY_CORE_ASSERT(false, "Unknown Graphics API");

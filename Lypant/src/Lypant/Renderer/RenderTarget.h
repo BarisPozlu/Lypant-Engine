@@ -5,6 +5,25 @@
 
 namespace lypant
 {
+	enum class AttachmentLoadOperation
+	{
+		Load, Clear, DontCare
+	};
+
+	enum class AttachmentStoreOperation
+	{
+		Store, DontCare
+	};
+
+	// TODO: For now render targets only support 1 color buffer but it is easy to extend
+	struct RenderTargetOperation
+	{
+		AttachmentLoadOperation ColorBufferLoadOp = AttachmentLoadOperation::DontCare;
+		AttachmentStoreOperation ColorBufferStoreOp = AttachmentStoreOperation::DontCare;
+		AttachmentLoadOperation DepthBufferLoadOp = AttachmentLoadOperation::DontCare;
+		AttachmentStoreOperation DepthBufferStoreOp = AttachmentStoreOperation::DontCare;
+	};
+
 	class RenderTarget
 	{
 	public:

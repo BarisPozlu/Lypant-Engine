@@ -1,41 +1,71 @@
+#version 460
+
 #ifdef VERTEX_SHADER
 
-layout (location = 0) in vec4 a_Position;
-layout (location = 1) in vec3 a_Normal;
-layout (location = 2) in vec3 a_Tangent;
-layout (location = 3) in vec2 a_TexCoord;
+#extension GL_EXT_buffer_reference : require
 
-out vec3 v_WorldPosition;
-out mat3 v_TBNMatrix;
-out vec2 v_TexCoord;
+layout (location = 0) out vec3 v_WorldPosition;
+layout (location = 1) out mat3 v_TBNMatrix;
+layout (location = 4) out vec2 v_TexCoord;
+layout (location = 5) out vec3 v_Normal;
 
-out vec3 v_Normal;
+struct Vertex
+{
+	vec4 Position;
+	vec3 Normal;
+	vec3 Tangent;
+	vec2 TexCoord;
+};
 
-out vec4 v_SpotLightSpacePositions[8];
+struct MaterialConstants
+{
+	vec3 Albedo;
+	float Roughness;
+	float Metallic;
+	bool UseCombinedORM;
+	bool UseNormalMap;
+};
 
-layout (std140, binding = 4) uniform Camera
+layout (buffer_reference) readonly buffer VertexBuffer
+{
+	Vertex vertices[];
+};
+
+layout (push_constant) uniform PushConstant
+{
+	VertexBuffer vertexBuffer;
+} PushConstants;
+
+//out vec4 v_SpotLightSpacePositions[8];
+
+layout (set = 0, binding = 0) readonly buffer Camera
 {
 	mat4 u_VP;
 	mat4 u_ViewMatrix;
 	vec3 u_ViewPosition;
 };
 
-uniform mat4 u_ModelMatrix;
-uniform mat3 u_NormalMatrix;
+layout (set = 1, binding = 3) uniform DynamicPassData
+{
+	mat4 u_ModelMatrix;
+	mat3 u_NormalMatrix;
+	MaterialConstants u_MaterialConstants;
+	//float u_AmbientStrength;
+};
 
-uniform bool u_UseNormalMap;
-
-uniform mat4 u_SpotLightSpaceMatrices[8];
+//uniform mat4 u_SpotLightSpaceMatrices[8];
 
 void main()
 {
-	v_WorldPosition = vec3(u_ModelMatrix * a_Position);
+	Vertex vertex = PushConstants.vertexBuffer.vertices[gl_VertexIndex];
 
-	vec3 normal = normalize(u_NormalMatrix * a_Normal);
+	v_WorldPosition = vec3(u_ModelMatrix * vertex.Position);
 
-	if (u_UseNormalMap)
+	vec3 normal = normalize(u_NormalMatrix * vertex.Normal);
+
+	if (u_MaterialConstants.UseNormalMap)
 	{
-		vec3 tangent = normalize(u_NormalMatrix * a_Tangent);
+		vec3 tangent = normalize(u_NormalMatrix * vertex.Tangent);
 		tangent = normalize(tangent - dot(tangent, normal) * normal);
 
 		vec3 bitangent = cross(normal, tangent);
@@ -48,13 +78,13 @@ void main()
 		v_Normal = normal;
 	}
 
-	for (int i = 0; i < 8; i++)
-	{
-		v_SpotLightSpacePositions[i] = u_SpotLightSpaceMatrices[i] * vec4(v_WorldPosition, 1.0);
-	}
+//	for (int i = 0; i < 8; i++)
+//	{
+//		v_SpotLightSpacePositions[i] = u_SpotLightSpaceMatrices[i] * vec4(v_WorldPosition, 1.0);
+//	}
 
-	v_TexCoord = a_TexCoord;
-	gl_Position = u_VP * u_ModelMatrix * a_Position;
+	v_TexCoord = vertex.TexCoord;
+	gl_Position = u_VP * u_ModelMatrix * vertex.Position;
 }
 
 #endif
@@ -63,18 +93,25 @@ void main()
 
 layout (location = 0) out vec4 o_Color;
 
-in vec3 v_WorldPosition;
-in mat3 v_TBNMatrix;
-in vec2 v_TexCoord;
-in vec3 v_Normal;
+layout (location = 0) in vec3 v_WorldPosition;
+layout (location = 1) in mat3 v_TBNMatrix;
+layout (location = 4) in vec2 v_TexCoord;
+layout (location = 5) in vec3 v_Normal;
 
-in vec4 v_SpotLightSpacePositions[8];
+//in vec4 v_SpotLightSpacePositions[8];
 
-layout (std140, binding = 4) uniform Camera
+layout (set = 0, binding = 0) readonly buffer Camera
 {
 	mat4 u_VP;
 	mat4 u_ViewMatrix;
 	vec3 u_ViewPosition;
+};
+
+layout (set = 0, binding = 1) readonly buffer NumberOfLights
+{
+	int u_NumberOfPointLights;
+	int u_NumberOfSpotLights;
+	int u_NumberOfDirectionalLights;
 };
 
 struct PointLight
@@ -87,7 +124,7 @@ struct PointLight
 	bool CastShadows;
 };
 
-layout (std140, binding = 0) uniform PointLights
+layout (set = 0, binding = 2) readonly buffer PointLights
 {
 	PointLight u_PointLights[30];
 };
@@ -103,7 +140,7 @@ struct SpotLight
 	bool CastShadows;
 };
 
-layout (std140, binding = 1) uniform SpotLights
+layout (set = 0, binding = 3) readonly buffer SpotLights
 {
 	SpotLight u_SpotLights[30];
 };
@@ -116,51 +153,53 @@ struct DirectionalLight
 	bool CastShadows;
 };
 
-layout (std140, binding = 2) uniform DirectionalLights
+layout (set = 0, binding = 4) readonly buffer DirectionalLights
 {
 	DirectionalLight u_DirectionalLights[30];
 };
 
-layout (std140, binding = 3) uniform NumberOfLights
+struct MaterialConstants
 {
-	int u_NumberOfPointLights;
-	int u_NumberOfSpotLights;
-	int u_NumberOfDirectionalLights;
+	vec3 Albedo;
+	float Roughness;
+	float Metallic;
+	bool UseCombinedORM;
+	bool UseNormalMap;
 };
 
-uniform bool u_UseCombinedORM;
+layout (set = 1, binding = 3) uniform DynamicPassData
+{
+	mat4 u_ModelMatrix;
+	mat3 u_NormalMatrix;
+	MaterialConstants u_MaterialConstants;
+	//float u_AmbientStrength;
+};
 
-uniform sampler2D u_AlbedoMap;
-uniform sampler2D u_ORMMap;
-uniform sampler2D u_AmbientOcclusionMap;
-uniform sampler2D u_RoughnessMap;
-uniform sampler2D u_MetallicMap;
-uniform sampler2D u_NormalMap;
+layout (set = 2, binding = 0) uniform sampler2D u_AlbedoMap;
+layout (set = 2, binding = 1) uniform sampler2D u_ORMMap;
+layout (set = 2, binding = 2) uniform sampler2D u_AmbientOcclusionMap;
+layout (set = 2, binding = 3) uniform sampler2D u_RoughnessMap;
+layout (set = 2, binding = 4) uniform sampler2D u_MetallicMap;
+layout (set = 2, binding = 5) uniform sampler2D u_NormalMap;
 
-uniform bool u_UseNormalMap;
-uniform vec3 u_Albedo;
-uniform float u_Roughness;
-uniform float u_Metallic;
+layout (set = 1, binding = 0) uniform samplerCube u_DiffuseIrradianceMap;
+layout (set = 1, binding = 1) uniform samplerCube u_PreFilteredMap;
+layout (set = 1, binding = 2) uniform sampler2D u_BRDFIntegrationMap;
 
-uniform float u_AmbientStrength;
-uniform samplerCube u_DiffuseIrradianceMap;
-uniform samplerCube u_PreFilteredMap;
-uniform sampler2D u_BRDFIntegrationMap;
+//uniform sampler2DArray u_DirectionalLightShadowMaps;
+//uniform float u_CascadePlaneDistances[5];
+//uniform mat4 u_DirectionalLightSpaceMatrices[5];
 
-uniform sampler2DArray u_DirectionalLightShadowMaps;
-uniform float u_CascadePlaneDistances[5];
-uniform mat4 u_DirectionalLightSpaceMatrices[5];
-
-uniform sampler2DArray u_SpotLightShadowMaps;
-uniform samplerCubeArray u_PointLightShadowMaps;
+//uniform sampler2DArray u_SpotLightShadowMaps;
+//uniform samplerCubeArray u_PointLightShadowMaps;
 
 vec3 CalculatePointLight(int i, vec3 normal, vec3 viewDirection, vec3 albedo, float roughness, float metallic, vec3 F0);
 vec3 CalculateSpotLight(int i, vec3 normal, vec3 viewDirection, vec3 albedo, float roughness, float metallic, vec3 F0);
 vec3 CalculateDirectionalLight(int i, vec3 normal, vec3 viewDirection, vec3 albedo, float roughness, float metallic, vec3 F0);
 
-float CalculateDirectionalLightShadowFactor(vec3 normal, vec3 lightDirection, int shadowMapIndex);
-float CalculateSpotLightShadowFactor(vec3 normal, vec3 lightDirection, int shadowMapIndex);
-float CalculatePointLightShadowFactor(vec3 normal, vec3 lightPosition, int shadowMapIndex);
+//float CalculateDirectionalLightShadowFactor(vec3 normal, vec3 lightDirection, int shadowMapIndex);
+//float CalculateSpotLightShadowFactor(vec3 normal, vec3 lightDirection, int shadowMapIndex);
+//float CalculatePointLightShadowFactor(vec3 normal, vec3 lightPosition, int shadowMapIndex);
 
 float DistributionGGX(vec3 normal, vec3 halfwayDirection, float roughness);
 float GeometrySchlickGGX(float NdotV, float roughness);
@@ -170,20 +209,11 @@ vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness);
 
 const float PI = 3.14159265359;
 
-vec3 SampleOffsetDirections[20] = vec3[]
-(
-   vec3( 1,  1,  1), vec3( 1, -1,  1), vec3(-1, -1,  1), vec3(-1,  1,  1), 
-   vec3( 1,  1, -1), vec3( 1, -1, -1), vec3(-1, -1, -1), vec3(-1,  1, -1),
-   vec3( 1,  1,  0), vec3( 1, -1,  0), vec3(-1, -1,  0), vec3(-1,  1,  0),
-   vec3( 1,  0,  1), vec3(-1,  0,  1), vec3( 1,  0, -1), vec3(-1,  0, -1),
-   vec3( 0,  1,  1), vec3( 0, -1,  1), vec3( 0, -1, -1), vec3( 0,  1, -1)
-); 
-
 void main()
 {
 	vec3 normal;
 
-	if (u_UseNormalMap)
+	if (u_MaterialConstants.UseNormalMap)
 	{
 		normal = texture(u_NormalMap, v_TexCoord).rgb * 2.0 - 1.0;
 		normal = normalize(v_TBNMatrix * normal);
@@ -196,25 +226,25 @@ void main()
 
 	vec3 viewDirection = normalize(u_ViewPosition - v_WorldPosition);
 
-	vec3 albedo = texture(u_AlbedoMap, v_TexCoord).rgb * u_Albedo;
+	vec3 albedo = texture(u_AlbedoMap, v_TexCoord).rgb * u_MaterialConstants.Albedo;
 
 	float ao;
 	float roughness;
 	float metallic;
 
-	if (u_UseCombinedORM)
+	if (u_MaterialConstants.UseCombinedORM)
 	{
 		vec3 orm = texture(u_ORMMap, v_TexCoord).rgb;
 		ao = orm.r;
-		roughness = orm.g * u_Roughness;
-		metallic = orm.b * u_Metallic;
+		roughness = orm.g * u_MaterialConstants.Roughness;
+		metallic = orm.b * u_MaterialConstants.Metallic;
 	}
 
 	else
 	{
 		ao = texture(u_AmbientOcclusionMap, v_TexCoord).r;
-		roughness = texture(u_RoughnessMap, v_TexCoord).r * u_Roughness;
-		metallic = texture(u_MetallicMap, v_TexCoord).r * u_Metallic;		
+		roughness = texture(u_RoughnessMap, v_TexCoord).r * u_MaterialConstants.Roughness;
+		metallic = texture(u_MetallicMap, v_TexCoord).r * u_MaterialConstants.Metallic;		
 	}
 
 	vec3 F0 = vec3(0.04);
@@ -254,9 +284,11 @@ void main()
 	vec3 specular = preFilteredSample * (BRDFSample.x * Ks + BRDFSample.y);
 
 	//vec3 ambient = (diffuse + specular) * ao;
-	vec3 ambient = (diffuse + specular) * u_AmbientStrength;
+	//vec3 ambient = (diffuse + specular) * u_AmbientStrength;
+	vec3 ambient = diffuse + specular;
 
 	o_Color = vec4(Lo + ambient, 1.0);
+	//o_Color = vec4(ambient, 1.0);
 }
 
 vec3 CalculatePointLight(int i, vec3 normal, vec3 viewDirection, vec3 albedo, float roughness, float metallic, vec3 F0)
@@ -283,7 +315,8 @@ vec3 CalculatePointLight(int i, vec3 normal, vec3 viewDirection, vec3 albedo, fl
 
 	vec3 specular = numerator / denominator;
 
-	return (Kd * albedo / PI + specular) * radiance * max(dot(normal, lightDirection), 0.0) * (1 - CalculatePointLightShadowFactor(normal, u_PointLights[i].Position, u_PointLights[i].ShadowMapIndex));
+	//return (Kd * albedo / PI + specular) * radiance * max(dot(normal, lightDirection), 0.0) * (1 - CalculatePointLightShadowFactor(normal, u_PointLights[i].Position, u_PointLights[i].ShadowMapIndex));
+	return (Kd * albedo / PI + specular) * radiance * max(dot(normal, lightDirection), 0.0);
 }
 
 vec3 CalculateSpotLight(int i, vec3 normal, vec3 viewDirection, vec3 albedo, float roughness, float metallic, vec3 F0)
@@ -314,7 +347,8 @@ vec3 CalculateSpotLight(int i, vec3 normal, vec3 viewDirection, vec3 albedo, flo
 
 	vec3 specular = numerator / denominator;
 
-	return (Kd * albedo / PI + specular) * radiance * max(dot(normal, lightDirection), 0.0) * (1 - CalculateSpotLightShadowFactor(normal, lightDirection, u_SpotLights[i].ShadowMapIndex));
+	//return (Kd * albedo / PI + specular) * radiance * max(dot(normal, lightDirection), 0.0) * (1 - CalculateSpotLightShadowFactor(normal, lightDirection, u_SpotLights[i].ShadowMapIndex));
+	return (Kd * albedo / PI + specular) * radiance * max(dot(normal, lightDirection), 0.0);
 }
 
 vec3 CalculateDirectionalLight(int i, vec3 normal, vec3 viewDirection, vec3 albedo, float roughness, float metallic, vec3 F0)
@@ -336,110 +370,111 @@ vec3 CalculateDirectionalLight(int i, vec3 normal, vec3 viewDirection, vec3 albe
 
 	vec3 specular = numerator / denominator;
 
-	return (Kd * albedo / PI + specular) * radiance * max(dot(normal, -u_DirectionalLights[i].Direction), 0.0) * (1 - CalculateDirectionalLightShadowFactor(normal, -u_DirectionalLights[i].Direction, u_DirectionalLights[i].ShadowMapIndex));
+	//return (Kd * albedo / PI + specular) * radiance * max(dot(normal, -u_DirectionalLights[i].Direction), 0.0) * (1 - CalculateDirectionalLightShadowFactor(normal, -u_DirectionalLights[i].Direction, u_DirectionalLights[i].ShadowMapIndex));
+	return (Kd * albedo / PI + specular) * radiance * max(dot(normal, -u_DirectionalLights[i].Direction), 0.0);
 }
 
-float CalculateDirectionalLightShadowFactor(vec3 normal, vec3 lightDirection, int shadowMapIndex)
-{
-	if (shadowMapIndex == -1)
-	{
-		return 0.0;
-	}
-
-	vec4 worldPosition = vec4(v_WorldPosition, 1.0);
-	vec4 viewPosition = u_ViewMatrix * worldPosition;
-	float depthValue = abs(viewPosition.z);
-	
-	int layer = 4;
-
-	for (int i = 0; i < 4; i++)
-	{
-		if (depthValue < u_CascadePlaneDistances[i])
-		{
-			layer = i;
-			break;
-		}
-	}
-
-	vec4 lightSpacePosition = u_DirectionalLightSpaceMatrices[layer] * worldPosition;
-
-	float shadowFactor = 0;
-	vec3 shadowCoords = lightSpacePosition.xyz / lightSpacePosition.w * 0.5 + 0.5; // xy being texture coords and z being the depth value
-
-	if (shadowCoords.z > 1)
-	{
-		return 0.0;
-	}
-
-	float bias = max(0.05 * (1.0 - dot(normal, lightDirection)), 0.005);
-	bias *= 1 / (u_CascadePlaneDistances[layer] * 0.5);
-
-	vec2 texelSize = 1.0 / textureSize(u_DirectionalLightShadowMaps, 0).xy;
-
-	for (int x = -1; x <= 1; x++)
-	{
-		for (int y = -1; y <= 1; y++)
-		{
-			float sampledDepth = texture(u_DirectionalLightShadowMaps, vec3(shadowCoords.xy + texelSize * vec2(x, y), layer)).r;
-			shadowFactor += shadowCoords.z - bias > sampledDepth ? 1.0 : 0.0;
-		}
-	}
-	
-	return shadowFactor / 9;
-}
-
-float CalculateSpotLightShadowFactor(vec3 normal, vec3 lightDirection, int shadowMapIndex)
-{
-	if (shadowMapIndex == -1)
-	{
-		return 0.0;
-	}
-
-	float shadowFactor = 0;
-	vec3 shadowCoords = v_SpotLightSpacePositions[shadowMapIndex].xyz / v_SpotLightSpacePositions[shadowMapIndex].w * 0.5 + 0.5; // xy being texture coords and z being the depth value
-
-	if (shadowCoords.z > 1)
-	{
-		return 0.0;
-	}
-
-	float bias = max(0.05 * (1.0 - dot(normal, lightDirection)), 0.005);
-
-	vec2 texelSize = 1.0 / textureSize(u_SpotLightShadowMaps, 0).xy;
-
-	for (int x = -1; x <= 1; x++)
-	{
-		for (int y = -1; y <= 1; y++)
-		{
-			float sampledDepth = texture(u_SpotLightShadowMaps, vec3(shadowCoords.xy + texelSize * vec2(x, y), shadowMapIndex)).r;
-			shadowFactor += shadowCoords.z - bias > sampledDepth ? 1.0 : 0.0;
-		}
-	}
-	
-	return shadowFactor / 9;
-}
-
-float CalculatePointLightShadowFactor(vec3 normal, vec3 lightPosition, int shadowMapIndex)
-{
-	// There is no PCF for point lights for now as they are already super expensive
-	if (shadowMapIndex == -1)
-	{
-		return 0.0;
-	}
-
-	float shadowFactor = 0;
-
-	vec3 lightToFragment = v_WorldPosition - lightPosition;
-
-	float distanceFromLight = length(lightToFragment);
-	float bias = 0.05;
-	
-	float sampledDistance = texture(u_PointLightShadowMaps, vec4(lightToFragment, shadowMapIndex)).r;
-	sampledDistance *= 25.0;
-	shadowFactor += distanceFromLight - bias > sampledDistance ? 1.0 : 0.0;
-	
-	return shadowFactor;
-}
+//float CalculateDirectionalLightShadowFactor(vec3 normal, vec3 lightDirection, int shadowMapIndex)
+//{
+//	if (shadowMapIndex == -1)
+//	{
+//		return 0.0;
+//	}
+//
+//	vec4 worldPosition = vec4(v_WorldPosition, 1.0);
+//	vec4 viewPosition = u_ViewMatrix * worldPosition;
+//	float depthValue = abs(viewPosition.z);
+//	
+//	int layer = 4;
+//
+//	for (int i = 0; i < 4; i++)
+//	{
+//		if (depthValue < u_CascadePlaneDistances[i])
+//		{
+//			layer = i;
+//			break;
+//		}
+//	}
+//
+//	vec4 lightSpacePosition = u_DirectionalLightSpaceMatrices[layer] * worldPosition;
+//
+//	float shadowFactor = 0;
+//	vec3 shadowCoords = lightSpacePosition.xyz / lightSpacePosition.w * 0.5 + 0.5; // xy being texture coords and z being the depth value
+//
+//	if (shadowCoords.z > 1)
+//	{
+//		return 0.0;
+//	}
+//
+//	float bias = max(0.05 * (1.0 - dot(normal, lightDirection)), 0.005);
+//	bias *= 1 / (u_CascadePlaneDistances[layer] * 0.5);
+//
+//	vec2 texelSize = 1.0 / textureSize(u_DirectionalLightShadowMaps, 0).xy;
+//
+//	for (int x = -1; x <= 1; x++)
+//	{
+//		for (int y = -1; y <= 1; y++)
+//		{
+//			float sampledDepth = texture(u_DirectionalLightShadowMaps, vec3(shadowCoords.xy + texelSize * vec2(x, y), layer)).r;
+//			shadowFactor += shadowCoords.z - bias > sampledDepth ? 1.0 : 0.0;
+//		}
+//	}
+//	
+//	return shadowFactor / 9;
+//}
+//
+//float CalculateSpotLightShadowFactor(vec3 normal, vec3 lightDirection, int shadowMapIndex)
+//{
+//	if (shadowMapIndex == -1)
+//	{
+//		return 0.0;
+//	}
+//
+//	float shadowFactor = 0;
+//	vec3 shadowCoords = v_SpotLightSpacePositions[shadowMapIndex].xyz / v_SpotLightSpacePositions[shadowMapIndex].w * 0.5 + 0.5; // xy being texture coords and z being the depth value
+//
+//	if (shadowCoords.z > 1)
+//	{
+//		return 0.0;
+//	}
+//
+//	float bias = max(0.05 * (1.0 - dot(normal, lightDirection)), 0.005);
+//
+//	vec2 texelSize = 1.0 / textureSize(u_SpotLightShadowMaps, 0).xy;
+//
+//	for (int x = -1; x <= 1; x++)
+//	{
+//		for (int y = -1; y <= 1; y++)
+//		{
+//			float sampledDepth = texture(u_SpotLightShadowMaps, vec3(shadowCoords.xy + texelSize * vec2(x, y), shadowMapIndex)).r;
+//			shadowFactor += shadowCoords.z - bias > sampledDepth ? 1.0 : 0.0;
+//		}
+//	}
+//	
+//	return shadowFactor / 9;
+//}
+//
+//float CalculatePointLightShadowFactor(vec3 normal, vec3 lightPosition, int shadowMapIndex)
+//{
+//	// There is no PCF for point lights for now as they are already super expensive
+//	if (shadowMapIndex == -1)
+//	{
+//		return 0.0;
+//	}
+//
+//	float shadowFactor = 0;
+//
+//	vec3 lightToFragment = v_WorldPosition - lightPosition;
+//
+//	float distanceFromLight = length(lightToFragment);
+//	float bias = 0.05;
+//	
+//	float sampledDistance = texture(u_PointLightShadowMaps, vec4(lightToFragment, shadowMapIndex)).r;
+//	sampledDistance *= 25.0;
+//	shadowFactor += distanceFromLight - bias > sampledDistance ? 1.0 : 0.0;
+//	
+//	return shadowFactor;
+//}
 
 float DistributionGGX(vec3 normal, vec3 halfwayDirection, float roughness)
 {

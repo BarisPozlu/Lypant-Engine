@@ -4,6 +4,7 @@
 #include "VulkanSwapChain.h"
 #include "VulkanDescriptorSet.h"
 #include "VulkanCommandBuffer.h"
+#include "Lypant/Renderer/EnvironmentBufferLayout.h"
 
 namespace lypant
 {
@@ -30,16 +31,22 @@ namespace lypant
 
 		// NOTE: This descriptor set layout is created here so that it lives for the duration of the context and shaders can simply get the layout from here and add it
 		// to their pipeline layout, this also enables the render command buffer to simply get the layout and create the descriptor set upon init.
-		VkDescriptorSetLayoutBinding layoutBinding{};
-		layoutBinding.binding = 0;
-		layoutBinding.descriptorCount = 1;
-		layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
-		layoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+		std::array<VkDescriptorSetLayoutBinding, EnvironmentBufferLayout::s_BindingCount> layoutBindings{};
 
+		for (int i = 0; i < layoutBindings.size(); i++)
+		{
+			VkDescriptorSetLayoutBinding& layoutBinding = layoutBindings[i];
+
+			layoutBinding.binding = i;
+			layoutBinding.descriptorCount = 1;
+			layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
+			layoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+		}
+		
 		VkDescriptorSetLayoutCreateInfo layoutInfo{};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layoutInfo.bindingCount = 1;
-		layoutInfo.pBindings = &layoutBinding;
+		layoutInfo.bindingCount = layoutBindings.size();
+		layoutInfo.pBindings = layoutBindings.data();
 
 		vkCreateDescriptorSetLayout(m_Device, &layoutInfo, nullptr, &m_GlobalDescriptorSetLayout);
 	}

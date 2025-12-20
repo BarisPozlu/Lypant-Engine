@@ -6,6 +6,8 @@
 #include "VulkanRenderPass.h"
 #include "VulkanBuffer.h"
 #include "VulkanDescriptorSet.h"
+#include "VulkanMaterial.h"
+#include "Lypant/Renderer/EnvironmentBufferLayout.h"
 
 namespace lypant
 {
@@ -85,7 +87,7 @@ namespace lypant
 		const VulkanSubpass& vulkanSubpass = reinterpret_cast<const VulkanSubpass&>(subpass);
 
 		VkPipeline pipeline = vulkanSubpass.GetGraphicsPipeline()->GetVkPipeline();
-		const auto& shader = vulkanSubpass.GetShader();
+		const auto& shader = vulkanSubpass.GetVkShader();
 		const auto& descriptorSet = vulkanSubpass.GetDescriptorSet();
 		const auto& renderTarget = vulkanSubpass.GetRenderTarget();
 		const auto& uniformBuffer = vulkanSubpass.GetUniformBuffer();
@@ -93,8 +95,9 @@ namespace lypant
 		if (m_EnvironmentBufferSize)
 		{
 			uint32_t dynamicOffset = m_EnvironmentBufferSize * graphicsContext.GetCurrentFrameIndex();
-			VkDescriptorSet environmentSet = m_EnvironmentDescriptorSet->GetVkDescriptorSet();
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipelineLayout(), 0, 1, &environmentSet, 1, &dynamicOffset);
+			m_DynamicOffsets.fill(dynamicOffset);
+			const auto& environmentSet = m_EnvironmentDescriptorSet->GetVkDescriptorSet();
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shader->GetPipelineLayout(), 0, 1, &environmentSet, m_DynamicOffsets.size(), m_DynamicOffsets.data());
 		}
 
 		for (const auto& dataBinding : vulkanSubpass.GetDataBindings())
@@ -107,7 +110,7 @@ namespace lypant
 
 		if (descriptorSet)
 		{
-			VkDescriptorSet vkDescriptorSet = descriptorSet->GetVkDescriptorSet();
+			const auto& vkDescriptorSet = descriptorSet->GetVkDescriptorSet();
 			if (uniformBuffer && uniformBuffer->IsDynamic())
 			{
 				uint32_t dynamicOffset = vulkanSubpass.GetUniformBuffer()->GetSize() * graphicsContext.GetCurrentFrameIndex();
@@ -120,15 +123,17 @@ namespace lypant
 			}
 		}
 
-		const VkRenderingInfo& renderingInfo = renderTarget->PrepareForRendering(commandBuffer, vulkanSubpass.ShouldClearTarget());
+		const VkRenderingInfo& renderingInfo = renderTarget->PrepareForRendering(commandBuffer, vulkanSubpass.GetRenderTargetOperation());
 
 		vkCmdBeginRendering(commandBuffer, &renderingInfo);
 
 		VkViewport viewport{};
 		viewport.x = renderingInfo.renderArea.offset.x;
 		viewport.y = renderingInfo.renderArea.extent.height - renderingInfo.renderArea.offset.y;
+		//viewport.y = renderingInfo.renderArea.offset.y;
 		viewport.width = renderingInfo.renderArea.extent.width;
 		viewport.height = -1 * static_cast<float>(renderingInfo.renderArea.extent.height);
+		//viewport.height = static_cast<float>(renderingInfo.renderArea.extent.height);
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 
@@ -143,7 +148,51 @@ namespace lypant
 		vkCmdEndRendering(commandBuffer);
 	}
 
-	void VulkanRenderCommandBuffer::DrawMesh(const Mesh& mesh, const std::shared_ptr<Shader>& shader, uint32_t instanceCount, bool IsImmediate)
+	void VulkanRenderCommandBuffer::ExecuteSubpass(Subpass& subpass, bool IsImmediate)
+	{
+		VkCommandBuffer commandBuffer = IsImmediate ? m_ImmediateCommandBuffer.GetVkCommandBuffer() : GetCurrentFrame().CommandBuffer;
+
+		BeginSubpass(subpass, IsImmediate);
+
+		//const VulkanSubpass& vkSubpass = reinterpret_cast<const VulkanSubpass&>(subpass);
+
+		if (subpass.GetFlags() & SubpassFlagDrawWithMaterial)
+		{
+			for (const DrawData& draw : subpass.GetDrawData())
+			{
+				// upload the model matrix and material data here but how do we match offsets?
+				// for now to make stuff work simply assume that model offset is 0 and normal offset is 64, they will always exist for now for material passes
+				// in the future I might implement a system where I give the data type and its name that is stored within the uniform buffer
+				// and we can simply get the offset of the variables using maybe a map
+
+				glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(draw.ModelMatrix)));
+				const auto& vkMaterial = reinterpret_cast<const std::shared_ptr<VulkanMaterial>&>(draw.MeshData.GetMaterial());
+
+				subpass.UploadData(&draw.ModelMatrix, sizeof(draw.ModelMatrix), 0);
+				
+				// MAT3 cannot be uploadded in one go since each vec3 has an alignment of 16
+				subpass.UploadData(&normalMatrix[0], sizeof(glm::vec3), 64);
+				subpass.UploadData(&normalMatrix[1], sizeof(glm::vec3), 64 + sizeof(glm::vec4));
+				subpass.UploadData(&normalMatrix[2], sizeof(glm::vec3), 64 + 2 * sizeof(glm::vec4));
+				
+				subpass.UploadData(&vkMaterial->GetData().Constants, sizeof(vkMaterial->GetData().Constants), 112); // padding required here, terrible but will change later
+				
+				DrawMeshWithMaterial(draw.MeshData, subpass.GetShader(), draw.ModelMatrix, draw.InstanceCount, IsImmediate);
+			}
+		}
+
+		else
+		{
+			for (const DrawData& draw : subpass.GetDrawData())
+			{
+				DrawMesh(draw.MeshData, subpass.GetShader(), draw.ModelMatrix, draw.InstanceCount, IsImmediate);
+			}
+		}
+
+		EndSubpass(subpass, IsImmediate);
+	}
+
+	void VulkanRenderCommandBuffer::DrawMesh(const Mesh& mesh, const std::shared_ptr<Shader>& shader, const glm::mat4& modelMatrix, uint32_t instanceCount, bool IsImmediate)
 	{
 		VkCommandBuffer commandBuffer = IsImmediate ? m_ImmediateCommandBuffer.GetVkCommandBuffer() : GetCurrentFrame().CommandBuffer;
 
@@ -159,6 +208,26 @@ namespace lypant
 		vkCmdDrawIndexed(commandBuffer, vkIndexBuffer->GetSize() / sizeof(uint32_t), instanceCount, 0, 0, 0);
 	}
 
+	void VulkanRenderCommandBuffer::DrawMeshWithMaterial(const Mesh& mesh, const std::shared_ptr<Shader>& shader, const glm::mat4& modelMatrix, uint32_t instanceCount, bool IsImmediate)
+	{
+		VkCommandBuffer commandBuffer = IsImmediate ? m_ImmediateCommandBuffer.GetVkCommandBuffer() : GetCurrentFrame().CommandBuffer;
+
+		const auto& vkVertexBuffer = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(mesh.GetVertexBuffer());
+		const auto& vkIndexBuffer = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(mesh.GetIndexBuffer());
+		const auto& vkMaterial = reinterpret_cast<const std::shared_ptr<VulkanMaterial>&>(mesh.GetMaterial());
+		const auto& vkShader = reinterpret_cast<const std::shared_ptr<VulkanShader>&>(shader);
+		VkDeviceAddress vertexBufferAddress = vkVertexBuffer->GetDeviceAddress();
+
+		vkCmdPushConstants(commandBuffer, vkShader->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(VkDeviceAddress), &vertexBufferAddress);
+		vkCmdBindIndexBuffer(commandBuffer, vkIndexBuffer->GetVkBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+		const auto& materialSet = vkMaterial->GetDescriptorSet()->GetVkDescriptorSet();
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkShader->GetPipelineLayout(), 2, 1, &materialSet, 0, nullptr);
+
+		// TODO: Change the way we get index count
+		vkCmdDrawIndexed(commandBuffer, vkIndexBuffer->GetSize() / sizeof(uint32_t), instanceCount, 0, 0, 0);
+	}
+
 	void VulkanRenderCommandBuffer::PushData(const void* data, uint32_t size, const std::shared_ptr<Shader>& shader, int shaderStageFlags, bool IsImmediate)
 	{
 		VkCommandBuffer commandBuffer = IsImmediate ? m_ImmediateCommandBuffer.GetVkCommandBuffer() : GetCurrentFrame().CommandBuffer;
@@ -169,7 +238,18 @@ namespace lypant
 
 	void VulkanRenderCommandBuffer::BindEnvironmentBuffer(const std::shared_ptr<Buffer>& buffer)
 	{
-		m_EnvironmentDescriptorSet->Update(std::vector<DataBinding>(), buffer);
+		std::vector<BufferBinding> bufferBindings(EnvironmentBufferLayout::s_BindingCount);
+
+		for (int i = 0; i < bufferBindings.size(); i++)
+		{
+			BufferBinding& bufferBinding = bufferBindings[i];
+			bufferBinding.Binding = i;
+			bufferBinding.Buffer = buffer;
+			bufferBinding.Offset = EnvironmentBufferLayout::GetOffsetOfBinding(i);
+			bufferBinding.Range = EnvironmentBufferLayout::GetRangeOfBinding(i);
+		}
+
+		m_EnvironmentDescriptorSet->Update({ }, bufferBindings);
 		m_EnvironmentBufferSize = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(buffer)->GetSize();
 	}
 

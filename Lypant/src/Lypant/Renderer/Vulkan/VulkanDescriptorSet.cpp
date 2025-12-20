@@ -96,60 +96,60 @@ namespace lypant
 
 	VulkanDescriptorSet::~VulkanDescriptorSet()
 	{
-		// For now the descriptor sets are only freed when their pool is destroyed
+		// TODO: For now the descriptor sets are only freed when their pool is destroyed
 	}
 
-	void VulkanDescriptorSet::Update(const std::vector<DataBinding>& dataBindings, const std::shared_ptr<Buffer>& buffer) const
+	void VulkanDescriptorSet::Update(const std::vector<ImageBinding>& imageBindings, const std::vector<BufferBinding>& bufferBindings) const
 	{
-		const auto& vkBuffer = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(buffer);
-
-		int bindingCount = buffer ? dataBindings.size() + 1 : dataBindings.size();
+		int bindingCount = imageBindings.size() + bufferBindings.size();
 		std::vector<VkWriteDescriptorSet> setWrites(bindingCount);
 
-		std::vector<VkDescriptorImageInfo> imageInfos;
+		std::vector<VkDescriptorImageInfo> imageInfos(imageBindings.size());
 
-		for (int i = 0; i < dataBindings.size(); i++)
+		for (int i = 0; i < imageBindings.size(); i++)
 		{
-			const DataBinding& dataBinding = dataBindings[i];
+			const ImageBinding& imageBinding = imageBindings[i];
 			VkWriteDescriptorSet& setWrite = setWrites[i];
+			VkDescriptorImageInfo& imageInfo = imageInfos[i];
 			
-			const auto& vulkanImage = reinterpret_cast<const std::shared_ptr<VulkanImage>&>(dataBinding.Image);
+			const auto& vulkanImage = reinterpret_cast<const std::shared_ptr<VulkanImage>&>(imageBinding.Image);
 
-			VkDescriptorImageInfo imageInfo{};
 			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 			imageInfo.imageView = vulkanImage->GetImageView();
 			imageInfo.sampler = vulkanImage->GetSampler();
-
-			imageInfos.push_back(imageInfo);
 
 			setWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			setWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 			setWrite.descriptorCount = 1;
 			setWrite.dstSet = m_DescriptorSet;
-			setWrite.dstBinding = dataBinding.Binding;
+			setWrite.dstBinding = imageBinding.Binding;
 			setWrite.dstArrayElement = 0;
-			setWrite.pImageInfo = &imageInfos.back();
+			setWrite.pImageInfo = &imageInfo;
 		}
 
-		VkDescriptorBufferInfo bufferInfo{};
+		std::vector<VkDescriptorBufferInfo> bufferInfos(bufferBindings.size());
 
-		if (buffer)
+		for (int i = 0; i < bufferBindings.size(); i++)
 		{
-			bufferInfo.buffer = vkBuffer->GetVkBuffer();
-			bufferInfo.offset = 0;
-			bufferInfo.range = vkBuffer->GetSize();
+			const BufferBinding& bufferBinding = bufferBindings[i];
+			VkWriteDescriptorSet& setWrite = setWrites[imageBindings.size() + i];
+			VkDescriptorBufferInfo& bufferInfo = bufferInfos[i];
 
-			VkWriteDescriptorSet& setWrite = setWrites.back();
+			const auto& vkBuffer = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(bufferBinding.Buffer);
+
+			bufferInfo.buffer = vkBuffer->GetVkBuffer();
+			bufferInfo.offset = bufferBinding.Offset;
+			bufferInfo.range = bufferBinding.Range;
 
 			setWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-			setWrite.descriptorCount = 1;
 			setWrite.descriptorType = GetDescriptorTypeFromBuffer(vkBuffer);
+			setWrite.descriptorCount = 1;
 			setWrite.dstSet = m_DescriptorSet;
-			setWrite.dstBinding = dataBindings.size();
+			setWrite.dstBinding = bufferBinding.Binding;
 			setWrite.dstArrayElement = 0;
 			setWrite.pBufferInfo = &bufferInfo;
 		}
-
+	
 		vkUpdateDescriptorSets(VulkanGraphicsContext::Get().GetDevice(), setWrites.size(), setWrites.data(), 0, nullptr);
 	}
 }

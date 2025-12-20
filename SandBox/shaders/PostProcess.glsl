@@ -1,14 +1,32 @@
+#version 460
+
 #ifdef VERTEX_SHADER
 
-layout (location = 0) in vec4 a_Position;
-layout (location = 1) in vec2 a_TexCoord;
+#extension GL_EXT_buffer_reference : require
 
-out vec2 v_TexCoord;
+layout (location = 0) out vec2 v_TexCoord;
+
+struct Vertex
+{
+	vec2 Position;
+	vec2 TexCoord;
+};
+
+layout (buffer_reference) readonly buffer VertexBuffer
+{
+	Vertex vertices[];
+};
+
+layout (push_constant) uniform PushConstant
+{
+	VertexBuffer vertexBuffer;
+} PushConstants;
 
 void main()
 {
-	v_TexCoord = a_TexCoord;
-	gl_Position = a_Position;
+	Vertex vertex = PushConstants.vertexBuffer.vertices[gl_VertexIndex];
+	v_TexCoord = vertex.TexCoord;
+	gl_Position = vec4(vertex.Position, 0, 1);
 }
 
 #endif
@@ -17,24 +35,26 @@ void main()
 
 layout (location = 0) out vec4 o_Color;
 
-in vec2 v_TexCoord;
+layout (location = 0) in vec2 v_TexCoord;
 
-uniform sampler2D u_SceneTexture;
-uniform sampler2D u_BloomTexture;
+layout (set = 1, binding = 0) uniform sampler2D u_SceneTexture;
 
-uniform bool u_IsBloomEnabled;
-uniform float u_Exposure;
+//uniform sampler2D u_BloomTexture;
+
+//uniform bool u_IsBloomEnabled;
+//uniform float u_Exposure;
 
 void main()
 {
 	vec3 color = texture(u_SceneTexture, v_TexCoord).rgb;
-	if (u_IsBloomEnabled)
-	{
-		vec3 bloomSample = texture(u_BloomTexture, v_TexCoord).rgb;
-		color = mix(color, bloomSample, 0.04);
-	}
+//	if (u_IsBloomEnabled)
+//	{
+//		vec3 bloomSample = texture(u_BloomTexture, v_TexCoord).rgb;
+//		color = mix(color, bloomSample, 0.04);
+//	}
 	
-	color = vec3(1.0) - exp(-color * u_Exposure); // tone mapping
+	//color = vec3(1.0) - exp(-color * u_Exposure); // tone mapping
+	color = vec3(1.0) - exp(-color * 1); // tone mapping
 	o_Color = vec4(pow(color, vec3(1.0 / 2.2)), 1.0); // gamma correction
 }
 

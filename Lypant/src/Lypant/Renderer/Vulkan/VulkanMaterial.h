@@ -2,22 +2,20 @@
 
 #include <Lypant/Renderer/Material.h>
 #include <vulkan/vulkan.h>
-#include "VulkanShader.h"
 #include "VulkanDescriptorSet.h"
-#include "VulkanImage.h"
 
 namespace lypant
 {
 	class VulkanMaterial : public Material
 	{
 	public:
-		VulkanMaterial(const std::shared_ptr<Shader>& shader, const std::shared_ptr<Image>& albedo);
+		VulkanMaterial(const MaterialData& data);
 		virtual ~VulkanMaterial();
+		virtual void UpdateMaterial() override;
+		inline virtual const MaterialData& GetData() const override { return m_Data; }
+		inline const std::shared_ptr<VulkanDescriptorSet>& GetDescriptorSet() const { return m_DescriptorSet; }
 	private:
-		void UpdateMaterial();
-	private:
-		std::shared_ptr<VulkanShader> m_Shader;
+		MaterialData m_Data;
 		std::shared_ptr<VulkanDescriptorSet> m_DescriptorSet;
-		std::shared_ptr<VulkanImage> m_Albedo;
 	};
 }

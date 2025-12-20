@@ -56,7 +56,7 @@ vec2 CubemapDirectionToEquirectangularCoords(vec3 directionVector)
 void main()
 {
 	vec2 uv = CubemapDirectionToEquirectangularCoords(normalize(v_DirectionVector));
-	o_Color = texture(u_EquirectangularTexture, uv);
+	o_Color = texture(u_EquirectangularTexture, vec2(uv.x, -uv.y));
 }
 
 #endif
