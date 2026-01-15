@@ -21,7 +21,7 @@ namespace lypant
 		DestroyCommandResources();
 	}
 
-	void VulkanRenderCommandBuffer::BeginCommands()
+	bool VulkanRenderCommandBuffer::BeginCommands()
 	{
 		auto& graphicsContext = VulkanGraphicsContext::Get();
 
@@ -29,7 +29,13 @@ namespace lypant
 
 		graphicsContext.GetDeletionQueue().Flush();
 
-		graphicsContext.GetSwapChain().OnFrameBegin(GetCurrentFrame().ImageReceivedSemaphore);
+		bool swapChainResult = graphicsContext.GetSwapChain().OnFrameBegin(GetCurrentFrame().ImageReceivedSemaphore);
+
+		if (!swapChainResult)
+		{
+			graphicsContext.RecreateSwapChain();
+			return false;
+		}
 
 		vkResetCommandBuffer(GetCurrentFrame().CommandBuffer, 0);
 
@@ -37,6 +43,8 @@ namespace lypant
 		commandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
 		vkBeginCommandBuffer(GetCurrentFrame().CommandBuffer, &commandBufferBeginInfo);
+
+		return true;
 	}
 
 	void VulkanRenderCommandBuffer::EndCommands()
@@ -73,7 +81,8 @@ namespace lypant
 		uint32_t imageIndex = swapChain.GetCurrentImageIndex();
 		presentInfo.pImageIndices = &imageIndex;
 
-		vkQueuePresentKHR(graphicsContext.GetGraphicsQueue(), &presentInfo);
+		VkResult result = vkQueuePresentKHR(graphicsContext.GetGraphicsQueue(), &presentInfo);
+		if (result == VK_ERROR_OUT_OF_DATE_KHR) graphicsContext.RecreateSwapChain();
 
 		graphicsContext.m_CurrentFrameIndex = (graphicsContext.m_CurrentFrameIndex + 1) % VulkanGraphicsContext::s_MaxFramesInFlight;
 	}

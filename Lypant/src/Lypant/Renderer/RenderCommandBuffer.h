@@ -12,7 +12,7 @@ namespace lypant
 		static RenderCommandBuffer* Create();
 		RenderCommandBuffer() = default;
 		virtual ~RenderCommandBuffer() = default;
-		virtual void BeginCommands() = 0;
+		virtual bool BeginCommands() = 0;
 		virtual void EndCommands() = 0;
 		virtual void BeginImmediateCommands() = 0;
 		virtual void EndImmediateCommands() = 0;

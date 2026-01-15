@@ -15,7 +15,8 @@ namespace lypant
 	public:
 		VulkanSwapChain(VkDevice device, VkSurfaceKHR surface, const VulkanDeviceSurfaceDetails& deviceSurfaceDetails);
 		~VulkanSwapChain();
-		void OnFrameBegin(VkSemaphore imageReceivedSemaphore);
+		// If the swap chain is outdated and could not begin frame return false.
+		bool OnFrameBegin(VkSemaphore imageReceivedSemaphore);
 		void OnFrameEnd(VkCommandBuffer commandBuffer);
 		inline VkSwapchainKHR GetSwapChain() const { return m_SwapChain; }
 		inline uint32_t GetCurrentImageIndex() const { return m_ImageIndex; }

@@ -72,6 +72,17 @@ namespace lypant
 		vkDestroyInstance(m_Instance, nullptr);
 	}
 
+	void VulkanGraphicsContext::RecreateSwapChain()
+	{
+		vkDeviceWaitIdle(m_Device);
+
+		// NOTE: You have to query capabilities again, otherwise they are not updated and swap chain cannot be recreated.
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_PhysicalDevice, m_Surface, &m_DeviceSurfaceDetails.Capabilities);
+
+		delete m_SwapChain;
+		m_SwapChain = new VulkanSwapChain(m_Device, m_Surface, m_DeviceSurfaceDetails);
+	}
+
 	static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 		VkDebugUtilsMessageTypeFlagsEXT messageType,

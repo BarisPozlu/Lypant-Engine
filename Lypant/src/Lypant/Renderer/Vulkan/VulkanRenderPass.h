@@ -19,6 +19,7 @@ namespace lypant
 		VulkanSubpass(const std::shared_ptr<RenderTarget>& renderTarget, const RenderTargetOperation& op, const std::shared_ptr<Shader>& shader, const std::vector<ImageBinding>& dataBindings, uint32_t uniformBufferSize, const void* data, bool isDynamic, int subpassFlags);
 		virtual ~VulkanSubpass() = default;
 		virtual void UploadData(const void* data, uint32_t size, uint32_t offset) override;
+		inline virtual void SetRenderTarget(const std::shared_ptr<RenderTarget>& renderTarget) override { m_RenderTarget = reinterpret_cast<const std::shared_ptr<VulkanRenderTarget>&>(renderTarget); }
 		inline virtual void Submit(const Mesh& mesh, const glm::mat4& modelMatrix, uint32_t instanceCount = 1) override { m_DrawData.emplace_back(mesh, modelMatrix, instanceCount); }
 		inline virtual void ClearDrawData() override { m_DrawData.clear(); }
 		inline virtual const std::vector<DrawData>& GetDrawData() const override { return m_DrawData; }
@@ -32,7 +33,6 @@ namespace lypant
 		inline const std::shared_ptr<VulkanBuffer>& GetUniformBuffer() const { return m_UniformBuffer; }
 		inline const std::shared_ptr<VulkanDescriptorSet>& GetDescriptorSet() const { return m_DescriptorSet; }
 		inline const RenderTargetOperation& GetRenderTargetOperation() const { return m_RenderTargetOperation; }
-		
 	private:
 		std::shared_ptr<VulkanRenderTarget> m_RenderTarget;
 		std::shared_ptr<VulkanShader> m_Shader;

@@ -74,10 +74,12 @@ namespace lypant
 				return false;
 			});
 
-		dispatcher.Dispatch<WindowResizeEvent>([this](WindowResizeEvent& event)
-			{
-				UpdateProjectionAndViewProjection(m_Params.Fovy, (float)event.GetWidth() / (float)event.GetHeight(), m_Params.ZNear, m_Params.ZFar);
-				return false;
-			});
+		// NOTE: The aspect ratio is going to depend on the render resolution not window.
+		
+		//dispatcher.Dispatch<WindowResizeEvent>([this](WindowResizeEvent& event)
+		//	{
+		//		UpdateProjectionAndViewProjection(m_Params.Fovy, (float)event.GetWidth() / (float)event.GetHeight(), m_Params.ZNear, m_Params.ZFar);
+		//		return false;
+		//	});
 	}
 }

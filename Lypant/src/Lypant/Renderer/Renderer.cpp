@@ -76,9 +76,11 @@ namespace lypant
 		delete s_Data;
 	}
 
-	void Renderer::BeginRendering()
+	bool Renderer::BeginRendering()
 	{
-		s_Cmd->BeginCommands();
+		// TODO: Update
+		s_Data->PostProcessPass->SetRenderTarget(RenderTarget::GetDefault());
+		return s_Cmd->BeginCommands();
 	}
 
 	void Renderer::EndRendering()

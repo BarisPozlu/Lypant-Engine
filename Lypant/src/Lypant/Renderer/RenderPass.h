@@ -50,6 +50,8 @@ namespace lypant
 		virtual const std::vector<DrawData>& GetDrawData() const = 0;
 		virtual const std::shared_ptr<Shader>& GetShader() const = 0;
 		virtual int GetFlags() const = 0;
+		// TODO: Setting the render target does not update the graphics pipeline, even though in some situtations it might be needed.
+		virtual void SetRenderTarget(const std::shared_ptr<RenderTarget>& renderTarget) = 0;
 		virtual void UploadData(const void* data, uint32_t size, uint32_t offset) = 0;
 	};
 

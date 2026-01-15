@@ -46,7 +46,10 @@ namespace lypant
 			float deltaTime = time - m_LastFrameTime;
 			m_LastFrameTime = time;
 
-			Renderer::BeginRendering();
+			bool renderingBegin = Renderer::BeginRendering();
+
+			// Skip frame
+			if (!renderingBegin) continue;
 
 			if (!m_Minimized)
 			{

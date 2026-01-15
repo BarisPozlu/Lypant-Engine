@@ -34,6 +34,9 @@ namespace lypant
 			LY_CORE_ASSERT(GraphicsContext::GetGraphicsAPI() == GraphicsAPI::Vulkan, "Trying to get vulkan graphics context while selected api is not vulkan");
 			return reinterpret_cast<VulkanGraphicsContext&>(Application::Get().GetGraphicsContext());
 		}
+
+		void RecreateSwapChain();
+
 		inline VkInstance GetInstance() const { return m_Instance; }
 		inline VkSurfaceKHR GetSurface() const { return m_Surface; }
 		inline VkPhysicalDevice GetPhysicalDevice() const { return m_PhysicalDevice; }

@@ -13,7 +13,8 @@ namespace lypant
 	public:
 		static void Init();
 		static void Shutdown();
-		static void BeginRendering();
+		// Return false if could not begin rendering
+		static bool BeginRendering();
 		static void EndRendering();
 		static void BeginScene(const Scene::SceneData& sceneData);
 		static void EndScene();

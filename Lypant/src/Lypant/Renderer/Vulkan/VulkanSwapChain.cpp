@@ -33,7 +33,7 @@ namespace lypant
 				break;
 			}
 		}
-
+		
 		if (deviceSurfaceDetails.Capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
 		{
 			m_ImageExtent = deviceSurfaceDetails.Capabilities.currentExtent;
@@ -41,8 +41,8 @@ namespace lypant
 
 		else
 		{
-			m_ImageExtent.width = Application::Get().GetWindow().GetFramebufferWidth(), Application::GetWindow().GetFramebufferHeight();
-			m_ImageExtent.height = Application::Get().GetWindow().GetFramebufferWidth(), Application::GetWindow().GetFramebufferHeight();
+			m_ImageExtent.width = Application::GetWindow().GetFramebufferWidth();
+			m_ImageExtent.height = Application::GetWindow().GetFramebufferHeight();
 		}
 
 		uint32_t imageCount = deviceSurfaceDetails.Capabilities.minImageCount + 1;
@@ -107,17 +107,19 @@ namespace lypant
 		vkDestroySwapchainKHR(graphicsContext.GetDevice(), m_SwapChain, nullptr);
 	}
 
-	void VulkanSwapChain::OnFrameBegin(VkSemaphore imageReceivedSemaphore)
+	bool VulkanSwapChain::OnFrameBegin(VkSemaphore imageReceivedSemaphore)
 	{
 		const auto& graphicsContext = VulkanGraphicsContext::Get();
 
-		vkAcquireNextImageKHR(graphicsContext.GetDevice(), m_SwapChain, UINT64_MAX, imageReceivedSemaphore, VK_NULL_HANDLE, &m_ImageIndex);
+		VkResult result = vkAcquireNextImageKHR(graphicsContext.GetDevice(), m_SwapChain, UINT64_MAX, imageReceivedSemaphore, VK_NULL_HANDLE, &m_ImageIndex);
+
+		if (result == VK_ERROR_OUT_OF_DATE_KHR) return false;
 
 		const auto& image = m_Images[m_ImageIndex];
-
 		image->m_CurrentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-
 		m_RenderTarget->AttachColorBuffer(image);
+
+		return true;
 	}
 
 	void VulkanSwapChain::OnFrameEnd(VkCommandBuffer commandBuffer)

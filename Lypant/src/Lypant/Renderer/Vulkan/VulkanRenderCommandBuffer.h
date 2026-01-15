@@ -15,7 +15,8 @@ namespace lypant
 	public:
 		VulkanRenderCommandBuffer();
 		virtual ~VulkanRenderCommandBuffer();
-		virtual void BeginCommands() override;
+		// Return false If could not begin commands successfully
+		virtual bool BeginCommands() override;
 		virtual void EndCommands() override;
 		inline virtual void BeginImmediateCommands() override { m_ImmediateCommandBuffer.BeginCommands(); }
 		inline virtual void EndImmediateCommands() override { m_ImmediateCommandBuffer.EndCommands(); }
