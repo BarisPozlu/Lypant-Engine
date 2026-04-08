@@ -11,7 +11,7 @@ namespace lypant
 		spec.Type = BufferType::VertexBuffer;
 		spec.Size = size;
 		spec.IsDynamic = false;
-		spec.UsageFlags = BufferUsageFlagsTransferDst | BufferUsageFlagsVertexBuffer | BufferUsageFlagsDeviceAddress;
+		spec.UsageFlags = BufferUsageFlagsTransferSrc | BufferUsageFlagsTransferDst | BufferUsageFlagsVertexBuffer | BufferUsageFlagsDeviceAddress;
 		spec.MemoryFlags = BufferMemoryFlagsGPULocal;
 
 		switch (GraphicsContext::GetGraphicsAPI())
@@ -30,7 +30,7 @@ namespace lypant
 		spec.Type = BufferType::IndexBuffer;
 		spec.Size = count * sizeof(uint32_t);
 		spec.IsDynamic = false;
-		spec.UsageFlags = BufferUsageFlagsTransferDst | BufferUsageFlagsIndexBuffer;
+		spec.UsageFlags = BufferUsageFlagsTransferSrc | BufferUsageFlagsTransferDst | BufferUsageFlagsIndexBuffer | BufferUsageFlagsDeviceAddress;
 		spec.MemoryFlags = BufferMemoryFlagsGPULocal;
 
 		switch (GraphicsContext::GetGraphicsAPI())
@@ -79,6 +79,35 @@ namespace lypant
 		spec.Size = size;
 		spec.IsDynamic = isDynamic;
 		spec.UsageFlags = BufferUsageFlagsStorageBuffer;
+
+		if (isDynamic)
+		{
+			spec.MemoryFlags = BufferMemoryFlagsHostVisible;
+		}
+
+		else
+		{
+			spec.MemoryFlags = BufferMemoryFlagsGPULocal;
+			spec.UsageFlags |= BufferUsageFlagsTransferDst;
+		}
+
+		switch (GraphicsContext::GetGraphicsAPI())
+		{
+			case GraphicsAPI::None: LY_CORE_ASSERT(false, "None graphics api is not supported."); break;
+			case GraphicsAPI::Vulkan: return std::make_shared<VulkanBuffer>(data, spec); break;
+		}
+
+		LY_CORE_ASSERT(false, "Unknown Graphics API");
+		return nullptr;
+	}
+
+	std::shared_ptr<Buffer> Buffer::CreateIndirectBuffer(uint32_t size, const void* data, bool isDynamic)
+	{
+		BufferSpecification spec;
+		spec.Type = BufferType::IndirectBuffer;
+		spec.Size = size;
+		spec.IsDynamic = isDynamic;
+		spec.UsageFlags = BufferUsageFlagsIndirectBuffer;
 
 		if (isDynamic)
 		{

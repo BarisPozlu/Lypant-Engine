@@ -6,7 +6,7 @@ namespace lypant
 {
 	enum class BufferType
 	{
-		Unknown, VertexBuffer, IndexBuffer, UniformBuffer, StorageBuffer, StagingBuffer
+		Unknown, VertexBuffer, IndexBuffer, UniformBuffer, StorageBuffer, IndirectBuffer, StagingBuffer
 	};
 
 	enum BufferUsageFlags
@@ -18,7 +18,8 @@ namespace lypant
 		BufferUsageFlagsIndexBuffer = 8,
 		BufferUsageFlagsUniformBuffer = 16,
 		BufferUsageFlagsStorageBuffer = 32,
-		BufferUsageFlagsDeviceAddress = 64
+		BufferUsageFlagsIndirectBuffer = 64,
+		BufferUsageFlagsDeviceAddress = 128
 	};
 
 	enum BufferMemoryFlags
@@ -50,6 +51,7 @@ namespace lypant
 		static std::shared_ptr<Buffer> CreateIndexBuffer(void* data, uint32_t count);
 		static std::shared_ptr<Buffer> CreateUniformBuffer(uint32_t size, const void* data, bool dynamic = false);
 		static std::shared_ptr<Buffer> CreateStorageBuffer(uint32_t size, const void* data, bool dynamic = false);
+		static std::shared_ptr<Buffer> CreateIndirectBuffer(uint32_t size, const void* data, bool dynamic = false);
 		static std::shared_ptr<Buffer> CreateStagingBuffer(uint32_t size);
 	};
 }

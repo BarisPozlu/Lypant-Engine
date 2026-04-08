@@ -257,7 +257,8 @@ namespace lypant
 
 		else
 		{
-			buffer = stbi_load(path.c_str(), &width, &height, &channels, 0);
+			buffer = stbi_load(path.c_str(), &width, &height, &channels, 4);
+			channels = 4;
 		}
 
 		LY_CORE_ASSERT(buffer, "Failed to load the image");
@@ -436,8 +437,6 @@ namespace lypant
 		TransitionLayout(commandBuffer.GetVkCommandBuffer(), { VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL });
 
 		vkCmdCopyBufferToImage(commandBuffer.GetVkCommandBuffer(), stagingBuffer->GetVkBuffer(), m_Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
-		TransitionLayout(commandBuffer.GetVkCommandBuffer(), { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL });
 
 		commandBuffer.EndCommands();
 	}

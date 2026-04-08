@@ -48,19 +48,16 @@ namespace lypant
 
 			std::unique_ptr<Subpass> subpass = Subpass::Create(renderTarget, op, shader,
 				{ { image, 0 } }, sizeof(viewMatrices), viewMatrices);
-			subpass->Submit(*MeshFactory::GetCubemapCube(), glm::mat4(1.0f), 6);
 
 			auto& cmd = Renderer::GetRenderCommandBuffer();
 
 			cmd.BeginImmediateCommands();
 
-			//cmd.BeginSubpass(*subpass, true);
-			//
-			//cmd.DrawMesh(*MeshFactory::GetCubemapCube(), shader, glm::mat4(1.0f), 6, true);
+			cmd.BeginSubpass(*subpass, true);
+			
+			cmd.Draw(*MeshFactory::GetCubemapCube(), shader, 6, true);
 
-			//cmd.EndSubpass(*subpass, true);
-
-			cmd.ExecuteSubpass(*subpass, true);
+			cmd.EndSubpass(*subpass, true);
 
 			cmd.EndImmediateCommands();
 
@@ -94,19 +91,16 @@ namespace lypant
 
 			std::unique_ptr<Subpass> subpass = Subpass::Create(renderTarget, op, shader,
 				{ { source, 0 } }, sizeof(viewMatrices), viewMatrices);
-			subpass->Submit(*MeshFactory::GetCubemapCube(), glm::mat4(1.0f), 6);
 
 			auto& cmd = Renderer::GetRenderCommandBuffer();
 
 			cmd.BeginImmediateCommands();
 
-			/*cmd.BeginSubpass(*subpass, true);
+			cmd.BeginSubpass(*subpass, true);
 
-			cmd.DrawMesh(*MeshFactory::GetCubemapCube(), shader, 6, true);
+			cmd.Draw(*MeshFactory::GetCubemapCube(), shader, 6, true);
 
-			cmd.EndSubpass(*subpass, true);*/
-
-			cmd.ExecuteSubpass(*subpass, true);
+			cmd.EndSubpass(*subpass, true);
 
 			cmd.EndImmediateCommands();
 
@@ -150,8 +144,6 @@ namespace lypant
 			std::unique_ptr<Subpass> subpass = Subpass::Create(renderTarget, op, shader,
 				{ { source, 0 } }, sizeof(passData), &passData, true);
 
-			subpass->Submit(*util::MeshFactory::GetCubemapCube(), glm::mat4(1.0f), 6);
-
 			auto& cmd = Renderer::GetRenderCommandBuffer();
 
 			//cmd.BeginImmediateCommands();
@@ -167,7 +159,11 @@ namespace lypant
 
 				cmd.BeginImmediateCommands();
 
-				cmd.ExecuteSubpass(*subpass, true);
+				cmd.BeginSubpass(*subpass, true);
+
+				cmd.Draw(*MeshFactory::GetCubemapCube(), shader, 6, true);
+
+				cmd.EndSubpass(*subpass, true);
 
 				cmd.EndImmediateCommands();
 			}

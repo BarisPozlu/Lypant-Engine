@@ -49,7 +49,8 @@ namespace lypant
 		inline float GetMaxSamplerAnisotropy() const { return m_MaxSamplerAnisotropy; }
 		inline DeletionQueue& GetDeletionQueue() { return m_DeletionQueues[m_CurrentFrameIndex]; }
 		inline uint32_t GetCurrentFrameIndex() const { return m_CurrentFrameIndex; }
-		inline VkDescriptorSetLayout GetGlobalDescriptorSetLayout() const { return m_GlobalDescriptorSetLayout; }
+		inline VkDescriptorSetLayout GetEnvironmentDescriptorSetLayout() const { return m_EnvironmentDescriptorSetLayout; }
+		inline VkDescriptorSetLayout GetIndirectDescriptorSetLayout() const { return m_IndirectDescriptorSetLayout; }
 	public:
 		inline static constexpr uint32_t s_MaxFramesInFlight = 2;
 	private:
@@ -73,7 +74,8 @@ namespace lypant
 		std::array<DeletionQueue, s_MaxFramesInFlight> m_DeletionQueues;
 		uint32_t m_CurrentFrameIndex = 0;
 		float m_MaxSamplerAnisotropy = 1;
-		VkDescriptorSetLayout m_GlobalDescriptorSetLayout = VK_NULL_HANDLE;
+		VkDescriptorSetLayout m_EnvironmentDescriptorSetLayout = VK_NULL_HANDLE;
+		VkDescriptorSetLayout m_IndirectDescriptorSetLayout = VK_NULL_HANDLE;
 	private:
 		friend class VulkanRenderCommandBuffer;
 	};

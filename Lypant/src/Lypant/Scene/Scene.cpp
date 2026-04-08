@@ -105,15 +105,17 @@ namespace lypant
 
 		// Lighting Pass
 
-		Renderer::BeginScene(m_SceneData);
+		//Renderer::BeginScene(m_SceneData);
 
 		for (entt::entity entity : group)
 		{
 			auto [transform, mesh] = group.get<TransformComponent, MeshComponent>(entity);
-			Renderer::SubmitMesh(mesh.MeshData, transform);
+			Renderer::Submit(mesh.MeshData, transform);
 		}
 
-		Renderer::EndScene();
+		Renderer::Render(m_SceneData);
+
+		//Renderer::EndScene();
 	}
 
 	void Scene::UpdateSceneData(const std::shared_ptr<PerspectiveCamera>& camera)

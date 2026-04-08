@@ -18,6 +18,7 @@ namespace lypant
 		}
 
 		LY_CORE_ASSERT(false, "Unknown buffer type or a buffer type that should not be in a descriptor.");
+		return VK_DESCRIPTOR_TYPE_MAX_ENUM;
 	}
 
 	VkDescriptorSet VulkanDescriptorSetAllocator::Allocate(VkDescriptorSetLayout layout)
@@ -150,6 +151,59 @@ namespace lypant
 			setWrite.pBufferInfo = &bufferInfo;
 		}
 	
+		vkUpdateDescriptorSets(VulkanGraphicsContext::Get().GetDevice(), setWrites.size(), setWrites.data(), 0, nullptr);
+	}
+
+	void VulkanDescriptorSet::UpdateWithDescriptorArrays(const std::vector<ImageBinding>& imageBindings, const std::vector<BufferBinding>& bufferBindings) const
+	{
+		int bindingCount = 1 + bufferBindings.size();
+		std::vector<VkWriteDescriptorSet> setWrites(bindingCount);
+
+		std::vector<VkDescriptorImageInfo> imageInfos(imageBindings.size());
+
+		for (int i = 0; i < imageBindings.size(); i++)
+		{
+			const ImageBinding& imageBinding = imageBindings[i];
+			VkDescriptorImageInfo& imageInfo = imageInfos[i];
+
+			const auto& vulkanImage = reinterpret_cast<const std::shared_ptr<VulkanImage>&>(imageBinding.Image);
+
+			imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			imageInfo.imageView = vulkanImage->GetImageView();
+			imageInfo.sampler = vulkanImage->GetSampler();
+		}
+
+		setWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		setWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		setWrites[0].descriptorCount = imageBindings.size();
+		setWrites[0].dstSet = m_DescriptorSet;
+		setWrites[0].dstBinding = imageBindings[0].Binding;
+		setWrites[0].dstArrayElement = 0;
+		setWrites[0].pImageInfo = imageInfos.data();
+
+		std::vector<VkDescriptorBufferInfo> bufferInfos(bufferBindings.size());
+
+		for (int i = 0; i < bufferBindings.size(); i++)
+		{
+			const BufferBinding& bufferBinding = bufferBindings[i];
+			VkWriteDescriptorSet& setWrite = setWrites[i + 1];
+			VkDescriptorBufferInfo& bufferInfo = bufferInfos[i];
+
+			const auto& vkBuffer = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(bufferBinding.Buffer);
+
+			bufferInfo.buffer = vkBuffer->GetVkBuffer();
+			bufferInfo.offset = bufferBinding.Offset;
+			bufferInfo.range = bufferBinding.Range;
+
+			setWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+			setWrite.descriptorType = GetDescriptorTypeFromBuffer(vkBuffer);
+			setWrite.descriptorCount = 1;
+			setWrite.dstSet = m_DescriptorSet;
+			setWrite.dstBinding = bufferBinding.Binding;
+			setWrite.dstArrayElement = 0;
+			setWrite.pBufferInfo = &bufferInfo;
+		}
+
 		vkUpdateDescriptorSets(VulkanGraphicsContext::Get().GetDevice(), setWrites.size(), setWrites.data(), 0, nullptr);
 	}
 }

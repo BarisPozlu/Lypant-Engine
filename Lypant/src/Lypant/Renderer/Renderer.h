@@ -13,12 +13,10 @@ namespace lypant
 	public:
 		static void Init();
 		static void Shutdown();
-		// Return false if could not begin rendering
 		static bool BeginRendering();
 		static void EndRendering();
-		static void BeginScene(const Scene::SceneData& sceneData);
-		static void EndScene();
-		static void SubmitMesh(const Mesh& mesh, const glm::mat4& modelMatrix);
+		static void Submit(const Mesh& mesh, const glm::mat4& modelMatrix);
+		static void Render(const Scene::SceneData& sceneData);
 		static RenderCommandBuffer& GetRenderCommandBuffer();
 	private:
 		struct RendererData

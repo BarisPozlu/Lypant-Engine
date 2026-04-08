@@ -39,6 +39,7 @@ namespace lypant
 		samplerInfo.addressModeV = GetVulkanWrappingOption(spec.WrappingOption);
 		samplerInfo.addressModeW = GetVulkanWrappingOption(spec.WrappingOption);
 		samplerInfo.maxAnisotropy = VulkanGraphicsContext::Get().GetMaxSamplerAnisotropy();
+		samplerInfo.anisotropyEnable = true;
 		samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 		samplerInfo.maxLod = VK_LOD_CLAMP_NONE;
 

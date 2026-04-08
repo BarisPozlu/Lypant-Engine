@@ -9,21 +9,16 @@
 #include "VulkanDescriptorSet.h"
 #include "VulkanRenderTarget.h"
 
-// TODO: Draw commands are not recoreded in passes for now. The system will slightly change when that is introduced.
-
 namespace lypant
 {
 	class VulkanSubpass : public Subpass
 	{
 	public:
-		VulkanSubpass(const std::shared_ptr<RenderTarget>& renderTarget, const RenderTargetOperation& op, const std::shared_ptr<Shader>& shader, const std::vector<ImageBinding>& dataBindings, uint32_t uniformBufferSize, const void* data, bool isDynamic, int subpassFlags);
+		VulkanSubpass(const std::shared_ptr<RenderTarget>& renderTarget, const RenderTargetOperation& op, const std::shared_ptr<Shader>& shader, const std::vector<ImageBinding>& imageBindings, uint32_t uniformBufferSize, const void* data, bool isDynamic, int subpassFlags);
 		virtual ~VulkanSubpass() = default;
 		virtual void UploadData(const void* data, uint32_t size, uint32_t offset) override;
 		inline virtual void SetRenderTarget(const std::shared_ptr<RenderTarget>& renderTarget) override { m_RenderTarget = reinterpret_cast<const std::shared_ptr<VulkanRenderTarget>&>(renderTarget); }
-		inline virtual void Submit(const Mesh& mesh, const glm::mat4& modelMatrix, uint32_t instanceCount = 1) override { m_DrawData.emplace_back(mesh, modelMatrix, instanceCount); }
-		inline virtual void ClearDrawData() override { m_DrawData.clear(); }
-		inline virtual const std::vector<DrawData>& GetDrawData() const override { return m_DrawData; }
-		inline virtual const std::shared_ptr<Shader>& GetShader() const override { return m_Shader; }
+		inline virtual const std::shared_ptr<Shader>& GetShader() const override { return reinterpret_cast<const std::shared_ptr<Shader>&>(m_Shader); }
 		inline virtual int GetFlags() const override { return m_SubpassFlags; };
 
 		inline const std::shared_ptr<VulkanRenderTarget>& GetRenderTarget() const { return m_RenderTarget; }
@@ -40,7 +35,6 @@ namespace lypant
 		std::shared_ptr<VulkanGraphicsPipeline> m_GraphicsPipeline;
 		std::shared_ptr<VulkanBuffer> m_UniformBuffer;
 		std::shared_ptr<VulkanDescriptorSet> m_DescriptorSet;
-		std::vector<DrawData> m_DrawData;
 		int m_SubpassFlags;
 		RenderTargetOperation m_RenderTargetOperation;
 	};

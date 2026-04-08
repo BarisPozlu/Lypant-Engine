@@ -19,5 +19,8 @@ namespace lypant
 		std::shared_ptr<Buffer> m_VertexBuffer;
 		std::shared_ptr<Buffer> m_IndexBuffer;
 		std::shared_ptr<Material> m_Material;
+		mutable bool m_Merged = false;
+	private: // TODO: Terrbile, fix this later
+		friend class VulkanRenderCommandBuffer;
 	};
 }

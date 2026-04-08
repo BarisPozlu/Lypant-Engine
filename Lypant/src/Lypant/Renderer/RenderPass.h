@@ -14,12 +14,14 @@ namespace lypant
 {
 	struct ImageBinding
 	{
+		//ImageBinding(const std::shared_ptr<Image>& image, uint32_t binding) : Image(image), Binding(binding) {}
 		std::shared_ptr<Image> Image;
 		uint32_t Binding;
 	};
 
 	struct BufferBinding
 	{
+		//BufferBinding(const std::shared_ptr<Buffer>& buffer, uint32_t binding, uint32_t offset, uint32_t range) : Buffer(buffer), Binding(binding), Offset(offset), Range(range) {}
 		std::shared_ptr<Buffer> Buffer;
 		uint32_t Binding;
 		uint32_t Offset;
@@ -45,9 +47,6 @@ namespace lypant
 	public:
 		virtual ~Subpass() = default;
 		static std::unique_ptr<Subpass> Create(const std::shared_ptr<RenderTarget>& renderTarget, const RenderTargetOperation& op, const std::shared_ptr<Shader>& shader, const std::vector<ImageBinding>& dataBindings, uint32_t uniformBufferSize, const void* data, bool isDynamic = false, int subpassFlags = SubpassFlagNone);
-		virtual void Submit(const Mesh& mesh, const glm::mat4& modelMatrix, uint32_t instanceCount = 1) = 0;
-		virtual void ClearDrawData() = 0;
-		virtual const std::vector<DrawData>& GetDrawData() const = 0;
 		virtual const std::shared_ptr<Shader>& GetShader() const = 0;
 		virtual int GetFlags() const = 0;
 		// TODO: Setting the render target does not update the graphics pipeline, even though in some situtations it might be needed.

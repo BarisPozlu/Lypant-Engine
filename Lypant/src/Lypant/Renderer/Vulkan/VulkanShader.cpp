@@ -134,8 +134,7 @@ namespace lypant
         Reflect(vertexShaderCode);
         Reflect(fragmentShaderCode);
 
-        m_DescriptorSetLayouts.reserve(s_DescriptorSetMap.size() + 1);
-        m_DescriptorSetLayouts[0] = graphicsContext.GetGlobalDescriptorSetLayout();
+        m_DescriptorSetLayouts[0] = graphicsContext.GetEnvironmentDescriptorSetLayout();
 
         for (auto& [key, value] : s_DescriptorSetMap)
         {
@@ -152,11 +151,10 @@ namespace lypant
         pipelineLayout.setLayoutCount = m_DescriptorSetLayouts.size();
         pipelineLayout.pushConstantRangeCount = s_PushConstantMap.size();
         
-        std::vector<VkDescriptorSetLayout> layouts;
-        layouts.reserve(m_DescriptorSetLayouts.size());
+        std::vector<VkDescriptorSetLayout> layouts(m_DescriptorSetLayouts.size());
         for (auto& [key, value] : m_DescriptorSetLayouts)
         {
-            layouts.push_back(value);
+            layouts[key] = value;
         }
 
         pipelineLayout.pSetLayouts = layouts.data();
@@ -185,12 +183,11 @@ namespace lypant
         VkPipelineLayout pipelineLayout = m_PipelineLayout;
         auto& shaderModules = m_ShaderModules;
 
-        // NOTE: Set 0 layout is not owned by the shader, it can't destroy it.
+        // NOTE: Set 0 and set 2 layout is not owned by the shader, it can't destroy them.
         std::vector<VkDescriptorSetLayout> descriptorSetLayouts;
-        descriptorSetLayouts.reserve(m_DescriptorSetLayouts.size() - 1);
         for (auto& [key, value] : m_DescriptorSetLayouts)
         {
-            if (key == 0) continue;
+            if (key == 0 || key == 2) continue;
             descriptorSetLayouts.push_back(value);
         }
 
@@ -212,6 +209,15 @@ namespace lypant
             });
 	}
 
+    VkDescriptorSetLayout VulkanShader::GetDescriptorSetLayout(DescriptorSetType setType) const
+    {
+        auto it = m_DescriptorSetLayouts.find(static_cast<uint32_t>(setType));
+
+        if (it == m_DescriptorSetLayouts.end()) return VK_NULL_HANDLE;
+
+        return it->second;
+    } 
+
     void VulkanShader::Reflect(const std::vector<uint32_t>& shaderCode)
     {
         // Reflect descriptor sets
@@ -228,9 +234,10 @@ namespace lypant
         {
             const SpvReflectDescriptorSet& reflSet = *reflSets[i];
             
-            // NOTE: Set 0 is global and added to every single pipeline layout no need to reflect here.
+            // NOTE: Set 0 and set 2 are not reflected, because the layout for these sets are already created.
             if (reflSet.set == 0) continue;
-                 
+            if (reflSet.set == 2) { m_DescriptorSetLayouts[2] = VulkanGraphicsContext::Get().GetIndirectDescriptorSetLayout(); continue; }
+
             for (int j = 0; j < reflSet.binding_count; j++)
             {
                 const SpvReflectDescriptorBinding& reflBinding = *reflSet.bindings[j];
@@ -261,7 +268,9 @@ namespace lypant
                 binding.descriptorCount = 1;
                 for (uint32_t dimension = 0; dimension < reflBinding.array.dims_count; dimension++)
                 {
-                    binding.descriptorCount *= reflBinding.array.dims[dimension];
+                    int descriptorCountForDimension = reflBinding.array.dims[dimension];
+                    // TODO: this is the upper limit, I will work on making this better after everything works. This also includes giving some flags to vulkan such as variable descriptor size
+                    binding.descriptorCount *= descriptorCountForDimension ? descriptorCountForDimension : 2000;
                 }
             }
         }

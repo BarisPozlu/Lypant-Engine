@@ -157,92 +157,173 @@ namespace lypant
 		vkCmdEndRendering(commandBuffer);
 	}
 
-	void VulkanRenderCommandBuffer::ExecuteSubpass(Subpass& subpass, bool IsImmediate)
-	{
-		VkCommandBuffer commandBuffer = IsImmediate ? m_ImmediateCommandBuffer.GetVkCommandBuffer() : GetCurrentFrame().CommandBuffer;
-
-		BeginSubpass(subpass, IsImmediate);
-
-		//const VulkanSubpass& vkSubpass = reinterpret_cast<const VulkanSubpass&>(subpass);
-
-		if (subpass.GetFlags() & SubpassFlagDrawWithMaterial)
-		{
-			for (const DrawData& draw : subpass.GetDrawData())
-			{
-				// upload the model matrix and material data here but how do we match offsets?
-				// for now to make stuff work simply assume that model offset is 0 and normal offset is 64, they will always exist for now for material passes
-				// in the future I might implement a system where I give the data type and its name that is stored within the uniform buffer
-				// and we can simply get the offset of the variables using maybe a map
-
-				glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(draw.ModelMatrix)));
-				const auto& vkMaterial = reinterpret_cast<const std::shared_ptr<VulkanMaterial>&>(draw.MeshData.GetMaterial());
-
-				subpass.UploadData(&draw.ModelMatrix, sizeof(draw.ModelMatrix), 0);
-				
-				// MAT3 cannot be uploadded in one go since each vec3 has an alignment of 16
-				subpass.UploadData(&normalMatrix[0], sizeof(glm::vec3), 64);
-				subpass.UploadData(&normalMatrix[1], sizeof(glm::vec3), 64 + sizeof(glm::vec4));
-				subpass.UploadData(&normalMatrix[2], sizeof(glm::vec3), 64 + 2 * sizeof(glm::vec4));
-				
-				subpass.UploadData(&vkMaterial->GetData().Constants, sizeof(vkMaterial->GetData().Constants), 112); // padding required here, terrible but will change later
-				
-				DrawMeshWithMaterial(draw.MeshData, subpass.GetShader(), draw.ModelMatrix, draw.InstanceCount, IsImmediate);
-			}
-		}
-
-		else
-		{
-			for (const DrawData& draw : subpass.GetDrawData())
-			{
-				DrawMesh(draw.MeshData, subpass.GetShader(), draw.ModelMatrix, draw.InstanceCount, IsImmediate);
-			}
-		}
-
-		EndSubpass(subpass, IsImmediate);
-	}
-
-	void VulkanRenderCommandBuffer::DrawMesh(const Mesh& mesh, const std::shared_ptr<Shader>& shader, const glm::mat4& modelMatrix, uint32_t instanceCount, bool IsImmediate)
+	void VulkanRenderCommandBuffer::Draw(const Mesh& mesh, const std::shared_ptr<Shader>& shader, uint32_t instanceCount, bool IsImmediate)
 	{
 		VkCommandBuffer commandBuffer = IsImmediate ? m_ImmediateCommandBuffer.GetVkCommandBuffer() : GetCurrentFrame().CommandBuffer;
 
 		const auto& vkVertexBuffer = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(mesh.GetVertexBuffer());
 		const auto& vkIndexBuffer = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(mesh.GetIndexBuffer());
 		const auto& vkShader = reinterpret_cast<const std::shared_ptr<VulkanShader>&>(shader);
-		VkDeviceAddress vertexBufferAddress = vkVertexBuffer->GetDeviceAddress();
 
-		vkCmdPushConstants(commandBuffer, vkShader->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(VkDeviceAddress), &vertexBufferAddress);
-		vkCmdBindIndexBuffer(commandBuffer, vkIndexBuffer->GetVkBuffer(), 0, VK_INDEX_TYPE_UINT32);
+		std::array<VkDeviceAddress, 2> addresses = {vkVertexBuffer->GetDeviceAddress(), vkIndexBuffer->GetDeviceAddress()};
 
-		// TODO: Change the way we get index count
-		vkCmdDrawIndexed(commandBuffer, vkIndexBuffer->GetSize() / sizeof(uint32_t), instanceCount, 0, 0, 0);
-	}
-
-	void VulkanRenderCommandBuffer::DrawMeshWithMaterial(const Mesh& mesh, const std::shared_ptr<Shader>& shader, const glm::mat4& modelMatrix, uint32_t instanceCount, bool IsImmediate)
-	{
-		VkCommandBuffer commandBuffer = IsImmediate ? m_ImmediateCommandBuffer.GetVkCommandBuffer() : GetCurrentFrame().CommandBuffer;
-
-		const auto& vkVertexBuffer = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(mesh.GetVertexBuffer());
-		const auto& vkIndexBuffer = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(mesh.GetIndexBuffer());
-		const auto& vkMaterial = reinterpret_cast<const std::shared_ptr<VulkanMaterial>&>(mesh.GetMaterial());
-		const auto& vkShader = reinterpret_cast<const std::shared_ptr<VulkanShader>&>(shader);
-		VkDeviceAddress vertexBufferAddress = vkVertexBuffer->GetDeviceAddress();
-
-		vkCmdPushConstants(commandBuffer, vkShader->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(VkDeviceAddress), &vertexBufferAddress);
-		vkCmdBindIndexBuffer(commandBuffer, vkIndexBuffer->GetVkBuffer(), 0, VK_INDEX_TYPE_UINT32);
-
-		const auto& materialSet = vkMaterial->GetDescriptorSet()->GetVkDescriptorSet();
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkShader->GetPipelineLayout(), 2, 1, &materialSet, 0, nullptr);
+		vkCmdPushConstants(commandBuffer, vkShader->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(addresses), addresses.data());
 
 		// TODO: Change the way we get index count
-		vkCmdDrawIndexed(commandBuffer, vkIndexBuffer->GetSize() / sizeof(uint32_t), instanceCount, 0, 0, 0);
+		vkCmdDraw(commandBuffer, vkIndexBuffer->GetSize() / sizeof(uint32_t), instanceCount, 0, 0);
 	}
 
-	void VulkanRenderCommandBuffer::PushData(const void* data, uint32_t size, const std::shared_ptr<Shader>& shader, int shaderStageFlags, bool IsImmediate)
+	void VulkanRenderCommandBuffer::Submit(const Mesh& mesh, const glm::mat4& modelMatrix, uint32_t instanceCount)
 	{
-		VkCommandBuffer commandBuffer = IsImmediate ? m_ImmediateCommandBuffer.GetVkCommandBuffer() : GetCurrentFrame().CommandBuffer;
+		// TODO: Right now cannot update model matrix if already merged, again will be fixed with dynamic loading
+		if (mesh.m_Merged) return;
+
+		// TODO: Check how material textures were transitioned before, this looks bad
+
+		auto images = mesh.GetMaterial()->GetData().Textures.Get();
+
+		for (auto& image : images)
+		{
+			reinterpret_cast<std::shared_ptr<VulkanImage>&>(image)->TransitionLayout(GetCurrentFrame().CommandBuffer, { VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL });
+		}
+
+		m_DrawData.push_back({ mesh, modelMatrix, instanceCount });
+		mesh.m_Merged = true;
+	}
+
+	void VulkanRenderCommandBuffer::Execute(const std::shared_ptr<Shader>& shader)
+	{
+		// NOTE: Execute will only bind the descriptor set and call drawIndirect in the future
+		// Merging meshes is going to be different when dynamic loading is implemented
+		static bool firstRun = true;
+
+		if (firstRun)
+		{
+			MergeMeshes();
+			firstRun = false;
+		}
+
 		const auto& vkShader = reinterpret_cast<const std::shared_ptr<VulkanShader>&>(shader);
 
-		vkCmdPushConstants(commandBuffer, vkShader->GetPipelineLayout(), GetVkShaderStageFlags(shaderStageFlags), sizeof(VkDeviceAddress), size, data);
+		std::array<VkDeviceAddress, 2> addresses = { m_VertexBuffer->GetDeviceAddress(), m_IndexBuffer->GetDeviceAddress() };
+
+		vkCmdPushConstants(GetCurrentFrame().CommandBuffer, vkShader->GetPipelineLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(addresses), addresses.data());
+
+		vkCmdBindDescriptorSets(GetCurrentFrame().CommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkShader->GetPipelineLayout(), 2, 1, &m_IndirectDescriptorSet->GetVkDescriptorSet(), 0, nullptr);
+
+		vkCmdDrawIndirect(GetCurrentFrame().CommandBuffer, m_IndirectBuffer->GetVkBuffer(), 0, m_DrawData.size(), sizeof(VkDrawIndirectCommand));
+	}
+
+	void VulkanRenderCommandBuffer::MergeMeshes()
+	{
+		// TODO: Destroy the old vertex and index buffers after merging them. What about materials?
+		// NOTE: Material index is the same as the mesh index which is going to be given to the Base instance in the indirect buffer
+
+		struct MetaData
+		{
+			uint32_t VertexOffset = 0;
+			uint32_t IndexOffset = 0;
+		};
+
+		struct MatrixData
+		{
+			glm::mat4 ModelMatrix;
+			glm::vec3 NormalCol1;
+			alignas(16) glm::vec3 NormalCol2;
+			alignas(16) glm::vec3 NormalCol3;
+		};
+
+		std::vector<VkDrawIndirectCommand> indirectCommands(m_DrawData.size());
+
+		// NOTE: These buffers are static for now will change it later
+		// Go down to updating the descriptor set GetSize() won't be the exact size
+		std::vector<MetaData> metaData(m_DrawData.size());
+		std::vector<MaterialConstants> materialData(m_DrawData.size());
+		std::vector<MatrixData> matrixData(m_DrawData.size());
+		std::vector<ImageBinding> imageBindings(m_DrawData.size() * 6); // TODO: Each material has 6 textures, get this value properly
+
+		uint32_t totalVertexSize = 0;
+		uint32_t totalIndexSize = 0;
+
+		for (int i = 0; i < m_DrawData.size(); i++)
+		{
+			const Mesh& mesh = m_DrawData[i].MeshData;
+
+			auto images = mesh.GetMaterial()->GetData().Textures.Get();
+
+			for (int j = 0; j < images.size(); j++)
+			{
+				imageBindings[i * images.size() + j] = { images[j], 0 };
+			}
+
+			uint32_t vertexSize = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(mesh.GetVertexBuffer())->GetSize();
+			uint32_t indexSize = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(mesh.GetIndexBuffer())->GetSize();
+
+			indirectCommands[i].firstInstance = i;
+			indirectCommands[i].firstVertex = 0;
+			indirectCommands[i].instanceCount = 1;
+			indirectCommands[i].vertexCount = indexSize / sizeof(uint32_t);
+
+			totalVertexSize += vertexSize;
+			totalIndexSize += indexSize;
+		}
+
+		m_VertexBuffer = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(Buffer::CreateVertexBuffer(nullptr, totalVertexSize));
+		m_IndexBuffer = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(Buffer::CreateIndexBuffer(nullptr, totalIndexSize));
+
+		BeginImmediateCommands();
+
+		uint32_t vertexBufferOffset = 0;
+		uint32_t indexBufferOffset = 0;
+
+		for (int i = 0; i < m_DrawData.size(); i++)
+		{
+			Mesh& mesh = m_DrawData[i].MeshData;
+
+			materialData[i] = mesh.GetMaterial()->GetData().Constants;
+
+			matrixData[i].ModelMatrix = m_DrawData[i].ModelMatrix;
+			glm::mat3 normalMatrix = glm::transpose(glm::inverse(glm::mat3(m_DrawData[i].ModelMatrix)));
+			matrixData[i].NormalCol1 = normalMatrix[0];
+			matrixData[i].NormalCol2 = normalMatrix[1];
+			matrixData[i].NormalCol3 = normalMatrix[2];
+
+			auto& submeshVertexBuffer = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(mesh.GetVertexBuffer());
+			auto& submeshIndexBuffer = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(mesh.GetIndexBuffer());
+
+			VkBufferCopy copy{};
+
+			copy.size = submeshVertexBuffer->GetSize();
+			copy.dstOffset = vertexBufferOffset;
+
+			metaData[i].VertexOffset = vertexBufferOffset;
+
+			vertexBufferOffset += submeshVertexBuffer->GetSize();
+
+			vkCmdCopyBuffer(m_ImmediateCommandBuffer.GetVkCommandBuffer(), submeshVertexBuffer->GetVkBuffer(), m_VertexBuffer->GetVkBuffer(), 1, &copy);
+
+			copy.size = submeshIndexBuffer->GetSize();
+			copy.dstOffset = indexBufferOffset;
+
+			metaData[i].IndexOffset = indexBufferOffset;
+
+			indexBufferOffset += submeshIndexBuffer->GetSize();
+
+			vkCmdCopyBuffer(m_ImmediateCommandBuffer.GetVkCommandBuffer(), submeshIndexBuffer->GetVkBuffer(), m_IndexBuffer->GetVkBuffer(), 1, &copy);
+
+			mesh.m_VertexBuffer.reset();
+			mesh.m_IndexBuffer.reset();
+		}
+
+		EndImmediateCommands();
+
+		m_MetaBuffer = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(Buffer::CreateStorageBuffer(sizeof(MetaData) * metaData.size(), metaData.data()));
+		m_MatrixBuffer = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(Buffer::CreateStorageBuffer(sizeof(MatrixData) * matrixData.size(), matrixData.data()));
+		m_MaterialBuffer = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(Buffer::CreateStorageBuffer(sizeof(MaterialConstants) * materialData.size(), materialData.data()));
+		m_IndirectBuffer = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(Buffer::CreateIndirectBuffer(sizeof(VkDrawIndirectCommand) * indirectCommands.size(), indirectCommands.data()));
+
+		m_IndirectDescriptorSet->UpdateWithDescriptorArrays(imageBindings, 
+			{ { m_MetaBuffer, 1, 0, m_MetaBuffer->GetSize()}, { m_MatrixBuffer, 2, 0, m_MatrixBuffer->GetSize() }, { m_MaterialBuffer, 3, 0, m_MaterialBuffer->GetSize() } });
 	}
 
 	void VulkanRenderCommandBuffer::BindEnvironmentBuffer(const std::shared_ptr<Buffer>& buffer)
@@ -300,7 +381,8 @@ namespace lypant
 			vkCreateSemaphore(graphicsContext.GetDevice(), &semaphoreInfo, nullptr, &semaphore);
 		}
 
-		m_EnvironmentDescriptorSet = std::make_unique<VulkanDescriptorSet>(graphicsContext.GetGlobalDescriptorSetLayout());
+		m_EnvironmentDescriptorSet = std::make_unique<VulkanDescriptorSet>(graphicsContext.GetEnvironmentDescriptorSetLayout());
+		m_IndirectDescriptorSet = std::make_unique<VulkanDescriptorSet>(graphicsContext.GetIndirectDescriptorSetLayout());
 	}
 
 	void VulkanRenderCommandBuffer::DestroyCommandResources()

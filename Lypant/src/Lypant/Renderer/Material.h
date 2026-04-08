@@ -9,6 +9,9 @@ namespace lypant
 {
 	struct MaterialTextures
 	{
+	public:
+		inline std::array<std::shared_ptr<Image>, 6> Get() const { return { AlbedoMap, ORMMap, AmbientOcclusionMap, RoughnessMap, MetallicMap, NormalMap }; }
+	public:
 		std::shared_ptr<Image> AlbedoMap = util::Images::GetWhite4Channel1x1();
 		std::shared_ptr<Image> ORMMap = util::Images::GetWhite4Channel1x1();
 		std::shared_ptr<Image> AmbientOcclusionMap = util::Images::GetWhite1Channel1x1();
@@ -19,7 +22,7 @@ namespace lypant
 		std::shared_ptr<Image> NormalMap = util::Images::GetWhite4Channel1x1();
 	};
 
-	struct MaterialConstants
+	struct alignas(16) MaterialConstants
 	{
 		glm::vec3 Albedo = glm::vec3(1.0f);
 		float Roughness = 1.0f;

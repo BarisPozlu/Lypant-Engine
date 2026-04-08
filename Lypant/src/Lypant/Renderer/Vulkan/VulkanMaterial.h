@@ -13,9 +13,9 @@ namespace lypant
 		virtual ~VulkanMaterial();
 		virtual void UpdateMaterial() override;
 		inline virtual const MaterialData& GetData() const override { return m_Data; }
-		inline const std::shared_ptr<VulkanDescriptorSet>& GetDescriptorSet() const { return m_DescriptorSet; }
+		//inline const std::shared_ptr<VulkanDescriptorSet>& GetDescriptorSet() const { return m_DescriptorSet; }
 	private:
 		MaterialData m_Data;
-		std::shared_ptr<VulkanDescriptorSet> m_DescriptorSet;
+		//std::shared_ptr<VulkanDescriptorSet> m_DescriptorSet;
 	};
 }

@@ -25,7 +25,6 @@ namespace lypant
 		s_Cmd->BindEnvironmentBuffer(s_Data->EnvironmentBuffer);
 
 		// Create Lighting pass
-
 		std::shared_ptr<Image> cubemap = util::CreateCubemapFromEquirectangularImage("textures/skybox/example1.hdr");
 		std::shared_ptr<Image> diffuseIrradiance = util::CreateDiffuseIrradianceMap(cubemap);
 		std::shared_ptr<Image> prefiltered = util::CreatePreFilteredMap(cubemap);
@@ -47,25 +46,19 @@ namespace lypant
 		op.DepthBufferLoadOp = AttachmentLoadOperation::Clear;
 		op.DepthBufferStoreOp = AttachmentStoreOperation::Store;
 
-		// TODO: the way we give the size is gonna change
 		s_Data->LightingPass = Subpass::Create(hdrTarget, op, Shader::Create("shaders/Model_PBR.glsl"), 
-			{ { diffuseIrradiance, 0 }, { prefiltered, 1 }, { brdf, 2 } }, 192, nullptr, true, SubpassFlagDrawWithMaterial);
+			{ { diffuseIrradiance, 0 }, { prefiltered, 1 }, { brdf, 2 } }, 0, nullptr);
 
 		// Create Cubemap pass
 
 		op.ColorBufferLoadOp = AttachmentLoadOperation::Load;
 		op.DepthBufferLoadOp = AttachmentLoadOperation::Load;
 		op.DepthBufferStoreOp = AttachmentStoreOperation::DontCare;
-
 		s_Data->CubemapPass = Subpass::Create(hdrTarget, op, Shader::Create("shaders/Skybox.glsl"), { { cubemap, 0 } }, 0, nullptr);
-		s_Data->CubemapPass->Submit(*util::MeshFactory::GetCubemapCube(), glm::mat4(1.0f));
 
 		// Create Post-process pass
-
 		op.ColorBufferLoadOp = AttachmentLoadOperation::DontCare;
-
 		s_Data->PostProcessPass = Subpass::Create(RenderTarget::GetDefault(), op, Shader::Create("shaders/PostProcess.glsl"), { { colorBuffer, 0 } }, 0, nullptr);
-		s_Data->PostProcessPass->Submit(*util::MeshFactory::GetQuad(), glm::mat4(1.0f));
 	}
 
 	void Renderer::Shutdown()
@@ -89,32 +82,34 @@ namespace lypant
 		s_Cmd->EndCommands();
 	}
 
-	void Renderer::BeginScene(const Scene::SceneData& sceneData)
+	void Renderer::Submit(const Mesh& mesh, const glm::mat4& modelMatrix)
+	{
+		s_Cmd->Submit(mesh, modelMatrix);
+	}
+
+	void Renderer::Render(const Scene::SceneData& sceneData)
 	{
 		s_Data->EnvironmentBuffer->UploadData(&sceneData.Camera->GetViewProjectionMatrix(), sizeof(glm::mat4), 0);
 		s_Data->EnvironmentBuffer->UploadData(&sceneData.Camera->GetViewMatrix(), sizeof(glm::mat4), sizeof(glm::mat4));
 		s_Data->EnvironmentBuffer->UploadData(&sceneData.Camera->GetPosition(), sizeof(glm::vec3), 2 * sizeof(glm::mat4));
-		
 
 		s_Data->EnvironmentBuffer->UploadData(&sceneData.NumberOfDirectionalLights, sizeof(sceneData.NumberOfDirectionalLights), EnvironmentBufferLayout::GetOffsetOfBinding(1) + offsetof(LightCountData, DirectionalLightCount));
 		s_Data->EnvironmentBuffer->UploadData(sceneData.DirectionalLightComponents, sceneData.NumberOfDirectionalLights * sizeof(DirectionalLightComponent), EnvironmentBufferLayout::GetOffsetOfBinding(4));
 
-		s_Data->LightingPass->ClearDrawData();
-	}
+		s_Cmd->BeginSubpass(*s_Data->LightingPass);
+		s_Cmd->Execute(s_Data->LightingPass->GetShader());
+		s_Cmd->EndSubpass(*s_Data->LightingPass);
 
-	void Renderer::EndScene()
-	{
-		s_Cmd->ExecuteSubpass(*s_Data->LightingPass);
-		s_Cmd->ExecuteSubpass(*s_Data->CubemapPass);
-		s_Cmd->ExecuteSubpass(*s_Data->PostProcessPass);
+		s_Cmd->BeginSubpass(*s_Data->CubemapPass);
+		s_Cmd->Draw(*util::MeshFactory::GetCubemapCube(), s_Data->CubemapPass->GetShader());
+		s_Cmd->EndSubpass(*s_Data->CubemapPass);
+
+		s_Cmd->BeginSubpass(*s_Data->PostProcessPass);
+		s_Cmd->Draw(*util::MeshFactory::GetQuad(), s_Data->PostProcessPass->GetShader());
+		s_Cmd->EndSubpass(*s_Data->PostProcessPass);
 
 		// for now to draw ImGui I will begin the post process pass again and end it after the Imgui also has rendered
 		s_Cmd->BeginSubpass(*s_Data->PostProcessPass);
-	}
-
-	void Renderer::SubmitMesh(const Mesh& mesh, const glm::mat4& modelMatrix)
-	{
-		s_Data->LightingPass->Submit(mesh, modelMatrix, 1);
 	}
 
 	RenderCommandBuffer& Renderer::GetRenderCommandBuffer()

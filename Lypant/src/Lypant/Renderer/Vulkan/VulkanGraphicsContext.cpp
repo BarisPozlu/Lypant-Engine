@@ -31,11 +31,11 @@ namespace lypant
 
 		// NOTE: This descriptor set layout is created here so that it lives for the duration of the context and shaders can simply get the layout from here and add it
 		// to their pipeline layout, this also enables the render command buffer to simply get the layout and create the descriptor set upon init.
-		std::array<VkDescriptorSetLayoutBinding, EnvironmentBufferLayout::s_BindingCount> layoutBindings{};
+		std::array<VkDescriptorSetLayoutBinding, EnvironmentBufferLayout::s_BindingCount> environmentBindings{};
 
-		for (int i = 0; i < layoutBindings.size(); i++)
+		for (int i = 0; i < environmentBindings.size(); i++)
 		{
-			VkDescriptorSetLayoutBinding& layoutBinding = layoutBindings[i];
+			VkDescriptorSetLayoutBinding& layoutBinding = environmentBindings[i];
 
 			layoutBinding.binding = i;
 			layoutBinding.descriptorCount = 1;
@@ -45,16 +45,49 @@ namespace lypant
 		
 		VkDescriptorSetLayoutCreateInfo layoutInfo{};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		layoutInfo.bindingCount = layoutBindings.size();
-		layoutInfo.pBindings = layoutBindings.data();
+		layoutInfo.bindingCount = environmentBindings.size();
+		layoutInfo.pBindings = environmentBindings.data();
 
-		vkCreateDescriptorSetLayout(m_Device, &layoutInfo, nullptr, &m_GlobalDescriptorSetLayout);
+		vkCreateDescriptorSetLayout(m_Device, &layoutInfo, nullptr, &m_EnvironmentDescriptorSetLayout);
+
+		// TODO: Change to dynamic
+		std::array<VkDescriptorSetLayoutBinding, 4> indirectBindings{};
+
+		// Material textures binding
+		indirectBindings[0].binding = 0;
+		indirectBindings[0].descriptorCount = 2000; // TODO: Check out the docs for this, Already have a plan in vulkanshader.cpp
+		indirectBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		indirectBindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+		// Metadata buffer binding
+		indirectBindings[1].binding = 1;
+		indirectBindings[1].descriptorCount = 1;
+		indirectBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		indirectBindings[1].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+		// Matrix buffer binding
+		indirectBindings[2].binding = 2;
+		indirectBindings[2].descriptorCount = 1;
+		indirectBindings[2].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		indirectBindings[2].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+		// Material buffer binding
+		indirectBindings[3].binding = 3;
+		indirectBindings[3].descriptorCount = 1;
+		indirectBindings[3].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		indirectBindings[3].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+		
+		layoutInfo.bindingCount = indirectBindings.size();
+		layoutInfo.pBindings = indirectBindings.data();
+
+		vkCreateDescriptorSetLayout(m_Device, &layoutInfo, nullptr, &m_IndirectDescriptorSetLayout);
 	}
 
 	VulkanGraphicsContext::~VulkanGraphicsContext()
 	{
 		//vkQueueWaitIdle(m_GraphicsQueue);
-		vkDestroyDescriptorSetLayout(m_Device, m_GlobalDescriptorSetLayout, nullptr);
+		vkDestroyDescriptorSetLayout(m_Device, m_IndirectDescriptorSetLayout, nullptr);
+		vkDestroyDescriptorSetLayout(m_Device, m_EnvironmentDescriptorSetLayout, nullptr);
 		VulkanDescriptorSetAllocator::Shutdown();
 		VulkanImmediateCommandBuffer::Shutdown();
 		delete m_SwapChain;
@@ -229,7 +262,9 @@ namespace lypant
 		VkPhysicalDeviceVulkan12Features enabledvk12Features{};
 		enabledvk12Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
 		enabledvk12Features.bufferDeviceAddress = VK_TRUE;
-		//enabledvk12Features.descriptorIndexing = VK_TRUE;
+		enabledvk12Features.descriptorIndexing = VK_TRUE;
+		enabledvk12Features.runtimeDescriptorArray = VK_TRUE;
+		enabledvk12Features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
 		enabledvk12Features.shaderOutputViewportIndex = VK_TRUE;
 		enabledvk12Features.shaderOutputLayer = VK_TRUE;
 		enabledvk12Features.pNext = &dynamicRenderingFeatures;
@@ -238,6 +273,7 @@ namespace lypant
 		enabledFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 		enabledFeatures.features.geometryShader = VK_TRUE;
 		enabledFeatures.features.samplerAnisotropy = VK_TRUE;
+		enabledFeatures.features.multiDrawIndirect = VK_TRUE;
 		enabledFeatures.pNext = &enabledvk12Features;
 
 		VkDeviceCreateInfo deviceInfo{};

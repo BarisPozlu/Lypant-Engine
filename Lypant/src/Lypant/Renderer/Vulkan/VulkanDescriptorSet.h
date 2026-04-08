@@ -28,6 +28,7 @@ namespace lypant
 		~VulkanDescriptorSet();
 		const VkDescriptorSet& GetVkDescriptorSet() const { return m_DescriptorSet; }
 		void Update(const std::vector<ImageBinding>& imageBindings, const std::vector<BufferBinding>& bufferBindings) const;
+		void UpdateWithDescriptorArrays(const std::vector<ImageBinding>& imageBindings, const std::vector<BufferBinding>& bufferBindings) const;
 	private:
 		VkDescriptorSet m_DescriptorSet;
 	};

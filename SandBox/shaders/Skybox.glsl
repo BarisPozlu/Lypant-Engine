@@ -16,10 +16,16 @@ layout (buffer_reference) readonly buffer VertexBuffer
 	Vertex vertices[];
 };
 
-layout (push_constant) uniform PushConstant
+layout (buffer_reference) readonly buffer IndexBuffer
+{
+	uint indices[];
+};
+
+layout (push_constant) uniform PushConstants
 {
 	VertexBuffer vertexBuffer;
-} PushConstants;
+    IndexBuffer indexBuffer;
+};
 
 layout (set = 0, binding = 0) readonly buffer Camera
 {
@@ -30,8 +36,11 @@ layout (set = 0, binding = 0) readonly buffer Camera
 
 void main()
 {
-	Vertex vertex = PushConstants.vertexBuffer.vertices[gl_VertexIndex];
+	uint index = indexBuffer.indices[gl_VertexIndex];
+    Vertex vertex = vertexBuffer.vertices[index];
+
 	v_DirectionVector = vertex.Position.xyz;
+
 	vec4 position = u_VP * (vec4(vertex.Position.xyz + u_ViewPosition, 1.0));
 	gl_Position = position.xyww;
 }

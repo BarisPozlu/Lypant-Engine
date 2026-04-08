@@ -17,14 +17,22 @@ layout (buffer_reference) readonly buffer VertexBuffer
 	Vertex vertices[];
 };
 
-layout (push_constant) uniform PushConstant
+layout (buffer_reference) readonly buffer IndexBuffer
+{
+	uint indices[];
+};
+
+layout (push_constant) uniform PushConstants
 {
 	VertexBuffer vertexBuffer;
-} PushConstants;
+    IndexBuffer indexBuffer;
+};
 
 void main()
 {
-	Vertex vertex = PushConstants.vertexBuffer.vertices[gl_VertexIndex];
+	uint index = indexBuffer.indices[gl_VertexIndex];
+    Vertex vertex = vertexBuffer.vertices[index];
+
 	v_TexCoord = vertex.TexCoord;
 	gl_Position = vec4(vertex.Position, 0, 1);
 }

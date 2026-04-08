@@ -10,6 +10,9 @@
 
 namespace lypant
 {
+	class VulkanDescriptorSet;
+	class VulkanBuffer;
+
 	class VulkanRenderCommandBuffer : public RenderCommandBuffer
 	{
 	public:
@@ -22,10 +25,10 @@ namespace lypant
 		inline virtual void EndImmediateCommands() override { m_ImmediateCommandBuffer.EndCommands(); }
 		virtual void BeginSubpass(const Subpass& subpass, bool IsImmediate = false) override;
 		virtual void EndSubpass(const Subpass& subpass, bool IsImmediate = false) override;
-		virtual void ExecuteSubpass(Subpass& subpass, bool IsImmediate = false) override;
-		virtual void DrawMesh(const Mesh& mesh, const std::shared_ptr<Shader>& shader, const glm::mat4& modelMatrix, uint32_t instanceCount = 1, bool IsImmediate = false) override;
-		virtual void DrawMeshWithMaterial(const Mesh& mesh, const std::shared_ptr<Shader>& shader, const glm::mat4& modelMatrix, uint32_t instanceCount = 1, bool IsImmediate = false) override;
-		virtual void PushData(const void* data, uint32_t size, const std::shared_ptr<Shader>& shader, int shaderStageFlags, bool IsImmediate = false) override;
+		virtual void Draw(const Mesh& mesh, const std::shared_ptr<Shader>& shader, uint32_t instanceCount = 1, bool IsImmediate = false) override;
+		virtual void Submit(const Mesh& mesh, const glm::mat4& modelMatrix, uint32_t instanceCount = 1) override;
+		virtual void Execute(const std::shared_ptr<Shader>& shader) override;
+		virtual void MergeMeshes() override;
 		virtual void BindEnvironmentBuffer(const std::shared_ptr<Buffer>& buffer) override;
 
 		inline VkCommandBuffer GetCommandBuffer() { return GetCurrentFrame().CommandBuffer; }
@@ -44,8 +47,26 @@ namespace lypant
 		std::array<FrameData, VulkanGraphicsContext::s_MaxFramesInFlight> m_FrameData;
 		std::vector<VkSemaphore> m_RenderFinishedSemaphores;
 		VulkanImmediateCommandBuffer m_ImmediateCommandBuffer;
-		std::unique_ptr<class VulkanDescriptorSet> m_EnvironmentDescriptorSet;
+		std::unique_ptr<VulkanDescriptorSet> m_EnvironmentDescriptorSet;
 		std::array<uint32_t, EnvironmentBufferLayout::s_BindingCount> m_DynamicOffsets;
 		uint32_t m_EnvironmentBufferSize = 0;
+
+		// NOTE: Draw data will not be stored here after dynamic loading
+		struct DrawData
+		{
+			DrawData(const Mesh& mesh, const glm::mat4& modelMatrix, uint32_t instanceCount) : MeshData(mesh), ModelMatrix(modelMatrix), InstanceCount(instanceCount) {}
+			Mesh MeshData;
+			glm::mat4 ModelMatrix;
+			uint32_t InstanceCount;
+		};
+
+		std::vector<DrawData> m_DrawData;
+		std::unique_ptr<VulkanDescriptorSet> m_IndirectDescriptorSet;
+		std::shared_ptr<VulkanBuffer> m_VertexBuffer;
+		std::shared_ptr<VulkanBuffer> m_IndexBuffer;
+		std::shared_ptr<VulkanBuffer> m_MetaBuffer;
+		std::shared_ptr<VulkanBuffer> m_MatrixBuffer;
+		std::shared_ptr<VulkanBuffer> m_MaterialBuffer;
+		std::shared_ptr<VulkanBuffer> m_IndirectBuffer;
 	};
 }

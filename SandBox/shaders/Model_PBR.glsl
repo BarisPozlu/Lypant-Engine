@@ -8,6 +8,7 @@ layout (location = 0) out vec3 v_WorldPosition;
 layout (location = 1) out mat3 v_TBNMatrix;
 layout (location = 4) out vec2 v_TexCoord;
 layout (location = 5) out vec3 v_Normal;
+layout (location = 6) flat out uint v_DrawId;
 
 struct Vertex
 {
@@ -15,6 +16,18 @@ struct Vertex
 	vec3 Normal;
 	vec3 Tangent;
 	vec2 TexCoord;
+};
+
+struct MetaData
+{
+	uint VertexOffset;
+	uint IndexOffset;
+};
+
+struct MatrixData
+{
+	mat4 ModelMatrix;
+	mat3 NormalMatrix;
 };
 
 struct MaterialConstants
@@ -31,10 +44,16 @@ layout (buffer_reference) readonly buffer VertexBuffer
 	Vertex vertices[];
 };
 
-layout (push_constant) uniform PushConstant
+layout (buffer_reference) readonly buffer IndexBuffer
+{
+	uint indices[];
+};
+
+layout (push_constant) uniform PushConstants
 {
 	VertexBuffer vertexBuffer;
-} PushConstants;
+    IndexBuffer indexBuffer;
+};
 
 //out vec4 v_SpotLightSpacePositions[8];
 
@@ -45,27 +64,44 @@ layout (set = 0, binding = 0) readonly buffer Camera
 	vec3 u_ViewPosition;
 };
 
-layout (set = 1, binding = 3) uniform DynamicPassData
+layout (set = 2, binding = 1) readonly buffer MetaBuffer
 {
-	mat4 u_ModelMatrix;
-	mat3 u_NormalMatrix;
-	MaterialConstants u_MaterialConstants;
-	//float u_AmbientStrength;
+	MetaData u_MetaData[];
+};
+
+layout (set = 2, binding = 2) readonly buffer MatrixBuffer
+{
+	MatrixData u_MatrixData[];
+};
+
+layout (set = 2, binding = 3) readonly buffer MaterialBuffer
+{
+	MaterialConstants u_MaterialConstants[];
 };
 
 //uniform mat4 u_SpotLightSpaceMatrices[8];
 
+const uint IndexSize = 4;
+const uint VertexSize = 64;
+
 void main()
 {
-	Vertex vertex = PushConstants.vertexBuffer.vertices[gl_VertexIndex];
+	uint drawId = gl_InstanceIndex;
+	v_DrawId = drawId;
 
-	v_WorldPosition = vec3(u_ModelMatrix * vertex.Position);
+	uint index = indexBuffer.indices[u_MetaData[drawId].IndexOffset / IndexSize + gl_VertexIndex];
+    Vertex vertex = vertexBuffer.vertices[u_MetaData[drawId].VertexOffset / VertexSize + index];
 
-	vec3 normal = normalize(u_NormalMatrix * vertex.Normal);
+	mat4 modelMatrix = u_MatrixData[drawId].ModelMatrix;
+	mat3 normalMatrix = u_MatrixData[drawId].NormalMatrix;
 
-	if (u_MaterialConstants.UseNormalMap)
+	v_WorldPosition = vec3(modelMatrix * vertex.Position);
+
+	vec3 normal = normalize(normalMatrix * vertex.Normal);
+
+	if (u_MaterialConstants[drawId].UseNormalMap)
 	{
-		vec3 tangent = normalize(u_NormalMatrix * vertex.Tangent);
+		vec3 tangent = normalize(normalMatrix * vertex.Tangent);
 		tangent = normalize(tangent - dot(tangent, normal) * normal);
 
 		vec3 bitangent = cross(normal, tangent);
@@ -84,12 +120,14 @@ void main()
 //	}
 
 	v_TexCoord = vertex.TexCoord;
-	gl_Position = u_VP * u_ModelMatrix * vertex.Position;
+	gl_Position = u_VP * modelMatrix * vertex.Position;
 }
 
 #endif
 
 #ifdef FRAGMENT_SHADER
+
+#extension GL_EXT_nonuniform_qualifier : require
 
 layout (location = 0) out vec4 o_Color;
 
@@ -97,6 +135,7 @@ layout (location = 0) in vec3 v_WorldPosition;
 layout (location = 1) in mat3 v_TBNMatrix;
 layout (location = 4) in vec2 v_TexCoord;
 layout (location = 5) in vec3 v_Normal;
+layout (location = 6) flat in uint v_DrawId;
 
 //in vec4 v_SpotLightSpacePositions[8];
 
@@ -167,20 +206,19 @@ struct MaterialConstants
 	bool UseNormalMap;
 };
 
-layout (set = 1, binding = 3) uniform DynamicPassData
+layout (set = 2, binding = 3) readonly buffer MaterialBuffer
 {
-	mat4 u_ModelMatrix;
-	mat3 u_NormalMatrix;
-	MaterialConstants u_MaterialConstants;
-	//float u_AmbientStrength;
+	MaterialConstants u_MaterialConstants[];
 };
 
-layout (set = 2, binding = 0) uniform sampler2D u_AlbedoMap;
-layout (set = 2, binding = 1) uniform sampler2D u_ORMMap;
-layout (set = 2, binding = 2) uniform sampler2D u_AmbientOcclusionMap;
-layout (set = 2, binding = 3) uniform sampler2D u_RoughnessMap;
-layout (set = 2, binding = 4) uniform sampler2D u_MetallicMap;
-layout (set = 2, binding = 5) uniform sampler2D u_NormalMap;
+layout (set = 2, binding = 0) uniform sampler2D u_Textures[];
+
+const uint AlbedoOffset = 0;
+const uint ORMOffset = 1;
+const uint AmbientOcclusionOffset = 2;
+const uint RoughnessOffset = 3;
+const uint MetallicOffset = 4;
+const uint NormalOffset = 5;
 
 layout (set = 1, binding = 0) uniform samplerCube u_DiffuseIrradianceMap;
 layout (set = 1, binding = 1) uniform samplerCube u_PreFilteredMap;
@@ -193,6 +231,7 @@ layout (set = 1, binding = 2) uniform sampler2D u_BRDFIntegrationMap;
 //uniform sampler2DArray u_SpotLightShadowMaps;
 //uniform samplerCubeArray u_PointLightShadowMaps;
 
+vec4 TextureBindless(uint imageOffset);
 vec3 CalculatePointLight(int i, vec3 normal, vec3 viewDirection, vec3 albedo, float roughness, float metallic, vec3 F0);
 vec3 CalculateSpotLight(int i, vec3 normal, vec3 viewDirection, vec3 albedo, float roughness, float metallic, vec3 F0);
 vec3 CalculateDirectionalLight(int i, vec3 normal, vec3 viewDirection, vec3 albedo, float roughness, float metallic, vec3 F0);
@@ -213,9 +252,9 @@ void main()
 {
 	vec3 normal;
 
-	if (u_MaterialConstants.UseNormalMap)
+	if (u_MaterialConstants[v_DrawId].UseNormalMap)
 	{
-		normal = texture(u_NormalMap, v_TexCoord).rgb * 2.0 - 1.0;
+		normal = TextureBindless(NormalOffset).rgb * 2.0 - 1.0;
 		normal = normalize(v_TBNMatrix * normal);
 	}
 
@@ -226,25 +265,25 @@ void main()
 
 	vec3 viewDirection = normalize(u_ViewPosition - v_WorldPosition);
 
-	vec3 albedo = texture(u_AlbedoMap, v_TexCoord).rgb * u_MaterialConstants.Albedo;
+	vec3 albedo = TextureBindless(AlbedoOffset).rgb * u_MaterialConstants[v_DrawId].Albedo;
 
 	float ao;
 	float roughness;
 	float metallic;
 
-	if (u_MaterialConstants.UseCombinedORM)
+	if (u_MaterialConstants[v_DrawId].UseCombinedORM)
 	{
-		vec3 orm = texture(u_ORMMap, v_TexCoord).rgb;
+		vec3 orm = TextureBindless(ORMOffset).rgb;
 		ao = orm.r;
-		roughness = orm.g * u_MaterialConstants.Roughness;
-		metallic = orm.b * u_MaterialConstants.Metallic;
+		roughness = orm.g * u_MaterialConstants[v_DrawId].Roughness;
+		metallic = orm.b * u_MaterialConstants[v_DrawId].Metallic;
 	}
 
 	else
 	{
-		ao = texture(u_AmbientOcclusionMap, v_TexCoord).r;
-		roughness = texture(u_RoughnessMap, v_TexCoord).r * u_MaterialConstants.Roughness;
-		metallic = texture(u_MetallicMap, v_TexCoord).r * u_MaterialConstants.Metallic;		
+		ao = TextureBindless(AmbientOcclusionOffset).r;
+		roughness = TextureBindless(RoughnessOffset).r * u_MaterialConstants[v_DrawId].Roughness;
+		metallic = TextureBindless(MetallicOffset).r * u_MaterialConstants[v_DrawId].Metallic;		
 	}
 
 	vec3 F0 = vec3(0.04);
@@ -289,6 +328,11 @@ void main()
 
 	o_Color = vec4(Lo + ambient, 1.0);
 	//o_Color = vec4(ambient, 1.0);
+}
+
+vec4 TextureBindless(uint imageOffset)
+{
+	return texture(u_Textures[nonuniformEXT(v_DrawId) * 6 + imageOffset], v_TexCoord);
 }
 
 vec3 CalculatePointLight(int i, vec3 normal, vec3 viewDirection, vec3 albedo, float roughness, float metallic, vec3 F0)

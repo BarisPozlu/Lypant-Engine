@@ -4,33 +4,27 @@
 
 namespace lypant
 {
-	VulkanSubpass::VulkanSubpass(const std::shared_ptr<RenderTarget>& renderTarget, const RenderTargetOperation& op, const std::shared_ptr<Shader>& shader, const std::vector<ImageBinding>& dataBindings, uint32_t uniformBufferSize, const void* data, bool isDynamic, int subpassFlags)
+	VulkanSubpass::VulkanSubpass(const std::shared_ptr<RenderTarget>& renderTarget, const RenderTargetOperation& op, const std::shared_ptr<Shader>& shader, const std::vector<ImageBinding>& imageBindings, uint32_t uniformBufferSize, const void* data, bool isDynamic, int subpassFlags)
 	{
 		m_RenderTarget = reinterpret_cast<const std::shared_ptr<VulkanRenderTarget>&>(renderTarget);
 		m_Shader = reinterpret_cast<const std::shared_ptr<VulkanShader>&>(shader);
-		m_DataBindings = dataBindings;
+		m_DataBindings = imageBindings;
 
-		// TODO: Update
-		if (uniformBufferSize)
-		{
-			m_UniformBuffer = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(Buffer::CreateUniformBuffer(uniformBufferSize, data, isDynamic));
+		VkDescriptorSetLayout layout = m_Shader->GetDescriptorSetLayout(DescriptorSetType::RenderPass);
 
-			//if (data)
-			//{
-			//	m_UniformBuffer->UploadData(data, uniformBufferSize, 0);
-			//}
-		}
-		if (m_Shader->GetDescriptorSetLayouts().size() > 1)
+		if (layout != VK_NULL_HANDLE)
 		{
-			m_DescriptorSet = std::make_shared<VulkanDescriptorSet>(m_Shader->GetDescriptorSetLayout(1));
+			m_DescriptorSet = std::make_shared<VulkanDescriptorSet>(layout);
 
 			if (uniformBufferSize)
 			{
-				m_DescriptorSet->Update(dataBindings, { { m_UniformBuffer, static_cast<uint32_t>(dataBindings.size()), 0, m_UniformBuffer->GetSize()}});
+				m_UniformBuffer = reinterpret_cast<const std::shared_ptr<VulkanBuffer>&>(Buffer::CreateUniformBuffer(uniformBufferSize, data, isDynamic));
+				m_DescriptorSet->Update(imageBindings, { { m_UniformBuffer, static_cast<uint32_t>(imageBindings.size()), 0, m_UniformBuffer->GetSize()}});
 			}
+
 			else
 			{
-				m_DescriptorSet->Update(dataBindings, { });
+				m_DescriptorSet->Update(imageBindings, { });
 			}
 		}
 

@@ -39,13 +39,16 @@ namespace lypant
 			op.ColorBufferStoreOp = AttachmentStoreOperation::Store;
 
 			std::unique_ptr<Subpass> subpass = Subpass::Create(renderTarget, op, shader, {}, 0, nullptr);
-			subpass->Submit(*MeshFactory::GetQuad(), glm::mat4(1.0f));
 			
 			auto& cmd = Renderer::GetRenderCommandBuffer();
 
 			cmd.BeginImmediateCommands();
 
-			cmd.ExecuteSubpass(*subpass, true);
+			cmd.BeginSubpass(*subpass, true);
+
+			cmd.Draw(*util::MeshFactory::GetQuad(), subpass->GetShader(), 1, true);
+
+			cmd.EndSubpass(*subpass, true);
 
 			cmd.EndImmediateCommands();
 

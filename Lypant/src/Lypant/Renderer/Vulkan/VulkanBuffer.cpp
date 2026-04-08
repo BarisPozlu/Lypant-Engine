@@ -25,9 +25,10 @@ namespace lypant
 			flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 		}
 
+		// NOTE: Engine does not use vulkan index buffers. Instead it uses storage buffers with device addresses for index data.
 		if (bufferUsageFlags & BufferUsageFlagsIndexBuffer)
 		{
-			flags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+			flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 		}
 
 		if (bufferUsageFlags & BufferUsageFlagsUniformBuffer)
@@ -38,6 +39,11 @@ namespace lypant
 		if (bufferUsageFlags & BufferUsageFlagsStorageBuffer)
 		{
 			flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+		}
+
+		if (bufferUsageFlags & BufferUsageFlagsIndirectBuffer)
+		{
+			flags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
 		}
 
 		if (bufferUsageFlags & BufferUsageFlagsDeviceAddress)

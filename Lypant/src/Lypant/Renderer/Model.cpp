@@ -115,6 +115,7 @@ namespace lypant
 
 		ImageParams albedoParams;
 		albedoParams.LinearSpace = false;
+		albedoParams.GenerateMipMap = true;
 
 		if (aiMaterial->GetTexture(aiTextureType_DIFFUSE, 0, &localPath) == aiReturn_SUCCESS)
 		{

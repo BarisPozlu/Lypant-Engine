@@ -17,10 +17,16 @@ layout (buffer_reference) readonly buffer VertexBuffer
 	Vertex vertices[];
 };
 
-layout (push_constant) uniform PushConstant
+layout (buffer_reference) readonly buffer IndexBuffer
+{
+	uint indices[];
+};
+
+layout (push_constant) uniform PushConstants
 {
 	VertexBuffer vertexBuffer;
-} PushConstants;
+    IndexBuffer indexBuffer;
+};
 
 layout (set = 1, binding = 1) uniform ViewMatrices
 {
@@ -30,7 +36,10 @@ layout (set = 1, binding = 1) uniform ViewMatrices
 void main()
 {
 	gl_Layer = gl_InstanceIndex;
-	Vertex vertex = PushConstants.vertexBuffer.vertices[gl_VertexIndex];
+
+	uint index = indexBuffer.indices[gl_VertexIndex];
+    Vertex vertex = vertexBuffer.vertices[index];
+
 	v_DirectionVector = vertex.Position.xyz;
 	gl_Position = u_ViewMatrix[gl_InstanceIndex] * vertex.Position; // already in ndc no need for a projection matrix
 }
