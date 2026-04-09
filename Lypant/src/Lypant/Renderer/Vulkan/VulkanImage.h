@@ -46,6 +46,7 @@ namespace lypant
 		void CreateImage(const ImageSpecification& spec);
 		void UploadData(const void* buffer);
 		void CreateImageViews(const ImageSpecification& spec);
+		void CreateSampler(const SamplerSpecification& spec);
 		void GenerateMipMaps();
 	private:
 		VkImage m_Image;
@@ -57,8 +58,7 @@ namespace lypant
 		VkImageLayout m_CurrentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
 		uint32_t m_LayerCount;
 		uint32_t m_MipCount;
-		// TODO: Samplers should not be created per image. Write the code so that we get the sampler we want from somewhere else
-		std::unique_ptr<VulkanSampler> m_Sampler;
+		std::shared_ptr<VulkanSampler> m_Sampler;
 		std::string m_Path;
 	private:
 		friend class VulkanSwapChain;

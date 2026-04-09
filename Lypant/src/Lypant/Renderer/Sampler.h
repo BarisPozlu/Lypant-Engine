@@ -1,5 +1,7 @@
 #pragma once
 
+#include <memory>
+
 namespace lypant
 {
 	enum class ImageWrappingOption
@@ -18,4 +20,10 @@ namespace lypant
 		ImageFilteringOption FilteringOption = ImageFilteringOption::Linear;
 	};
 
+	class Sampler
+	{
+	public:
+		static std::shared_ptr<Sampler> Create(const SamplerSpecification& spec);
+		virtual ~Sampler() = default;
+	};
 }

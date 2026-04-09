@@ -3,6 +3,7 @@
 #include <Lypant/Util/MeshFactory.h>
 #include <Lypant/Util/Util.h>
 #include <Lypant/Util/Images.h>
+#include <Lypant/Util/Samplers.h>
 #include "EditorPerspectiveCamera.h" // temp
 #include <glm/glm.hpp> // temp
 #include "Buffer.h" // temp
@@ -19,6 +20,7 @@ namespace lypant
 		s_Cmd = RenderCommandBuffer::Create();
 
 		util::MeshFactory::Create();
+		util::Samplers::Create();
 		util::Images::Create();
 
 		s_Data->EnvironmentBuffer = Buffer::CreateStorageBuffer(sizeof(EnvironmentBufferLayout), nullptr, true);
@@ -64,6 +66,7 @@ namespace lypant
 	void Renderer::Shutdown()
 	{
 		util::Images::Destroy();
+		util::Samplers::Destroy(),
 		util::MeshFactory::Destroy();
 		delete s_Cmd;
 		delete s_Data;

@@ -5,11 +5,11 @@
 
 namespace lypant
 {
-	class VulkanSampler
+	class VulkanSampler : public Sampler
 	{
 	public:
-		VulkanSampler(SamplerSpecification spec);
-		~VulkanSampler();
+		VulkanSampler(const SamplerSpecification& spec);
+		virtual ~VulkanSampler();
 		inline VkSampler GetVkSampler() const { return m_Sampler; }
 	private:
 		VkSampler m_Sampler;

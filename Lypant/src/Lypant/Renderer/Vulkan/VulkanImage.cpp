@@ -3,6 +3,7 @@
 #include "VulkanGraphicsContext.h"
 #include "VulkanBuffer.h"
 #include "VulkanCommandBuffer.h"
+#include "Lypant/Util/Samplers.h"
 #include <stb_image.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/integer.hpp>
@@ -271,7 +272,7 @@ namespace lypant
 		UploadData(buffer);
 		stbi_image_free(buffer);
 
-		m_Sampler = std::make_unique<VulkanSampler>(spec.Params.SamplerSpec);
+		CreateSampler(spec.Params.SamplerSpec);
 
 		CreateImageViews(spec);
 
@@ -300,7 +301,7 @@ namespace lypant
 			UploadData(data);
 		}
 
-		m_Sampler = std::make_unique<VulkanSampler>(spec.Params.SamplerSpec);
+		CreateSampler(spec.Params.SamplerSpec);
 
 		CreateImageViews(spec);
 
@@ -520,6 +521,24 @@ namespace lypant
 				break;
 
 			default: LY_CORE_ASSERT(false, "Invalid image type");
+		}
+	}
+
+	void VulkanImage::CreateSampler(const SamplerSpecification& spec)
+	{
+		if (spec.FilteringOption == ImageFilteringOption::Linear && spec.WrappingOption == ImageWrappingOption::Repeat)
+		{
+			m_Sampler = reinterpret_cast<const std::shared_ptr<VulkanSampler>&>(util::Samplers::GetLinearRepeat());
+		}
+			
+		else if (spec.FilteringOption == ImageFilteringOption::Linear && spec.WrappingOption == ImageWrappingOption::ClampEdge)
+		{
+			m_Sampler = reinterpret_cast<const std::shared_ptr<VulkanSampler>&>(util::Samplers::GetLinearClampEdge());
+		}
+			
+		else
+		{
+			m_Sampler = std::make_shared<VulkanSampler>(spec);
 		}
 	}
 

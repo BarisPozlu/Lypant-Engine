@@ -4,7 +4,7 @@
 
 namespace lypant
 {
-	static constexpr VkSamplerAddressMode GetVulkanWrappingOption(ImageWrappingOption wrappingOption)
+	static VkSamplerAddressMode GetVulkanWrappingOption(ImageWrappingOption wrappingOption)
 	{
 		switch (wrappingOption)
 		{
@@ -17,7 +17,7 @@ namespace lypant
 		return VK_SAMPLER_ADDRESS_MODE_MAX_ENUM;
 	}
 
-	static constexpr VkFilter GetVulkanFilteringOption(ImageFilteringOption filteringOption)
+	static VkFilter GetVulkanFilteringOption(ImageFilteringOption filteringOption)
 	{
 		switch (filteringOption)
 		{
@@ -29,7 +29,7 @@ namespace lypant
 		return VK_FILTER_MAX_ENUM;
 	}
 
-	VulkanSampler::VulkanSampler(SamplerSpecification spec)
+	VulkanSampler::VulkanSampler(const SamplerSpecification& spec)
 	{
 		VkSamplerCreateInfo samplerInfo{};
 		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;

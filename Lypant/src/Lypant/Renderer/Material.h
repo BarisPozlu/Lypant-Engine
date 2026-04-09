@@ -40,9 +40,9 @@ namespace lypant
 	class Material
 	{
 	public:
-		static std::shared_ptr<Material> Create(const MaterialData& data);
-		virtual ~Material() = default;
-		virtual void UpdateMaterial() = 0;
-		virtual const MaterialData& GetData() const = 0;
+		Material(const MaterialData& data) : m_Data(data) {}
+		MaterialData& GetData() { return m_Data; }
+	private:
+		MaterialData m_Data;
 	};
 }

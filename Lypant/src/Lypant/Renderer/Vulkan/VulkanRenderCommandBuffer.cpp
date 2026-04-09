@@ -6,7 +6,6 @@
 #include "VulkanRenderPass.h"
 #include "VulkanBuffer.h"
 #include "VulkanDescriptorSet.h"
-#include "VulkanMaterial.h"
 #include "Lypant/Renderer/EnvironmentBufferLayout.h"
 
 namespace lypant
@@ -177,8 +176,6 @@ namespace lypant
 	{
 		// TODO: Right now cannot update model matrix if already merged, again will be fixed with dynamic loading
 		if (mesh.m_Merged) return;
-
-		// TODO: Check how material textures were transitioned before, this looks bad
 
 		auto images = mesh.GetMaterial()->GetData().Textures.Get();
 

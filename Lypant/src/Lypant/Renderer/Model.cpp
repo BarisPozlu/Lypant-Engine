@@ -201,7 +201,7 @@ namespace lypant
 			stbi_image_free(buffer);
 		}
 
-		std::shared_ptr<Material> material = Material::Create(materialData);
+		std::shared_ptr<Material> material = std::make_shared<Material>(materialData);
 		m_Meshes.emplace_back(vertexBuffer, indexBuffer, material);
 	}
 }

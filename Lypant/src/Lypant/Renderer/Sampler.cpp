@@ -1,16 +1,16 @@
-#include <lypch.h>
-#include "Material.h"
+#include "lypch.h"
+#include "Sampler.h"
 #include "GraphicsContext.h"
-#include "Vulkan/VulkanMaterial.h"
+#include "Vulkan/VulkanSampler.h"
 
 namespace lypant
 {
-	std::shared_ptr<Material> Material::Create(const MaterialData& data)
+	std::shared_ptr<Sampler> Sampler::Create(const SamplerSpecification& spec)
 	{
 		switch (GraphicsContext::GetGraphicsAPI())
 		{
 			case GraphicsAPI::None: LY_CORE_ASSERT(false, "None graphics api is not supported."); break;
-			case GraphicsAPI::Vulkan: return std::make_shared<VulkanMaterial>(data); break;
+			case GraphicsAPI::Vulkan: return std::make_shared<VulkanSampler>(spec); break;
 		}
 
 		LY_CORE_ASSERT(false, "Unknown Graphics API");
